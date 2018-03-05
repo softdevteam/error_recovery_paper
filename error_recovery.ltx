@@ -1,0 +1,122 @@
+\documentclass[acmsmall,small,screen]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
+%\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{booktabs} % For formal tables
+\usepackage{softdev}
+
+
+
+\usepackage[ruled]{algorithm2e} % For algorithms
+\renewcommand{\algorithmcfname}{ALGORITHM}
+\SetAlFnt{\small}
+\SetAlCapFnt{\small}
+\SetAlCapNameFnt{\small}
+\SetAlCapHSkip{0pt}
+\IncMargin{-\parindent}
+
+\acmJournal{PACMPL}
+\acmVolume{1}
+\acmNumber{CONF} % CONF = POPL or ICFP or OOPSLA
+\acmArticle{1}
+\acmYear{2018}
+\acmMonth{1}
+\acmDOI{} % \acmDOI{10.1145/nnnnnnn.nnnnnnn}
+\startPage{1}
+
+\setcopyright{none}
+
+\bibliographystyle{ACM-Reference-Format}
+\citestyle{acmauthoryear}
+
+% DOI
+%\acmDOI{0000001.0000001}
+
+% Paper history
+%\received{February 2007}
+
+
+% Document starts
+\begin{document}
+% Title portion. Note the short title for running heads
+\title[Fast Multiple Repair Error Recovery]{Fast Multiple Repair Error Recovery}
+
+\author{Lukas Diekmann}
+\affiliation{%
+  \department{Software Development Team}
+  \institution{King's College London}
+  \country{United Kingdom}}
+\author{Laurence Tratt}
+\orcid{0000-0002-5258-3805}
+\affiliation{%
+  \department{Software Development Team}
+  \institution{King's College London}
+  \country{United Kingdom}
+}
+\thanks{Authors' URLs: %
+    L.~Diekmann~\url{http://diekmann.co.uk/},
+    L.~Tratt~\url{http://tratt.net/laurie/}.
+}
+
+
+\begin{abstract}
+Syntax errors are frustrating. Though they are
+typically easy for humans to fix, compilers often choose incorrect repairs: one
+small error then leads to a cascading chain of errors that drown out the
+original. More advanced error recovery techniques have been available for at
+least 20 years, but have not made their way into production systems for two
+reasons for this: such techniques arbitrarily pick one possible repair sequence
+from a wider set, which frequently does not match the user's understanding of
+the error; and they have bad worse case performance. In this paper we show that
+it is possible to generate the complete set of minimal cost repair sequences in
+only slightly more time \laurie{can we quantify it?} than is needed for a single
+repair sequence. We then allow a maximum of 0.5s to error recovery. We show
+that, on a corpus of \laurie{1,000,000?} real-world syntactically invalid Java
+programs, this finds the complete set of minimal cost repairs in \laurie{99\%?}
+of cases.
+\end{abstract}
+
+\keywords{Parsing, error recovery, programming languages}
+
+\maketitle
+
+\section{Introduction}
+
+Programming is a humbling job, which involves acknowledging that we will make
+untold errors in our quest to perfect a program. Most troubling are semantic
+errors, where we intended the program to do one thing, but it does another. Less
+troubling, but in some ways more irritating, are syntax errors, which are
+generally minor deviances from the exacting syntax required by a compiler.
+Syntax errors are annoying because they stop us concentrating on important
+semantic issues. Unfortunately we all make many syntax errors when programming.
+
+So common are syntax errors that modern compilers expect us to make more than
+one. Rather than stopping on the first error, they attempt to \emph{recover}
+from it, so that they can process the remainder of the user's input. This allows
+them to report all our syntax errors to us in one go, so that we can quickly fix
+them, and move on to deeper issues. When error recovery works well, it is a
+useful productivity gain. Unfortunately, current compilers use simplistic and
+ad-hoc approaches to error recovery, which often lead to inappropriate
+\emph{repairs} being found. The result is a cascade of spurious syntax errors,
+each the result of the first incorrect repair: programmers quickly learn that
+only the position of the first error -- not its repair, nor the position of
+subsequent errors -- can truly be relied upon to be accurate.
+
+We are so used to this state of affairs that we assume it to be inevitable.
+However, there has been a slowly growing body of work on more advanced error
+recovery approaches (see~\cite{cereke03phd} for a good general overview and
+\cite{kimyi10astar,deJonge12natural} for more recent work).
+
+
+
+\section{Related work}
+
+\cite{corchuelo02repairing}
+
+\cite{deJonge12natural}
+
+\bibliography{bib}
+
+\end{document}
