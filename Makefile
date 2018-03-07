@@ -31,7 +31,7 @@ clean:
 	rm -rf error_recovery.aux error_recovery.bbl error_recovery.blg \
 		error_recovery.dvi error_recovery.log error_recovery.ps error_recovery.pdf \
 		error_recovery.toc error_recovery.out error_recovery.snm error_recovery.nav \
-		error_recovery.vrb texput.log
+		error_recovery.vrb texput.log bib.bib
 
 error_recovery.pdf: ${LATEX_FILES} ${DIAGRAMS} bib.bib
 	pdflatex error_recovery.ltx

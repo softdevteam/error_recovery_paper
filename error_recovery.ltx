@@ -4,10 +4,10 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 
+\usepackage{listings}
 \usepackage{booktabs} % For formal tables
 \usepackage{softdev}
-
-
+\usepackage{subcaption}
 
 \usepackage[ruled]{algorithm2e} % For algorithms
 \renewcommand{\algorithmcfname}{ALGORITHM}
@@ -25,6 +25,15 @@
 \acmMonth{1}
 \acmDOI{} % \acmDOI{10.1145/nnnnnnn.nnnnnnn}
 \startPage{1}
+
+\lstset{
+    basicstyle=\tt\scriptsize,
+    xleftmargin=0pt,
+    framexleftmargin=1.5em,
+    numberstyle=\scriptsize\tt\color{gray},
+    captionpos=b,
+    escapeinside={{<!}{!>}},
+}
 
 \setcopyright{none}
 
@@ -62,18 +71,23 @@
 
 
 \begin{abstract}
-Syntax errors are frustrating. Though they are
-typically easy for humans to fix, compilers often choose incorrect repairs: one
-small error then leads to a cascading chain of errors that drown out the
-original. More advanced error recovery techniques have been available for at
-least 20 years, but have not made their way into production systems for two
-reasons for this: such techniques arbitrarily pick one possible repair sequence
-from a wider set, which frequently does not match the user's understanding of
-the error; and they have bad worse case performance. In this paper we show that
+Syntax errors are generally easy to fix for humans, but not for compilers: the
+latter often choose incorrect repairs, leading to a cascading chain of errors that drown out the
+original. More advanced error recovery techniques discover repair sequences,
+reducing the problem of cascading errors. However, they arbitrarily select a
+single repair sequence from the set of possibilities: the chosen sequence still
+often causes cascading errors; and the chosen sequence is often not what the
+user would have selected, thus confusing them. Worse, such approaches have
+unbounded worse case performance.
+
+In this paper we show -- first by extending an existing algorithm, second by
+introducing a new, faster, alternative -- that
 it is possible to generate the complete set of minimal cost repair sequences in
 only slightly more time \laurie{can we quantify it?} than is needed for a single
-repair sequence. We then allow a maximum of 0.5s to error recovery. We show
-that, on a corpus of \laurie{1,000,000?} real-world syntactically invalid Java
+repair sequence. We report all errors to the user, ranking them by how far ahead
+they allow parsing to continue. Choosing the top ranked sequence reduces
+the cascading error problem significantly. After putting a 0.5s bound on error
+recovery, we show that, on a corpus of \laurie{1,000,000?} real-world syntactically invalid Java
 programs, this finds the complete set of minimal cost repairs in \laurie{99\%?}
 of cases.
 \end{abstract}
@@ -90,12 +104,12 @@ errors, where we intended the program to do one thing, but it does another. Less
 troubling, but in some ways more irritating, are syntax errors, which are
 generally minor deviances from the exacting syntax required by a compiler.
 Syntax errors are annoying because they stop us concentrating on important
-semantic issues. Unfortunately we all make many syntax errors when programming.
+semantic issues.
 
 So common are syntax errors that modern compilers expect us to make more than
 one. Rather than stopping on the first error, they attempt to \emph{recover}
-from it, so that they can process the remainder of the user's input. This allows
-them to report all our syntax errors to us in one go, so that we can quickly fix
+from it, allowing
+them to report all our syntax errors in one go, so that we can batch fix
 them, and move on to deeper issues. When error recovery works well, it is a
 useful productivity gain. Unfortunately, current compilers use simplistic and
 ad-hoc approaches to error recovery, which often lead to inappropriate
@@ -103,6 +117,89 @@ ad-hoc approaches to error recovery, which often lead to inappropriate
 each the result of the first incorrect repair: programmers quickly learn that
 only the position of the first error -- not its repair, nor the position of
 subsequent errors -- can truly be relied upon to be accurate.
+
+\begin{figure}[t]
+\begin{minipage}{0.48\textwidth}
+\begin{tabular}{p{0.02\textwidth}p{0.45\textwidth}}
+\begin{subfigure}{0.02\textwidth}
+\caption{}
+\label{lst:javaerror}
+\end{subfigure}
+&
+\begin{minipage}[t]{0.45\textwidth}
+\vspace{-7pt}
+\begin{lstlisting}
+class C {
+  int x y;
+}
+\end{lstlisting}
+\end{minipage}
+\\
+\begin{subfigure}{0.02\textwidth}
+\addtocounter{subfigure}{1}
+\caption{}
+\label{lst:javaerror:mf}
+\end{subfigure}
+&
+\begin{minipage}[t]{0.45\textwidth}
+\vspace{-7pt}
+\begin{lstlisting}
+Error at line 2 col 9. Repairs found:
+  Delete "y"
+  Insert "COMMA"
+  Insert "EQ"
+\end{lstlisting}
+\end{minipage}
+\end{tabular}
+\end{minipage}
+%
+\begin{minipage}{0.48\textwidth}
+\vspace{-20.5pt}
+\begin{tabular}{p{0.02\textwidth}p{0.45\textwidth}}
+\begin{subfigure}{0.02\textwidth}
+\addtocounter{subfigure}{-2}
+\caption{}
+\label{lst:javaerror:javac}
+\end{subfigure}
+&
+\begin{minipage}[t]{0.45\textwidth}
+\vspace{-7pt}
+\begin{lstlisting}
+C.java:2: error: ';' expected
+  int x y;
+       ^
+C.java:2: error: <identifier> expected
+  int x y;
+         ^
+\end{lstlisting}
+\end{minipage}
+\end{tabular}
+\end{minipage}
+%&
+%\begin{minipage}[t]{0.47\textwidth}
+%\vspace{-17pt}
+\vspace{-10pt}
+\caption{An example of a simple, common Java syntax error
+(\subref{lst:javaerror}) and the problems traditional error recovery has in
+dealing with it. \texttt{javac} (\subref{lst:javaerror:javac}) spots the error
+when it encounters `\texttt{y}'. Its error recovery heuristic then suggests
+repairing the input by inserting a semicolon `\texttt{;}' before `\texttt{y}';
+however, this immediately leads to a spurious second parse error (where
+`\texttt{y}' is now considered a type, which is then missing a variable to
+type). Our new recovery algorithm (\subref{lst:javaerror:mf}) also spots the
+error when it encounters `\texttt{y}'. Unlike \texttt{javac} it interrogates the
+Java grammar to find a minimal cost repair sequences. In this case, it finds
+and reports to the user three separate repair sequences: one can delete `\texttt{y}'
+entirely (i.e.~making the input `\texttt{int x;}'), or insert a comma `\texttt{,}'
+(`\texttt{int x, y;}'), or insert an equals sign `\texttt{=}' (\texttt{`int x = y;'}).
+Our recovery algorithm always uses the first repair sequence in the list
+to repair the input for subsequent parsing. Presenting all three
+minimal cost repair sequences to the user gives a much greater chance that one
+matches their original intention.}
+%\end{minipage}
+%\end{tabular}
+\end{figure}
+
 
 We are so used to this state of affairs that we assume it to be inevitable.
 However, there has been a slowly growing body of work on more advanced error
