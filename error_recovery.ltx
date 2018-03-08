@@ -84,9 +84,11 @@ In this paper we show -- first by extending an existing algorithm, second by
 introducing a new, faster, alternative -- that
 it is possible to generate the complete set of minimal cost repair sequences in
 only slightly more time \laurie{can we quantify it?} than is needed for a single
-repair sequence. We report all errors to the user, ranking them by how far ahead
-they allow parsing to continue. Choosing the top ranked sequence reduces
-the cascading error problem significantly. After putting a 0.5s bound on error
+repair sequence. This allows us to then rank repair sequences by how far they
+allow parsing to continue and removes any low-ranking sequences. This significantly
+reduces the cascading error problem, while still reporting all high-ranking
+sequences to the user, increasing the chance that one matches their expectation.
+After putting a 0.5s bound on error
 recovery, we show that, on a corpus of \laurie{1,000,000?} real-world syntactically invalid Java
 programs, this finds the complete set of minimal cost repairs in \laurie{99\%?}
 of cases.
@@ -101,22 +103,20 @@ of cases.
 Programming is a humbling job, which involves acknowledging that we will make
 untold errors in our quest to perfect a program. Most troubling are semantic
 errors, where we intended the program to do one thing, but it does another. Less
-troubling, but in some ways more irritating, are syntax errors, which are
-generally minor deviances from the exacting syntax required by a compiler.
-Syntax errors are annoying because they stop us concentrating on important
-semantic issues.
+troubling, but often more irritating, are syntax errors, which are
+(generally minor) deviances from the exacting syntax required by a compiler.
+So common are syntax errors that modern compilers expect us to make several
+in a single input. Rather than stopping on the first syntax error, they attempt
+to \emph{recover} from it. This allows them to report, and us to fix, all our
+syntax errors in one go.
 
-So common are syntax errors that modern compilers expect us to make more than
-one. Rather than stopping on the first error, they attempt to \emph{recover}
-from it, allowing
-them to report all our syntax errors in one go, so that we can batch fix
-them, and move on to deeper issues. When error recovery works well, it is a
+When error recovery works well, it is a
 useful productivity gain. Unfortunately, current compilers use simplistic and
 ad-hoc approaches to error recovery, which often lead to inappropriate
 \emph{repairs} being found. The result is a cascade of spurious syntax errors,
 each the result of the first incorrect repair: programmers quickly learn that
 only the position of the first error -- not its repair, nor the position of
-subsequent errors -- can truly be relied upon to be accurate.
+subsequent errors -- can really be relied upon to be accurate.
 
 \begin{figure}[t]
 \begin{minipage}{0.48\textwidth}
@@ -182,18 +182,18 @@ C.java:2: error: <identifier> expected
 \caption{An example of a simple, common Java syntax error
 (\subref{lst:javaerror}) and the problems traditional error recovery has in
 dealing with it. \texttt{javac} (\subref{lst:javaerror:javac}) spots the error
-when it encounters `\texttt{y}'. Its error recovery heuristic then suggests
-repairing the input by inserting a semicolon `\texttt{;}' before `\texttt{y}';
-however, this immediately leads to a spurious second parse error (where
-`\texttt{y}' is now considered a type, which is then missing a variable to
-type). Our new recovery algorithm (\subref{lst:javaerror:mf}) also spots the
-error when it encounters `\texttt{y}'. Unlike \texttt{javac} it interrogates the
-Java grammar to find a minimal cost repair sequences. In this case, it finds
+when it encounters `\texttt{y}'. Its error recovery heuristic then
+repairs the input by inserting a semicolon before `\texttt{y}' (i.e.~making
+the input equivalent to `\texttt{int x; y;}'). This immediately leads to a spurious second parse error,
+since `\texttt{y}' on its own is not a valid statement. Our new recovery
+approach (\subref{lst:javaerror:mf}) also spots the
+error when it encounters `\texttt{y}', and then uses the
+Java grammar to find minimal cost repair sequences. In this case, it finds
 and reports to the user three separate repair sequences: one can delete `\texttt{y}'
-entirely (i.e.~making the input `\texttt{int x;}'), or insert a comma `\texttt{,}'
-(`\texttt{int x, y;}'), or insert an equals sign `\texttt{=}' (\texttt{`int x = y;'}).
-Our recovery algorithm always uses the first repair sequence in the list
-to repair the input for subsequent parsing. Presenting all three
+entirely (`\texttt{int x;}'), or insert a comma
+(`\texttt{int x, y;}'), or insert an equals sign (\texttt{`int x = y;'}).
+The first repair sequence is then used to repair the input for subsequent
+parsing. Presenting all three
 minimal cost repair sequences to the user gives a much greater chance that one
 matches their original intention.}
 %\end{minipage}
