@@ -75,23 +75,20 @@ Syntax errors are generally easy to fix for humans, but not for compilers: the
 latter often choose incorrect repairs, leading to a cascading chain of errors that drown out the
 original. More advanced error recovery techniques discover repair sequences,
 reducing the problem of cascading errors. However, they arbitrarily select a
-single repair sequence from the set of possibilities: the chosen sequence still
-often causes cascading errors; and the chosen sequence is often not what the
-user would have selected, thus confusing them. Worse, such approaches have
+single repair sequence from the set of possibilities: not only is the chosen
+sequence often not what the user would have selected, but it still often
+causes cascading errors. Worse, such approaches have
 unbounded worse case performance.
 
 In this paper we show -- first by extending an existing algorithm, second by
-introducing a new, faster, alternative -- that
-it is possible to generate the complete set of minimal cost repair sequences in
-only slightly more time \laurie{can we quantify it?} than is needed for a single
-repair sequence. This allows us to then rank repair sequences by how far they
-allow parsing to continue and removes any low-ranking sequences. This significantly
-reduces the cascading error problem, while still reporting all high-ranking
-sequences to the user, increasing the chance that one matches their expectation.
-After putting a 0.5s bound on error
-recovery, we show that, on a corpus of \laurie{1,000,000?} real-world syntactically invalid Java
-programs, this finds the complete set of minimal cost repairs in \laurie{99\%?}
-of cases.
+introducing a new, faster, alternative -- how the complete set of minimal cost repair sequences
+can be generated. Not only does this increase the chance of the user seeing a
+relevant repair sequence, but it allows us to rank repair sequences and choose one
+which lessens the chances of cascading errors. Using a corpus of
+\laurie{1,000,000?} human-generated syntactically invalid of Java programs, we
+then show that, even when used with a tight timeout of 0.5s, our new error
+recovery algorithm can find the complete set of minimal repair sequences in
+\laurie{99\%?} of cases.
 \end{abstract}
 
 \keywords{Parsing, error recovery, programming languages}
@@ -103,10 +100,10 @@ of cases.
 Programming is a humbling job, which involves acknowledging that we will make
 untold errors in our quest to perfect a program. Most troubling are semantic
 errors, where we intended the program to do one thing, but it does another. Less
-troubling, but often more irritating, are syntax errors, which are
+troubling, but often no less irritating, are syntax errors, which are
 (generally minor) deviances from the exacting syntax required by a compiler.
 So common are syntax errors that modern compilers expect us to make several
-in a single input. Rather than stopping on the first syntax error, they attempt
+in a single input. Rather than stop on the first syntax error encountered, they attempt
 to \emph{recover} from it. This allows them to report, and us to fix, all our
 syntax errors in one go.
 
@@ -117,6 +114,11 @@ ad-hoc approaches to error recovery, which often lead to inappropriate
 each the result of the first incorrect repair: programmers quickly learn that
 only the position of the first error -- not its repair, nor the position of
 subsequent errors -- can really be relied upon to be accurate.
+
+We are so used to this state of affairs that we assume it to be inevitable.
+However, there has been a slowly growing body of work on more advanced error
+recovery approaches (see~\cite{cereke03phd} for a good general overview and
+\cite{kimyi10astar,deJonge12natural} for more recent work).
 
 \begin{figure}[t]
 \begin{minipage}{0.48\textwidth}
@@ -191,21 +193,15 @@ error when it encounters `\texttt{y}', and then uses the
 Java grammar to find minimal cost repair sequences. In this case, it finds
 and reports to the user three separate repair sequences: one can delete `\texttt{y}'
 entirely (`\texttt{int x;}'), or insert a comma
-(`\texttt{int x, y;}'), or insert an equals sign (\texttt{`int x = y;'}).
-The first repair sequence is then used to repair the input for subsequent
-parsing. Presenting all three
-minimal cost repair sequences to the user gives a much greater chance that one
+(`\texttt{int x, y;}'), or insert an equals sign (\texttt{`int x = y;'}). In
+this case, all three repair sequences have the same rank, and are thus presented
+in an arbitrary order. However, it is important to note that the first repair
+sequence is then used to repair the input for subsequent parsing. Presenting all
+three minimal cost repair sequences to the user gives a much greater chance that one
 matches their original intention.}
 %\end{minipage}
 %\end{tabular}
 \end{figure}
-
-
-We are so used to this state of affairs that we assume it to be inevitable.
-However, there has been a slowly growing body of work on more advanced error
-recovery approaches (see~\cite{cereke03phd} for a good general overview and
-\cite{kimyi10astar,deJonge12natural} for more recent work).
-
 
 
 \section{Related work}
@@ -213,6 +209,10 @@ recovery approaches (see~\cite{cereke03phd} for a good general overview and
 \cite{corchuelo02repairing}
 
 \cite{deJonge12natural}
+
+\cite{pottier16reachability}
+
+\cite{gomezrodriguez10error}
 
 \bibliography{bib}
 
