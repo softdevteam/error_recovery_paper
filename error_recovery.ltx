@@ -204,7 +204,7 @@ matches their original intention.}
 
 Most of us are so used to this state of affairs that
 we assume it to be inevitable. However, there are more advanced algorithms which,
-as well as being grammar neutral, take into account the full context of the error, and have
+as well as being able to deal with any LR grammar, take into account the full context of the error, and have
 several ways of recovering from errors. Probably the earliest such algorithm
 is \citet{aho72minimum}, which, upon encountering an error, creates on-the-fly an
 alternative (possibly ambiguous) grammar which allows the parser to recover.
@@ -266,6 +266,50 @@ of files within this time, with a mean recovery time of \corchuelomeantime; and
 a mean recovery time of \mfmeantime. We believe that this shows that such
 approaches are ready for wider usage.
 
+
+\section{Background}
+
+We assume a high-level understanding of the mechanics of parsing in this paper,
+but in this section we provide a handful of definitions, and a brief refresher
+of relevant low-level details, needed to understand the rest of this paper. Although
+there are many flavours of parsing, we exclusively consider LR
+parsing~\cite{knuth65lllr}, which is the basis of all algorithms in the
+\citet{fischer79locally} family. As well as describing the largest practical set
+of unambiguous grammars, LR parsing remains one of the most widely used parsing
+approaches, largely thanks to the ubiquity of Yacc~\cite{johnson75yacc} and its
+descendants. In acknowledgement of that, we use Yacc syntax throughout this
+paper, so that examples can easily be tested in Yacc-compatible parsing tools.
+
+Yacc-like tools take in a Context-Free Grammar (CFG) and produce a parser from
+it. The CFG has one or more \emph{rules}; each rule has a name and one or more
+\emph{productions} (often called `alternatives'); each production contains one
+or more \emph{symbols}; and a symbol is either a \emph{terminal} (i.e.~a token
+type such as `INT`) or a \emph{nonterminal} (i.e.~a reference to another rule in
+the grammar). One rule is designated the \emph{start rule}. The resulting parser
+takes as input a stream of tokens, each of which has a \emph{type}
+(e.g.~\texttt{INT}) and a value (e.g.~\texttt{123}).\footnote{In practise, the
+system we outline requires a \emph{lexer} which splits string inputs up into
+tokens. In the interests of brevity, we assume the existence of a tool such as
+Lex which does performs this task.} Strictly speaking, parsing is the act of
+determining whether a stream of tokens is correct with respect to the underlying
+grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
+to specify `semantic actions' which are executed when a grammar rule is
+successfully matched. In this paper, we assume that the semantic actions build
+up a \emph{parse tree}, ordering the tokens into a tree of nonterminals (nodes
+which can have children) and terminals (nodes which cannot have children)
+relative to the underlying grammar. This makes it easy to visualise the result
+of parsing and error recovery (indeed, the Rust parser we built for this paper
+automatically prints parse trees as its default output).
+
+The beauty of LR parsing stems from the way a parser is constructed. The CFG is
+first transformed into a \emph{stategraph}, which is a fairly traditional
+description of a statemachine. Since even on a modern machine, a canonical
+(i.e.~unmerged) stategraph for a real-world grammar takes several seconds to
+build, and a surprising amount of memory to store, we use the state merging
+algorithm of \citet{pager77practical} to merge together compatible states. The
+effect of this is significant, reducing the Java grammar we use later from
+\laurie{8000ish} to \laurie{900ish} states. The stategraph is then transformed into a
+\emph{statetable}, which allows the run-time parser to operate efficiently.
 \section{\corchueloplus}
 \label{corchueloplus}
 
@@ -293,6 +337,16 @@ approaches are ready for wider usage.
 \cite{pottier16reachability}
 
 \cite{gomezrodriguez10error}
+
+
+\section{Future work}
+
+Our current parsing tool uses the merging algorithm from
+\citet{pager77practical}, but this can over-merge states when conflict
+resolution is used \cite[p.~3]{denny10ielr}. Since our error recovery approach
+is intended to be independent of the merging approach, it should be possible to
+use the more sophisticated state merging approach of \cite{denny10ielr} without
+problems.
 
 \bibliography{bib}
 
