@@ -75,23 +75,18 @@
 
 \begin{abstract}
 Syntax errors are generally easy to fix for humans, but not for compilers: the
-latter often choose incorrect repairs, leading to a cascading chain of errors that drown out the
-original. More advanced error recovery techniques discover repair sequences,
-reducing the problem of cascading errors. However, they arbitrarily select a
-single repair sequence from the set of possibilities: not only is the chosen
-sequence often not what the user would have selected, but it still often
-causes cascading errors. Worse, such approaches have
-unbounded worse case performance.
-
-In this paper we show -- first by extending an existing algorithm, second by
-introducing a new, faster, alternative -- how the complete set of minimal cost repair sequences
-can be generated. Not only does this increase the chance of the user seeing a
-relevant repair sequence, but it allows us to rank repair sequences and choose one
-which lessens the chances of cascading errors. Using a corpus of
-\laurie{1,000,000?} human-generated syntactically invalid of Java programs, we
-then show that, even when used with a tight timeout of 0.5s, our new error
-recovery algorithm can find the complete set of minimal repair sequences in
-\laurie{99\%?} of cases.
+latter often fail to find an effective recovery, leading to a cascading chain of
+errors that drown out the original. More advanced error recovery techniques
+suffer much less from this problem but have seen little practical use because
+their typical performance was seen as poor and their worse case unbounded.
+In this paper we show that not only can such an approach run in acceptable time
+(which we define as spending a maximum of 0.5s in error recovery per file), but
+that we can increase the complexity of the problem to finding \emph{all} minimal
+cost recovery options, and still do so within acceptable time. We first extend
+an existing algorithm, and then introduce a new, faster, alternative \mf. We
+validate our algorithms with a corpus of \laurie{1,000,000?} real-world
+syntactically invalid of Java programs: \mf is able to find recovery options for
+\laurie{99\%{}?} of these in acceptable time.
 \end{abstract}
 
 \keywords{Parsing, error recovery, programming languages}
