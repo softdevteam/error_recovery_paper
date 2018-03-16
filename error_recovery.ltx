@@ -116,66 +116,10 @@ two weaknesses limiting their usefulness: only limited consideration is
 given to the context of the error; and the only recoveries attempted are the
 skipping of input until a pre-determined synchronisation
 token is reached~\cite[p.~3]{degano95comparison} or the insertion of a
-single synchronisation token. Inappropriate repairs cause a cascade of spurious syntax errors (see
+single synchronisation token. An inappropriate recovery causes a cascade of spurious syntax errors (see
 Figure~\ref{fig:javaerror} for an example): programmers quickly learn that
 only the position of the first error -- not its repair, nor the position of
 subsequent errors -- can really be relied upon to be accurate.
-
-Most of us are so used to this state of affairs that
-we assume it to be inevitable. However, there are more advanced approaches which:
-are grammar neutral; take into account the full context of the error; and have
-more options for recovering from errors. Probably the earliest such approach
-is \citet{aho72minimum}, which, upon encountering an error, creates on-the-fly an
-alternative (possibly ambiguous) grammar which allows the parser to recover.
-The implementation complexity of this approach, and the challenge of explaining
-to users what has been done, probably explain why it has fallen out of
-favour in programming language circles. A simpler approach, which
-traces its roots to \citet{fischer79locally}, instead tries to find a single minimal cost
-\emph{repair sequence} of token insertions and deletions which allow the parser to
-recover. This approach is good at recovering from errors and is
-easily adapted to give human-friendly feedback. However, such approaches
-have seen little practical use because their typical
-performance was seen as poor and their worse case unbounded \cite[p.~14]{mckenzie95error}.
-
-In this paper we test the following hypothesis:
-
-\begin{description}
-  \item[H1] A \citet{fischer79locally} approach can repair nearly all errors in
-    acceptable time.
-\end{description}
-
-We impose a strict budget of 0.5s for error recovery (i.e.~all errors must be
-recovered within this time) since we think that even the most demanding user
-will accept that small delay in order to get better quality parses. To a
-reasonable extent, our access to faster hardware makes it more likely that we
-can validate this hypothesis than past researchers. However, not only do we
-validate this hypothesis, but we do so while finding \emph{all} minimal cost
-repair sequences in acceptable time. In other words, we are able to tackle a
-harder version of the problem than any previous approach, and do so in
-acceptable time. This not only leads to higher quality, and more programmer
-friendly, error messages (see Figure~\ref{fig:javaerror} for an example), but
-allows us to reduce the cascading error problem.
-
-We first use one of the more recent algorithms in this family -- that of
-\citet{corchuelo02repairing} -- as a base, slightly correcting and extending it
-to form an algorithm called \corchueloplus (Section~\ref{corchueloplus}). We
-then show that an even newer algorithm which promises better performance -- that
-of \citet{kimyi10astar} -- has several weaknesses which cause it to miss many
-minimal cost repair sequences (Section~\ref{kimyi}). However, we are able to use
-this as partial inspiration for an entirely new error recovery algorithm \mf
-(Section~\ref{mf}) which is approximately \laurie{2x} faster than
-\corchueloplus. We aim for both algorithms to be as simple as possible, so that
-tool builders can reasonably incorporate them: \corchueloplus is somewhat
-simpler than \mf, though the latter is still less than 1,000 lines of Rust code.
-
-We then validate \corchueloplus and \mf on a corpus of \laurie{1,000,000?} real,
-syntactically incorrect, Java programs (Section~\ref{experiment}). Within the
-time budget of 0.5s: \corchueloplus is able to find repairs for \laurie{XX\%{}}
-of files within this time, with an average recovery time of \laurie{XXs}; and
-\mf is able to find repairs for \laurie{XX\%{}} of files within this time, with
-an average recovery time of \laurie{XXs}. We believe that this shows that such
-approaches are ready for wider usage.
-
 
 \begin{figure}[t]
 \begin{minipage}{0.48\textwidth}
@@ -261,6 +205,61 @@ matches their original intention.}
 %\end{tabular}
 \end{figure}
 
+Most of us are so used to this state of affairs that
+we assume it to be inevitable. However, there are more advanced algorithms which,
+as well as being grammar neutral, take into account the full context of the error, and have
+more options for recovering from errors. Probably the earliest such algorithm
+is \citet{aho72minimum}, which, upon encountering an error, creates on-the-fly an
+alternative (possibly ambiguous) grammar which allows the parser to recover.
+The implementation complexity of this algorithm, and the challenge of explaining
+to users what has been done, probably explain why it has fallen out of
+favour in programming language circles. A simpler algorithm, which
+traces its roots to \citet{fischer79locally}, instead tries to find a single minimal cost
+\emph{repair sequence} of token insertions and deletions which allow the parser to
+recover. Algorithms in this style are good at recovering from errors and are
+easily adapted to give human-friendly feedback. However, they
+have seen little practical use because their typical
+performance was seen as poor and their worse case unbounded \cite[p.~14]{mckenzie95error}.
+
+In this paper we test the following hypothesis:
+
+\begin{description}
+  \item[H1] An error recovery algorithm in the style of \citet{fischer79locally}
+    can repair nearly all errors in acceptable time.
+\end{description}
+
+We impose a strict budget of 0.5s for error recovery (i.e.~all errors must be
+recovered within this time) since we think that even the most demanding user
+will accept that small delay in order to get better quality parses. To a
+reasonable extent, our access to faster hardware makes it more likely that we
+can validate this hypothesis than past researchers. However, not only do we
+validate this hypothesis, but we do so while finding \emph{all} minimal cost
+repair sequences in acceptable time. In other words, we are able to tackle a
+harder version of the problem than any previous algorithm, and do so in
+acceptable time. This not only leads to higher quality, and more programmer
+friendly, error messages (see Figure~\ref{fig:javaerror} for an example), but
+allows us to reduce the cascading error problem.
+
+We first use one of the more recent algorithms in this family -- that of
+\citet{corchuelo02repairing} -- as a base, slightly correcting and extending it
+to form an algorithm called \corchueloplus (Section~\ref{corchueloplus}). We
+then show that an even newer algorithm which promises better performance -- that
+of \citet{kimyi10astar} -- has several weaknesses which cause it to miss many
+minimal cost repair sequences (Section~\ref{kimyi}). However, we are able to use
+this as partial inspiration for an entirely new error recovery algorithm \mf
+(Section~\ref{mf}) which is approximately \laurie{2x} faster than
+\corchueloplus. We aim for both algorithms to be as simple as possible, so that
+tool builders can reasonably incorporate them: \corchueloplus is somewhat
+simpler than \mf, though the latter is still less than 1,000 lines of Rust code.
+
+We then validate \corchueloplus and \mf on a corpus of \laurie{1,000,000?} real,
+syntactically incorrect, Java programs (Section~\ref{experiment}) -- approximately
+20x bigger than any previous experiment. Within the
+time budget of 0.5s: \corchueloplus is able to find repairs for \laurie{XX\%{}}
+of files within this time, with an average recovery time of \laurie{XXs}; and
+\mf is able to find repairs for \laurie{XX\%{}} of files within this time, with
+an average recovery time of \laurie{XXs}. We believe that this shows that such
+approaches are ready for wider usage.
 
 \section{Related work}
 
