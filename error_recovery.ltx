@@ -264,21 +264,45 @@ time budget of 0.5s: \corchueloplus is able to find repairs for \corchuelosucces
 of files within this time, with a mean recovery time of \corchuelomeantime; and
 \mf is able to find repairs for \mfsuccessrate of files within this time, with
 a mean recovery time of \mfmeantime. We believe that this shows that such
-approaches are ready for wider usage.
+approaches are ready for wider usage, either on their own, or as part of a multi-phase
+recovery system such as \citet{deJonge12natural}.
 
 
 \section{Background}
 
+\begin{figure}[t]
+\begin{lstlisting}
+Expr: Term '+' Expr
+    | Term ;
+
+Term: Factor '*' Term
+    | Factor ;
+
+Factor: '(' Expr ')'
+      | 'INT' ;
+\end{lstlisting}
+\caption{An example grammar, its corresponding stategraph, and statetable.
+  Each item within a state $[p \rightarrow \alpha \bullet \beta]$ references a
+  production $p \rightarrow \alpha \beta$ (where $\alpha$ and $\beta$ each
+  represent zero or more symbols), with the \emph{dot $\bullet$} representing
+  how much of the production must have been matched ($\alpha$) if parsing has
+  reached that state, and how much remains ($\beta$).
+  \laurie{the stategraph and statetable are (obviously) missing}}
+\label{fig:stategraphtable}
+\end{figure}
+
 We assume a high-level understanding of the mechanics of parsing in this paper,
 but in this section we provide a handful of definitions, and a brief refresher
-of relevant low-level details, needed to understand the rest of this paper. Although
-there are many flavours of parsing, we exclusively consider LR
+of relevant low-level details, needed to understand the rest of this paper.
+
+Although there are many flavours of parsing, we exclusively consider LR
 parsing~\cite{knuth65lllr}, which is the basis of all algorithms in the
 \citet{fischer79locally} family. As well as describing the largest practical set
 of unambiguous grammars, LR parsing remains one of the most widely used parsing
-approaches, largely thanks to the ubiquity of Yacc~\cite{johnson75yacc} and its
-descendants. In acknowledgement of that, we use Yacc syntax throughout this
-paper, so that examples can easily be tested in Yacc-compatible parsing tools.
+approaches to the ubiquity of Yacc~\cite{johnson75yacc} and its
+descendants (which include the Rust parsing tool we created for this paper).
+We use Yacc syntax throughout this paper so that
+examples can easily be tested in Yacc-compatible parsing tools.
 
 Yacc-like tools take in a Context-Free Grammar (CFG) and produce a parser from
 it. The CFG has one or more \emph{rules}; each rule has a name and one or more
@@ -295,21 +319,24 @@ determining whether a stream of tokens is correct with respect to the underlying
 grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
 to specify `semantic actions' which are executed when a grammar rule is
 successfully matched. In this paper, we assume that the semantic actions build
-up a \emph{parse tree}, ordering the tokens into a tree of nonterminals (nodes
+a \emph{parse tree}, ordering the tokens into a tree of nonterminals (nodes
 which can have children) and terminals (nodes which cannot have children)
-relative to the underlying grammar. This makes it easy to visualise the result
-of parsing and error recovery (indeed, the Rust parser we built for this paper
-automatically prints parse trees as its default output).
+relative to the underlying grammar.
 
 The beauty of LR parsing stems from the way a parser is constructed. The CFG is
 first transformed into a \emph{stategraph}, which is a fairly traditional
-description of a statemachine. Since even on a modern machine, a canonical
+statemachine, with each state containing one or more \emph{items}. Since even on a modern machine, a canonical
 (i.e.~unmerged) stategraph for a real-world grammar takes several seconds to
 build, and a surprising amount of memory to store, we use the state merging
 algorithm of \citet{pager77practical} to merge together compatible states. The
 effect of this is significant, reducing the Java grammar we use later from
 \laurie{8000ish} to \laurie{900ish} states. The stategraph is then transformed into a
-\emph{statetable}, which allows the run-time parser to operate efficiently.
+\emph{statetable}. Each state has a possibly empty \emph{action} (shift, reduce,
+or accept) for each terminal and a possibly empty \emph{goto state} for each
+nonterminal. Figure~\ref{fig:stategraphtable} shows an example grammar, its
+stategraph, and statetable.
+
+
 \section{\corchueloplus}
 \label{corchueloplus}
 
@@ -320,6 +347,9 @@ effect of this is significant, reducing the Java grammar we use later from
 
 \section{\mf}
 \label{mf}
+
+\subsection{Ambiguity}
+\label{disambiguation}
 
 
 \section{Experiment}
