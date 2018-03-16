@@ -49,6 +49,7 @@
 
 \newcommand{\corchueloplus}{\textit{CPCT}$^+$\xspace}
 \newcommand{\mf}{\textit{MF}\xspace}
+\include{experimentstats}
 
 % Document starts
 \begin{document}
@@ -83,10 +84,10 @@ In this paper we show that not only can such an approach run in acceptable time
 (which we define as spending a maximum of 0.5s in error recovery per file), but
 that we can increase the complexity of the problem to finding \emph{all} minimal
 cost recovery options, and still do so within acceptable time. We first extend
-an existing algorithm, and then introduce a new, faster, alternative \mf. We
-validate our algorithms with a corpus of \laurie{1,000,000?} real-world
+an existing algorithm, before introducing a new, faster, alternative \mf. We
+validate our algorithms with a corpus of \corpussize real-world
 syntactically invalid of Java programs: \mf is able to find recovery options for
-\laurie{99\%{}?} of these in acceptable time.
+\mfsuccessrate of these in acceptable time.
 \end{abstract}
 
 \keywords{Parsing, error recovery, programming languages}
@@ -242,18 +243,18 @@ then show that an even newer algorithm which promises better performance -- that
 of \citet{kimyi10astar} -- has several weaknesses which cause it to miss many
 minimal cost repair sequences (Section~\ref{kimyi}). However, we are able to use
 this as partial inspiration for an entirely new error recovery algorithm \mf
-(Section~\ref{mf}) which is approximately \laurie{2x} faster than
+(Section~\ref{mf}) which is approximately \mfratioovercorchuelo faster than
 \corchueloplus. We aim for both algorithms to be as simple as possible, so that
 tool builders can reasonably incorporate them: \corchueloplus is somewhat
 simpler than \mf, though the latter is still less than 1,000 lines of Rust code.
 
-We then validate \corchueloplus and \mf on a corpus of \laurie{1,000,000?} real,
+We then validate \corchueloplus and \mf on a corpus of \corpussize real,
 syntactically incorrect, Java programs (Section~\ref{experiment}) -- approximately
 20x bigger than any previous experiment. Within the
-time budget of 0.5s: \corchueloplus is able to find repairs for \laurie{XX\%{}}
-of files within this time, with an average recovery time of \laurie{XXs}; and
-\mf is able to find repairs for \laurie{XX\%{}} of files within this time, with
-an average recovery time of \laurie{XXs}. We believe that this shows that such
+time budget of 0.5s: \corchueloplus is able to find repairs for \corchuelosuccessrate
+of files within this time, with a mean recovery time of \corchuelomeantime; and
+\mf is able to find repairs for \mfsuccessrate of files within this time, with
+a mean recovery time of \mfmeantime. We believe that this shows that such
 approaches are ready for wider usage.
 
 \section{Related work}
