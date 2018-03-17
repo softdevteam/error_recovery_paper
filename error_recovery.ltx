@@ -78,13 +78,13 @@
 
 
 \begin{abstract}
-Syntax errors are generally easy to fix for humans, but not for compilers: the
+Syntax errors are generally easy to fix for humans, but not for parsers: the
 latter often fail to find an effective recovery, leading to a cascading chain of
 errors that drown out the original. More advanced recovery techniques
 suffer much less from this problem but have seen little practical use because
 their typical performance was seen as poor and their worse case unbounded.
 In this paper we show that not only can an advanced approach run in acceptable time
-(which we define as spending a maximum of 0.5s in error recovery per file), but
+-- which we define as spending a maximum of 0.5s in error recovery per file -- but
 that we can increase the complexity of the problem to finding \emph{all} minimal
 cost recovery options, and still do so within acceptable time. We first extend
 an existing algorithm, before introducing a new, faster, alternative \mf. We
@@ -99,12 +99,12 @@ syntactically invalid of Java programs: \mf is able to find recovery options for
 
 \section{Introduction}
 
-Programming is a humbling job, which involves acknowledging that we will make
+Programming is a humbling job, which requires acknowledging that we will make
 untold errors in our quest to perfect a program. Most troubling are semantic
 errors, where we intended the program to do one thing, but it does another. Less
 troubling, but often no less irritating, are syntax errors, which are
 (generally minor) deviances from the exacting syntax required by a compiler.
-So common are syntax errors that modern compilers expect us to make several
+So common are syntax errors that the parsers in modern compilers expect us to make several
 in a single input. Rather than stop on the first syntax error encountered, they attempt
 to \emph{recover} from it. This allows them to report, and us to fix, all our
 syntax errors in one go.
@@ -118,7 +118,7 @@ token is reached~\cite[p.~3]{degano95comparison} or the insertion of a
 single synchronisation token. Inappropriate recoveries tend to cause a
 cascade of spurious syntax errors (see
 Figure~\ref{fig:javaerror} for an example): programmers quickly learn that
-only the position of the first error -- not its repair, nor the position of
+only the position of the first error -- not the reported repair, nor the position of
 subsequent errors -- can really be relied upon to be accurate.
 
 \begin{figure}[t]
@@ -221,7 +221,7 @@ easily adapted to give human-friendly feedback. However, they
 have seen little practical use because their typical
 performance was seen as poor and their worse case unbounded \cite[p.~14]{mckenzie95error}.
 
-In this paper we test the following hypothesis:
+In this paper we first test the following hypothesis:
 
 \begin{description}
   \item[H1] Error recovery algorithms from the \citet{fischer79locally} family
@@ -231,12 +231,12 @@ In this paper we test the following hypothesis:
 We (somewhat arbitrarily) define `acceptable time' as 0.5s for error recovery
 per file (i.e.~all errors in a file must be
 recovered from within this time) since we think that even the most demanding user
-tolerate that delay in order to get better quality results. We
+will tolerate that delay in order to get better quality results. We
 strongly validate this hypothesis. To a
-certain extent, our access to faster hardware made it more likely that we
+reasonable extent our access to faster hardware made it more likely that we
 can validate this hypothesis than past researchers. However, while existing
 algorithms in the \citet{fischer79locally} family aim to find a single
-minimal cost recovery, we also test a second, stronger, hypothesis:
+minimal cost repair sequence, we also test a second, stronger, hypothesis:
 
 \begin{description}
   \item[H2] Nearly all minimal cost repair sequences can be found in acceptable time.
@@ -287,9 +287,9 @@ Factor: "(" Expr ")"
       | "INT" ;
 \end{lstlisting}
 \caption{An example grammar, its corresponding stategraph, and statetable.
-  Each item within a state $[p \rightarrow \alpha \bullet \beta]$ references a
-  production $p \rightarrow \alpha \beta$ (where $\alpha$ and $\beta$ each
-  represent zero or more symbols), with the \emph{dot $\bullet$} representing
+  Each item within a state $[N \colon \alpha \bullet \beta]$ references one
+  of the rule $N$'s productions; $\alpha$ and $\beta$ each
+represent zero or more symbols; with the \emph{dot} ($\bullet$) representing
   how much of the production must have been matched ($\alpha$) if parsing has
   reached that state, and how much remains ($\beta$).
   \laurie{the stategraph and statetable are (obviously) missing}}
@@ -322,7 +322,7 @@ tokens. In the interests of brevity, we assume the existence of a tool such as
 Lex which performs this task.} Strictly speaking, parsing is the act of
 determining whether a stream of tokens is correct with respect to the underlying
 grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
-to specify `semantic actions' which are executed when a grammar rule is
+to specify `semantic actions' which are executed when a production in the grammar is
 successfully matched. In this paper, we assume that the semantic actions build
 a \emph{parse tree}, ordering the tokens into a tree of nonterminals (nodes
 which can have children) and terminals (nodes which cannot have children)
@@ -343,25 +343,25 @@ or accept) for each terminal and a possibly empty \emph{goto state} for each
 nonterminal. Figure~\ref{fig:stategraphtable} shows an example grammar, its
 stategraph, and statetable.
 
-The statetable then allows us to define a simple, efficient, parsing process. We
+The statetable allows us to define a simple, efficient, parsing process. We
 first define two functions relative to the statetable: \textsf{action}$(s, i)$
-returns the action for the state $s$ for the terminal at position $i$ in the
+returns the action for the state $s$ for the token at position $i$ in the
 input or \emph{empty} if no such action exists; and \textsf{goto}$(s, N)$
 returns the goto state for the state $s$ and the nonterminal $N$. We then define
-a reduction relation $\lrarrow$ from $(\textit{parsing stack}, \textit{token
-index})$ pairs and the following two reduction rules (`shift' and `reduce'
+a reduction relation $\lrarrow$ for $(\textit{parsing stack}, \textit{token
+index})$ pairs with the following two reduction rules (`shift' and `reduce'
 respectively):\\
 
 \begin{tabular}{lr}
 \infer{(s0 \ldots s_n, i) \lrarrow (s0 \ldots s_n s', i + 1)}{\textsf{action}(s_n, i) = \textit{shift}\ s'}
 &
-\infer{(s0 \ldots s_n, i) \lrarrow (s0 \ldots s_{n - |\alpha|} s', i)}{(\textsf{action}(s_n, i) = \textit{reduce}\ N \rightarrow \alpha) \wedge (\textsf{goto}(s_{n - |\alpha|}, N) = s')}
+\infer{(s0 \ldots s_n, i) \lrarrow (s0 \ldots s_{n - |\alpha|} s', i)}{(\textsf{action}(s_n, i) = \textit{reduce}\ N \colon \alpha) \wedge (\textsf{goto}(s_{n - |\alpha|}, N) = s')}
 \end{tabular}
 \\
 
-Intuitively, the shift rule advances the input one token at a time (appending to
-the parsing stack), and the reduction rule matches when a production is complete
-(poping values from the parsing stack before appending a single value). The
+Intuitively, the shift rule advances the input one token at a time and grows
+the parsing stack, while the reduction rule unwinds the parsing stack when
+a production is complete before moving to a new state. The
 LR parsing algorithm takes a starting value of $(0, 0)$ (where state $0$ is
 expected to represent the entry point into the stategraph) and repeatedly applies
 the $\lrarrow$ rules until either: \textsf{action}$(s_n, i) =
