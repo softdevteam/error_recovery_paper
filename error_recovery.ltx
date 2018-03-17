@@ -5,7 +5,8 @@
 \usepackage[T1]{fontenc}
 
 \usepackage{listings}
-\usepackage{booktabs} % For formal tables
+\usepackage{booktabs}
+\usepackage{proof}
 \usepackage{softdev}
 \usepackage{subcaption}
 \usepackage{xspace}
@@ -49,6 +50,8 @@
 
 \newcommand{\corchueloplus}{\textit{CPCT}$^+$\xspace}
 \newcommand{\mf}{\textit{MF}\xspace}
+\newcommand{\lrarrow}{\rightarrow_{\textrm{\tiny LR}}}
+\newcommand{\lrarrowstar}{\rightarrow_{\textrm{\tiny LR*}}}
 \include{experimentstats}
 
 % Document starts
@@ -233,7 +236,7 @@ strongly validate this hypothesis. To a
 certain extent, our access to faster hardware made it more likely that we
 can validate this hypothesis than past researchers. However, while existing
 algorithms in the \citet{fischer79locally} family aim to find a single
-minimal cost recovery, we then made, and test, a second hypothesis:
+minimal cost recovery, we also test a second, stronger, hypothesis:
 
 \begin{description}
   \item[H2] Nearly all minimal cost repair sequences can be found in acceptable time.
@@ -249,10 +252,10 @@ We first use one of the more recent algorithms in this family -- that of
 \citet{corchuelo02repairing} -- as a base, slightly correcting and extending it
 to form an algorithm \corchueloplus (Section~\ref{corchueloplus}). We
 then show that an even newer algorithm which promises better performance -- that
-of \citet{kimyi10astar} -- has several weaknesses which cause it to miss many
+of \citet{kimyi10astar} -- has problems which cause it to miss many
 minimal cost repair sequences (Section~\ref{kimyi}). However, we are able to use
-this as partial inspiration for an entirely new error recovery algorithm \mf
-(Section~\ref{mf}) which is approximately \mfratioovercorchuelo faster than
+it as partial inspiration for an entirely new error recovery algorithm \mf
+(Section~\ref{mf}), which is approximately \mfratioovercorchuelo faster than
 \corchueloplus. We aim for both algorithms to be as simple as possible, so that
 they are realistic targets for tool builders: \corchueloplus is somewhat
 simpler than \mf, though the latter is still less than 1,000 lines of Rust code.
@@ -272,14 +275,16 @@ recovery system such as \citet{deJonge12natural}.
 
 \begin{figure}[t]
 \begin{lstlisting}
-Expr: Term '+' Expr
+%start Expr
+%%
+Expr: Term "+" Expr
     | Term ;
 
-Term: Factor '*' Term
+Term: Factor "*" Term
     | Factor ;
 
-Factor: '(' Expr ')'
-      | 'INT' ;
+Factor: "(" Expr ")"
+      | "INT" ;
 \end{lstlisting}
 \caption{An example grammar, its corresponding stategraph, and statetable.
   Each item within a state $[p \rightarrow \alpha \bullet \beta]$ references a
@@ -295,11 +300,11 @@ We assume a high-level understanding of the mechanics of parsing in this paper,
 but in this section we provide a handful of definitions, and a brief refresher
 of relevant low-level details, needed to understand the rest of this paper.
 
-Although there are many flavours of parsing, we exclusively consider LR
-parsing~\cite{knuth65lllr}, which is the basis of all algorithms in the
-\citet{fischer79locally} family. As well as describing the largest practical set
+Although there are many flavours of parsing, the \citet{fischer79locally} family
+of algorithms, including those presented in this paper, are based on LR
+parsing~\cite{knuth65lllr}. As well as describing the largest practical set
 of unambiguous grammars, LR parsing remains one of the most widely used parsing
-approaches to the ubiquity of Yacc~\cite{johnson75yacc} and its
+approaches due to the ubiquity of Yacc~\cite{johnson75yacc} and its
 descendants (which include the Rust parsing tool we created for this paper).
 We use Yacc syntax throughout this paper so that
 examples can easily be tested in Yacc-compatible parsing tools.
@@ -308,13 +313,13 @@ Yacc-like tools take in a Context-Free Grammar (CFG) and produce a parser from
 it. The CFG has one or more \emph{rules}; each rule has a name and one or more
 \emph{productions} (often called `alternatives'); each production contains one
 or more \emph{symbols}; and a symbol is either a \emph{terminal} (i.e.~a token
-type such as `INT`) or a \emph{nonterminal} (i.e.~a reference to another rule in
+type such as \texttt{INT}) or a \emph{nonterminal} (i.e.~a reference to another rule in
 the grammar). One rule is designated the \emph{start rule}. The resulting parser
 takes as input a stream of tokens, each of which has a \emph{type}
 (e.g.~\texttt{INT}) and a value (e.g.~\texttt{123}).\footnote{In practise, the
 system we outline requires a \emph{lexer} which splits string inputs up into
 tokens. In the interests of brevity, we assume the existence of a tool such as
-Lex which does performs this task.} Strictly speaking, parsing is the act of
+Lex which performs this task.} Strictly speaking, parsing is the act of
 determining whether a stream of tokens is correct with respect to the underlying
 grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
 to specify `semantic actions' which are executed when a grammar rule is
@@ -324,18 +329,44 @@ which can have children) and terminals (nodes which cannot have children)
 relative to the underlying grammar.
 
 The beauty of LR parsing stems from the way a parser is constructed. The CFG is
-first transformed into a \emph{stategraph}, which is a fairly traditional
-statemachine, with each state containing one or more \emph{items}. Since even on a modern machine, a canonical
-(i.e.~unmerged) stategraph for a real-world grammar takes several seconds to
+first transformed into a \emph{stategraph}, which is a statemachine
+where each node contains one or more \emph{items} (describing the valid
+parse states at that point) and edges are labelled with terminals or
+nonterminals. Since even on a modern machine, a canonical
+(i.e.~unmerged) LR stategraph for a real-world grammar takes several seconds to
 build, and a surprising amount of memory to store, we use the state merging
 algorithm of \citet{pager77practical} to merge together compatible states. The
 effect of this is significant, reducing the Java grammar we use later from
 \laurie{8000ish} to \laurie{900ish} states. The stategraph is then transformed into a
-\emph{statetable}. Each state has a possibly empty \emph{action} (shift, reduce,
+\emph{statetable} with one row per state. Each row has a possibly empty \emph{action} (shift, reduce,
 or accept) for each terminal and a possibly empty \emph{goto state} for each
 nonterminal. Figure~\ref{fig:stategraphtable} shows an example grammar, its
 stategraph, and statetable.
 
+The statetable then allows us to define a simple, efficient, parsing process. We
+first define two functions relative to the statetable: \textsf{action}$(s, i)$
+returns the action for the state $s$ for the terminal at position $i$ in the
+input or \emph{empty} if no such action exists; and \textsf{goto}$(s, N)$
+returns the goto state for the state $s$ and the nonterminal $N$. We then define
+a reduction relation $\lrarrow$ from $(\textit{parsing stack}, \textit{token
+index})$ pairs and the following two reduction rules (`shift' and `reduce'
+respectively):\\
+
+\begin{tabular}{lr}
+\infer{(s0 \ldots s_n, i) \lrarrow (s0 \ldots s_n s', i + 1)}{\textsf{action}(s_n, i) = \textit{shift}\ s'}
+&
+\infer{(s0 \ldots s_n, i) \lrarrow (s0 \ldots s_{n - |\alpha|} s', i)}{(\textsf{action}(s_n, i) = \textit{reduce}\ N \rightarrow \alpha) \wedge (\textsf{goto}(s_{n - |\alpha|}, N) = s')}
+\end{tabular}
+\\
+
+Intuitively, the shift rule advances the input one token at a time (appending to
+the parsing stack), and the reduction rule matches when a production is complete
+(poping values from the parsing stack before appending a single value). The
+LR parsing algorithm takes a starting value of $(0, 0)$ (where state $0$ is
+expected to represent the entry point into the stategraph) and repeatedly applies
+the $\lrarrow$ rules until either: \textsf{action}$(s_n, i) =
+\textit{accept}$ (i.e.~the input has been fully parsed); or \textsf{action}$(s_n,
+i) = \textit{empty}$ (i.e.~an error has been detected at position $i$).
 
 \section{\corchueloplus}
 \label{corchueloplus}
