@@ -316,7 +316,7 @@ or more \emph{symbols}; and a symbol is either a \emph{terminal} (i.e.~a token
 type such as \texttt{INT}) or a \emph{nonterminal} (i.e.~a reference to another rule in
 the grammar). One rule is designated the \emph{start rule}. The resulting parser
 takes as input a stream of tokens, each of which has a \emph{type}
-(e.g.~\texttt{INT}) and a value (e.g.~\texttt{123}).\footnote{In practise, the
+(e.g.~\texttt{INT}) and a \emph{value} (e.g.~\texttt{123}).\footnote{In practise, the
 system we outline requires a \emph{lexer} which splits string inputs up into
 tokens. In the interests of brevity, we assume the existence of a tool such as
 Lex which performs this task.} Strictly speaking, parsing is the act of
@@ -353,9 +353,12 @@ index})$ pairs with the following two reduction rules (`shift' and `reduce'
 respectively):\\
 
 \begin{tabular}{lr}
-\infer{(s0 \ldots s_n, i) \lrarrow (s0 \ldots s_n s', i + 1)}{\textsf{action}(s_n, i) = \textit{shift}\ s'}
+\infer{(s0 \ldots s_n, i) \lrarrow (s0 \ldots s_n s', i + 1)}
+      {\textsf{action}(s_n, i) = \textit{shift}\ s'}
 &
-\infer{(s0 \ldots s_n, i) \lrarrow (s0 \ldots s_{n - |\alpha|} s', i)}{(\textsf{action}(s_n, i) = \textit{reduce}\ N \colon \alpha) \wedge (\textsf{goto}(s_{n - |\alpha|}, N) = s')}
+\infer{(s0 \ldots s_n, i) \lrarrow (s0 \ldots s_{n - \lvert \alpha \rvert} s', i)}
+      {(\textsf{action}(s_n, i) = \textit{reduce}\ N \colon \alpha)
+       \wedge (\textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s')}
 \end{tabular}
 \\
 
