@@ -51,7 +51,7 @@
 \newcommand{\corchueloplus}{\textit{CPCT}$^+$\xspace}
 \newcommand{\mf}{\textit{MF}\xspace}
 \newcommand{\lrarrow}{\rightarrow_{\textrm{\tiny LR}}}
-\newcommand{\lrarrowstar}{\rightarrow_{\textrm{\tiny LR*}}}
+\newcommand{\lrarrowstar}{\rightarrow_{\textrm{\tiny LR}}^*}
 \include{experimentstats}
 
 % Document starts
@@ -299,6 +299,9 @@ represent zero or more symbols; with the \emph{dot} ($\bullet$) representing
 We assume a high-level understanding of the mechanics of parsing in this paper,
 but in this section we provide a handful of definitions, and a brief refresher
 of relevant low-level details, needed to understand the rest of this paper.
+Although the parsing tool we created for this paper is written in Rust, we
+appreciate that this still an unfamiliar language to most readers: code examples
+are therefore given in Python which, we hope, is familiar to most.
 
 Although there are many flavours of parsing, the \citet{fischer79locally} family
 of algorithms, including those presented in this paper, are based on LR
@@ -346,7 +349,7 @@ stategraph, and statetable.
 The statetable allows us to define a simple, efficient, parsing process. We
 first define two functions relative to the statetable: \textsf{action}$(s, i)$
 returns the action for the state $s$ for the token at position $i$ in the
-input or \emph{empty} if no such action exists; and \textsf{goto}$(s, N)$
+input or \emph{null} if no such action exists; and \textsf{goto}$(s, N)$
 returns the goto state for the state $s$ and the nonterminal $N$. We then define
 a reduction relation $\lrarrow$ for $(\textit{parsing stack}, \textit{token
 index})$ pairs with the following two reduction rules (`shift' and `reduce'
@@ -364,12 +367,15 @@ respectively):\\
 
 Intuitively, the shift rule advances the input one token at a time and grows
 the parsing stack, while the reduction rule unwinds the parsing stack when
-a production is complete before moving to a new state. The
-LR parsing algorithm takes a starting value of $(0, 0)$ (where state $0$ is
-expected to represent the entry point into the stategraph) and repeatedly applies
-the $\lrarrow$ rules until either: \textsf{action}$(s_n, i) =
+a production is complete before moving to a new state. We then define a full
+LR parse $\lrarrowstar$ as repeatedly applying the two $\lrarrow$ reductions
+until neither applies, which means that either: \textsf{action}$(s_n, i) =
 \textit{accept}$ (i.e.~the input has been fully parsed); or \textsf{action}$(s_n,
-i) = \textit{empty}$ (i.e.~an error has been detected at position $i$).
+i) = \textit{null}$ (i.e.~an error has been detected at position $i$). A
+full parse of an empty file thus takes a starting pair of $(0, 0)$ (where state $0$ is
+expected to represent the entry point into the stategraph) and applies
+$\lrarrowstar$.
+
 
 \section{\corchueloplus}
 \label{corchueloplus}
