@@ -4,8 +4,9 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 
-\usepackage{listings}
 \usepackage{booktabs}
+\usepackage{listings}
+\usepackage{multicol}
 \usepackage{proof}
 \usepackage{softdev}
 \usepackage{subcaption}
@@ -31,7 +32,7 @@
 \lstset{
     basicstyle=\tt\scriptsize,
     xleftmargin=0pt,
-    framexleftmargin=1.5em,
+    numbersep=.8em,
     numberstyle=\scriptsize\tt\color{gray},
     captionpos=b,
     escapeinside={{<!}{!>}},
@@ -49,9 +50,12 @@
 %\received{February 2007}
 
 \newcommand{\corchueloplus}{\textit{CPCT}$^+$\xspace}
-\newcommand{\mf}{\textit{MF}\xspace}
-\newcommand{\lrarrow}{\rightarrow_{\textrm{\tiny LR}}}
+\newcommand{\crarrow}{\rightarrow_{\textrm{\tiny CR}}}
+\newcommand{\crarrowstar}{\rightarrow_{\textrm{\tiny CR}}^*}
 \newcommand{\lrarrowstar}{\rightarrow_{\textrm{\tiny LR}}^*}
+\newcommand{\lrarrow}{\rightarrow_{\textrm{\tiny LR}}}
+\newcommand{\mf}{\textit{MF}\xspace}
+
 \include{experimentstats}
 
 % Document starts
@@ -352,22 +356,23 @@ returns the action for the state $s$ and token $t$
 or \emph{error} if no such action exists; and \textsf{goto}$(s, N)$
 returns the goto state for the state $s$ and the nonterminal $N$. We then define
 a reduction relation $\lrarrow$ for $(\textit{parsing stack}, \textit{token
-index})$ pairs with two reduction rules as shown in Figure~\ref{fig:lrreduction}.
+list})$ pairs with two reduction rules as shown in Figure~\ref{fig:lrreduction}.
 A full LR parse $\lrarrowstar$ repeatedly applies the two $\lrarrow$ reductions
-until neither applies, which means that either: \textsf{action}$(s_n, i) =
-\textit{accept}$ (i.e.~the input has been fully parsed); or \textsf{action}$(s_n,
-i) = \textit{error}$ (i.e.~an error has been detected at position $i$). A
-full parse of an empty file thus takes a starting pair of $([0], I)$ (where state $0$ is
-expected to represent the entry point into the stategraph and $I$ is
-the sequence of input tokens) and applies $\lrarrowstar$.
+until neither applies, which means that either \textsf{action}$(s_n, i)$ is:
+$\textit{accept}$ (i.e.~the input has been fully parsed); or
+$\textit{error}$ (i.e.~an error has been detected at position $i$). A
+full parse of an empty file takes a starting pair of $([0], [t_0 \ldots t_n, \$])$,
+where state $0$ is expected to represent the entry point into the stategraph, $t_0 \ldots t_n$ are
+the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token.
 
 \begin{figure}[t]
+\small
 \[
 \infer[(\textsc{LR Shift})]
       {([s0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_n, s'], [t_1 \ldots t_n])}
       {\textsf{action}(s_n, t_n) = \textit{shift}\ s'}
 \]
-
+\vspace{-3pt}
 \[
 \infer[(\textsc{LR Reduce})]
       {([s0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'], [t_0 \ldots t_n])}
@@ -382,11 +387,151 @@ before moving to a new state.}
 \end{figure}
 
 
-
-
 \section{\corchueloplus}
 \label{corchueloplus}
 
+The \citet{fischer79locally} family of error recovery algorithms has many
+members --- far too many to cover them all in one paper (see
+\citet{cerecke03phd} for a fairly comprehensive summary). We therefore start
+with one of the more recent members -- \citet{corchuelo02repairing}. We first
+explain, with one small tweak for correctness, the original algorithm
+(Section~\ref{corchuelo:orig}), although we use different notation
+than the original, fill in several missing details,
+and provide a more formal definition of the overall algorithm. We then
+make a further tweak to the algorithm which allows it to find sophisticated repair sequences
+(Section~\ref{corchuelo:kimyi}). Since the original description
+gives few details as to how the algorithm might best be implemented, we then
+explain the steps we took to make a performant implementation
+(Section~\ref{corchuelo:implementation}). Finally, we show how the algorithm can
+be extended to find all minimum cost repair sequences
+(Section~\ref{corchuelo:allminimumcost}). It is this final algorithm that we
+refer to as \corchueloplus and which forms part of our later evaluation.
+
+
+\subsection{The original algorithm}
+\label{corchuelo:orig}
+
+As with all error recovery algorithms, \citet{corchuelo02repairing} is invoked
+when an error is found in main parsing i.e.~when \textsf{action}$(s_n, i) =
+\textit{error}$. Intuitively, the algorithm starts at the error state and tries
+to find a minimum cost repair sequence consisting of: \textit{insert T}
+(`insert a token of type T'), \textit{delete} (`delete the token at the current offset'),
+or \textit{shift} (`skip over the token at the current offset without changing it'). The
+algorithm completes: successfully if it reaches an accept state; successfully if
+it parses `enough' tokens to be considered worthy of success; or unsuccessfully
+if it consumes `too much' input.
+
+We explain the overall algorithm in two parts. First is a new reduction relation
+$\crarrow$ which defines when individual repairs are created
+(Figure~\ref{fig:corchuelo:reductions}). Second is an actual algorithm which
+determines when to use the $\crarrow$ relation (Figure~\ref{fig:corchuelo:algorithm}).
+
+As well as notational changes for clarity, there are two major differences
+between our definitions and those of \citet{corchuelo02repairing}. First, our
+\textsc{CR Shift} reduction rule has a small, but important, correctness fix:
+the original does not deal with the case where the LR parser needs to be used to
+perform reductions in order to reach an \textit{accept} state but where no
+actual shifts are required (i.e.~\citet{corchuelo02repairing} use the condition
+$0 < j \leq N$, forcing the LR parser to always shift at least one symbol).
+Second, \citet{corchuelo02repairing} only explain in prose (spread amongst
+several topics over several pages) what we have captured as an algorithm in
+Figure~\ref{fig:corchuelo:algorithm}: perhaps inevitably when capturing prose as
+code, we have had to fill in several missing details.
+
+\begin{figure}[tb]
+\small
+\[
+\infer[\textsc{CR Insert}]
+      {(S, [t_0 \ldots t_n]) \crarrow (S', [t_0 \ldots t_n], [\textit{insert}~t])}
+      {(\textsf{action}(s_n, t) \ne error) \wedge (t \ne \${})
+       \wedge ((S, [t, t_0 \ldots t_n]) \lrarrowstar (S', [t_0 \ldots t_n]))}
+\]
+\vspace{-5pt}
+\[
+\infer[\textsc{CR Delete}]
+      {(S, [t_0 \ldots t_n]) \crarrow (S, [t_1 \ldots t_n], [\textit{delete}])}
+      {t_0 \ne \$}
+\]
+\vspace{-3pt}
+\[
+\infer[\textsc{CR Shift}]
+      {(S, [t_0 \ldots t_n]) \crarrow (S, [t_j \ldots t_n], [\textit{shift}_0 \ldots \textit{shift}_j])}
+      {((S, t_0 \ldots t_n) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n]) \wedge 0 \leq j \leq N)
+       \wedge (\textsf{action}(s_0, t_j) \in \{\textit{accept}, \textit{error}\} \vee j = N)}
+\]
+
+\caption{The three main reduction rules, one for each repair type, for
+\citet{corchuelo02repairing}. \textsc{CR Insert} creates insert repairs for
+terminals (other than $\$$) which can be inserted at the current state.
+\textsc{CR Delete} creates deletion repairs if we are not at the EOF token $\$$.
+\textsc{CR Shift} parses at most $N$ tokens; if it reaches an accept or error
+state, or if it parses exactly $N$ tokens, then a matching number of shift
+repairs are created.}
+\label{fig:corchuelo:reductions}
+\end{figure}
+
+
+\begin{figure}[tb]
+\begin{lstlisting}[numbers=left, multicols=2]
+def corchueloetal(pstack, toks):
+  todo = [[(pstack, toks, [])]]
+  cur_cst = 0
+  while cur_cst < len(todo):
+    if len(todo[cur_cst]) == 0:
+      cur_cst += 1
+      continue
+    n = todo[cur_cst].pop()
+    if action(n.0, n.1) == <!{\textrm{\textit{accept}}}!> \
+       or ends_in_N_shifts(n.2):
+      return n
+    elif len(n.1) - len(toks) == N_total:
+      continue
+    for nbr_pstack, nbr_toks, nbr_rprs in \
+        all_cr_star(n.0, n.1):
+      if len(n.2) > 0 and n.2[-1] == <!{\textrm{\textit{delete}}}!> \
+         and nbr_rprs[-1] == <!{\textrm{\textit{insert}}}!>:
+        continue
+      cst = cur_cst + rprs_cst(nbr_rprs)
+      for _ in range(len(todo), cst):
+        todo.push([])
+      todo[cst].append((nbr_pstack, \
+                        nbr_toks, \
+                        n.2 + nbr_rprs))
+  return None
+
+def rprs_cst(rprs):
+  c = 0
+  for r in rprs:
+    if r == <!{\textrm{\textit{shift}}}!>:
+      continue
+    c += 1
+  return c
+
+def all_cr_star(pstack, toks):
+  # Exhaustively apply the <!{$\crarrowstar$}!> relation to
+  # (pstack, toks) and return the resulting list.
+\end{lstlisting}
+\caption{The \citet{corchuelo02repairing} algorithm. The main function
+\texttt{corchueloetall} takes in a (\emph{parsing stack}, \emph{token list})
+pair and returns: a (\emph{parsing stack}, \emph{token list}, \emph{repair
+sequence}) triple where \emph{repair sequence} is guaranteed to be a minimal
+cost repair sequence; or \texttt{None} if it failed to find a repair sequence.
+The algorithm maintains a todo list of lists (which we
+chose to model on \citet[p.~25]{cerecke03phd}); the first sub-list contains
+search nodes of cost 0, the second sub-list contains search nodes of cost 1 and
+so on. The todo list is initialised with the error parsing stack, error token
+index, and an empty repair sequence (line 2). If there are todo items left, a
+lowest cost node $n$ is picked (line 8). If $n$ represents an accept state (line
+9) or if the last $N_\textit{shifts}$ repairs are shifts (line 10), then $n$
+represents a minimal cost repair sequence and the algorithm terminates
+successfully (line 11). If $n$ has already consumed $N_\textit{total}$ tokens,
+then it is not further considered (lines 12, 13). Otherwise, $n$'s neighbours
+are searched for using the $\crarrow$ relation (lines 14, 15, 35--37). To avoid
+duplicate repairs, \textit{delete} repairs never follow \textit{insert} repairs
+(lines 16--18). Finally, each neighbour has its repairs costed and it is
+assigned to the correct todo list (lines 19--24).}
+\label{fig:corchuelo:algorithm}
+\end{figure}
 
 \section{\cite{kimyi10astar}}
 \label{kimyi}
