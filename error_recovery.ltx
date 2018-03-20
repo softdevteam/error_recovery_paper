@@ -592,7 +592,7 @@ include those which require no deletions.
       {(S, [t_0 \ldots t_n]) \crarrow (S', [t_j \ldots t_n], R)}
       {%
 \begin{array}{c}
-(S, t_0 \ldots t_n) \lrarrowstar (S', [t_j \ldots t_n])
+(S, [t_0 \ldots t_n]) \lrarrowstar (S', [t_j \ldots t_n])
  \wedge S \ne S'
  \wedge 0 \leq j \leq 1
 \\
@@ -647,7 +647,7 @@ Insert "INT", Shift, Shift, Insert "MULT"
 found at the first token) relative to the grammar from
 Figure~\ref{fig:exprgrammar}. (\subref{fig:crshift2:orig}) shows the four repair
 sequences that the original \textsc{CR Shift} rule is capable of finding.
-(\subref{fig:crshift2:new}) shows the four additional repair sequences that teh
+(\subref{fig:crshift2:new}) shows the four additional repair sequences that the
 new \texttt{CR Shift 2} rule is capable of finding.}
 \label{fig:crshift2:example}
 \end{figure}
