@@ -298,6 +298,7 @@ represent zero or more symbols; with the \emph{dot} ($\bullet$) representing
   reached that state, and how much remains ($\beta$).
   \laurie{the stategraph and statetable are (obviously) missing}}
 \label{fig:stategraphtable}
+\label{fig:exprgrammar}
 \end{figure}
 
 We assume a high-level understanding of the mechanics of parsing in this paper,
@@ -394,11 +395,12 @@ The \citet{fischer79locally} family of error recovery algorithms has many
 members --- far too many to cover them all in one paper (see
 \citet{cerecke03phd} for a fairly comprehensive summary). We therefore start
 with one of the more recent members -- \citet{corchuelo02repairing}. We first
-explain, with one small tweak for correctness, the original algorithm
+explain, with one alteration for correctness, the original algorithm
 (Section~\ref{corchuelo:orig}), although we use different notation
 than the original, fill in several missing details,
 and provide a more formal definition of the overall algorithm. We then
-make a further tweak to the algorithm which allows it to find sophisticated repair sequences
+show that the algorithm needs a further alteration in order that it
+does not miss some minimal cost repair sequences
 (Section~\ref{corchuelo:kimyi}). Since the original description
 gives few details as to how the algorithm might best be implemented, we then
 explain the steps we took to make a performant implementation
@@ -440,9 +442,14 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \[
 \hspace{-12pt}
 \infer[\textsc{CR Shift}]
-      {(S, [t_0 \ldots t_n]) \crarrow (S, [t_j \ldots t_n], [\textit{shift}_0 \ldots \textit{shift}_j])}
-      {((S, t_0 \ldots t_n) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n]) \wedge 0 \leq j \leq N_\textit{shifts})
-       \wedge (\textsf{action}(s_0, t_j) \in \{\textit{accept}, \textit{error}\} \vee j = N_\textit{shifts})}
+      {(S, [t_0 \ldots t_n]) \crarrow ([s_0 \ldots s_n], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
+      {%
+\begin{array}{c}
+(S, t_0 \ldots t_n) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n])
+ \wedge S \ne [s_0 \ldots s_n] \wedge 0 \leq j \leq N_\textit{shifts}
+\\
+ \textsf{action}(s_n, t_j) \in \{\textit{accept}, \textit{error}\} \vee j = N_\textit{shifts}
+\end{array}}
 \]
 
 \caption{The repair-creating reduction rules \cite{corchuelo02repairing}.
@@ -450,10 +457,10 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 creates insert repairs for them (other than the EOF token `$\$$').
 \textsc{CR Delete} creates deletion repairs if user defined input remains.
 \textsc{CR Shift} parses at most $N_\textit{shift}$ tokens; if it reaches an accept or error
-state, or parses exactly $N_\textit{shift}$ tokens, then a matching number of shift
-repairs are created.}
+state, or parses exactly $N_\textit{shift}$ tokens, then a shift repair per
+token shifted is created.}
 \label{fig:corchuelo:reductions}
-\vspace*{-15pt}
+\vspace*{-8pt}
 \end{figure}
 
 
@@ -498,11 +505,11 @@ def all_cr_star(pstack, toks):
 \end{lstlisting}
 \columnbreak
 \vspace*{-18pt}
-\caption{The \citet{corchuelo02repairing} algorithm. The main function
+\caption{Our interpretation of the \citet{corchuelo02repairing} algorithm. The main function
 \texttt{corchueloetall} takes in a (\emph{parsing stack}, \emph{token list})
 pair and returns: a (\emph{parsing stack}, \emph{token list}, \emph{repair
 sequence}) triple where \emph{repair sequence} is guaranteed to be a minimal
-cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\[10pt]
+cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\[9pt]
 %
 The algorithm maintains a todo list of lists (which we
 chose to model on \citet[p.~25]{cerecke03phd}); the first sub-list contains
@@ -517,7 +524,7 @@ then it is discarded (lines 12, 13). Otherwise, $n$'s neighbours
 are gathered using the $\crarrow$ relation (lines 14, 32--35). To avoid
 duplicate repairs, \textit{delete} repairs never follow \textit{insert} repairs
 (lines 16--18). Each neighbour has its repairs costed and is then
-assigned to the correct todo sub-list (lines 19--23).\\[10pt]
+assigned to the correct todo sub-list (lines 19--23).\\[9pt]
 %
 The \texttt{rprs\_cst} function returns the cost of a repair sequence. Inserts
 and deletes cost 1, shifts 0.}
@@ -529,25 +536,131 @@ As with the original, we explain the approach in two parts. First is a new reduc
 $\crarrow$ which defines when individual repairs are created
 (Figure~\ref{fig:corchuelo:reductions}). Second is an algorithm which
 determines when to use the $\crarrow$ relation (Figure~\ref{fig:corchuelo:algorithm}).
-
 As well as several changes for clarity, there are two major differences
-between our explanation and that of \citet{corchuelo02repairing}. First, our
-\textsc{CR Shift} reduction rule has a small, but important, correctness fix:
-the original does not deal with the case where the LR parser needs to be used to
-perform reductions in order to reach an \textit{accept} state but where no
-actual shifts are required (i.e.~\citet{corchuelo02repairing} use the condition
-$0 < j \leq N$, forcing the LR parser to always shift at least one symbol, which
-can lead to non-minimal cost repair sequences).
+between our explanation and that of \citet{corchuelo02repairing}.
+
+First, our
+\textsc{CR Shift} reduction rule has an important correctness fix.
+The original rule always requires at least one token to be shifted. However,
+after a delete repair, for example, all that may be required is one or more
+reductions in order to reach an \textit{accept} state. We fix this in two
+phases: first, we do not require any tokens to have been shifted (i.e.~we use $0
+\leq j \leq N_\textit{shifts}$ whereas \citet{corchuelo02repairing} specify $0 <
+j \leq N_\textit{shifts}$); second, to avoid infinite loops, we require the LR
+parser to make progress ($S \ne [s_0 \ldots s_n]$).
+
 Second, \citet{corchuelo02repairing} only explain in prose (spread amongst
 several topics over several pages) what we have captured as an algorithm in
 Figure~\ref{fig:corchuelo:algorithm}: perhaps inevitably when capturing prose as
 code, we have had to fill in several missing details. For example,
-\citet{corchuelo02repairing} never define what the cost of repairs is: for
+\citet{corchuelo02repairing} do not define what the cost of repairs is: for
 simplicities sake, we define the cost of \textit{insert} and \textit{delete} as
 1, and \textit{shift} as 0.\footnote{It is trivial to extend this to variable
 token costs if desired, and our implementation supports this. However, it is
 unclear whether non-uniform token costs are useful in practise
 \cite[p.96]{cerecke03phd}.}
+
+\laurie{do we need an example here? probably...}
+
+
+\subsection{Finding minimal cost repair sequences that are missed by \textsc{CR Shift}}
+\label{corchuelo:kimyi}
+
+Both the original description of the \citet{corchuelo02repairing} algorithm, and
+our version of it, have a surprising weakness: they are not capable of finding
+some minimal cost repairs (this insight and the basis of a solution derive
+from \cite[p.~12]{kimyi10astar}, though our solution is slightly different). The
+weakness is, perhaps unsurprisingly, in the most complex rule, \textsc{CR Shift}
+which creates multiple shifts in one go. This causes it to miss intermediate
+positions from which minimal cost repair sequences may be found.
+
+The solution is tehrefore simple: at most one shift can be generated at any one
+time so taht intermediate positions are not missed. A replacement reduction rule
+\textsc{CR Shift 2} is shown in Figure~\ref{fig:corchuelo:kimyi}. Relative to
+\textsc{CR Shift}, it is simpler, though it also inevitably slows down the
+search for repair sequences, since more are tried. An example of the additional
+repair sequences it can find is shown in Figure~\ref{fig:crshift2:example}.
+As this example shows, the additional repair sequences can by significantly
+different: while the repair sequences findable by \textsc{CR Shift} all require
+deleting some of the user's input, \textsc{CR Shift 2}'s repair sequences
+include those which require no deletions.
+
+\begin{figure}[tb]
+\small
+\[
+\infer[\textsc{CR Shift 2}]
+      {(S, [t_0 \ldots t_n]) \crarrow (S', [t_j \ldots t_n], R)}
+      {%
+\begin{array}{c}
+(S, t_0 \ldots t_n) \lrarrowstar (S', [t_j \ldots t_n])
+ \wedge S \ne S'
+ \wedge 0 \leq j \leq 1
+\\
+ (j = 0 \wedge R = [])
+  \vee
+  (j = 1 \wedge R = [\textit{shift}])
+\end{array}
+}
+\]
+
+\caption{An improved version of the \textsc{CR Shift} rule from
+Fig~\ref{fig:corchuelo:reductions}. Whereas \textsc{CR Shift} generates multiple
+shift repairs in one go, skipping `intermediate' repair positions, \textsc{CR
+Shift 2} generates at most one shift, exploring all intermediate repair
+positions.}
+\label{fig:corchuelo:kimyi}
+\vspace*{-8pt}
+\end{figure}
+
+\begin{figure}
+\begin{tabular}[t]{llll}
+\begin{subfigure}{0.02\textwidth}
+\vspace{-31.5pt}
+\caption{}
+\label{fig:crshift2:orig}
+\end{subfigure}
+&
+\hspace{-6pt}
+\begin{lstlisting}
+Delete, Delete
+Delete, Shift, Delete
+Delete, Shift, Insert "PLUS"
+Delete, Shift, Insert "MULT"
+\end{lstlisting}
+&
+\begin{subfigure}{0.02\textwidth}
+\vspace{-31.5pt}
+\caption{}
+\label{fig:crshift2:new}
+\end{subfigure}
+&
+\hspace{-6pt}
+\begin{lstlisting}
+Insert "INT", Shift, Delete
+Insert "INT", Shift, Shift, Delete
+Insert "INT", Shift, Shift, Insert "PLUS"
+Insert "INT", Shift, Shift, Insert "MULT"
+\end{lstlisting}
+\end{tabular}
+
+\caption{Repair sequences for the input `\texttt{+ 2 3}' (where an error is
+found at the first token) relative to the grammar from
+Figure~\ref{fig:exprgrammar}. (\subref{fig:crshift2:orig}) shows the four repair
+sequences that the original \textsc{CR Shift} rule is capable of finding.
+(\subref{fig:crshift2:new}) shows the four additional repair sequences that teh
+new \texttt{CR Shift 2} rule is capable of finding.}
+\label{fig:crshift2:example}
+\end{figure}
+
+
+\subsection{Implementation considerations}
+\label{corchuelo:implementation}
+
+
+\subsection{Finding all minimum cost repair sequences}
+\label{corchuelo:allminimumcost}
+
+
 \section{\cite{kimyi10astar}}
 \label{kimyi}
 
