@@ -417,26 +417,10 @@ when an error is found in main parsing i.e.~when \textsf{action}$(s_n, i) =
 to find a minimum cost repair sequence consisting of: \textit{insert T}
 (`insert a token of type T'), \textit{delete} (`delete the token at the current offset'),
 or \textit{shift} (`skip over the token at the current offset without changing it'). The
-algorithm completes: successfully if it reaches an accept state; successfully if
-it parses `enough' tokens to be considered worthy of success; or unsuccessfully
-if it consumes `too much' input.
-
-We explain the overall algorithm in two parts. First is a new reduction relation
-$\crarrow$ which defines when individual repairs are created
-(Figure~\ref{fig:corchuelo:reductions}). Second is an actual algorithm which
-determines when to use the $\crarrow$ relation (Figure~\ref{fig:corchuelo:algorithm}).
-
-As well as notational changes for clarity, there are two major differences
-between our definitions and those of \citet{corchuelo02repairing}. First, our
-\textsc{CR Shift} reduction rule has a small, but important, correctness fix:
-the original does not deal with the case where the LR parser needs to be used to
-perform reductions in order to reach an \textit{accept} state but where no
-actual shifts are required (i.e.~\citet{corchuelo02repairing} use the condition
-$0 < j \leq N$, forcing the LR parser to always shift at least one symbol).
-Second, \citet{corchuelo02repairing} only explain in prose (spread amongst
-several topics over several pages) what we have captured as an algorithm in
-Figure~\ref{fig:corchuelo:algorithm}: perhaps inevitably when capturing prose as
-code, we have had to fill in several missing details.
+algorithm completes successfully if it reaches an accept state or shifts
+`enough' tokens ($N_\textit{shift}$; set at 3 in \citet{corchuelo02repairing}),
+or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
+10 in \citet{corchuelo02repairing}).
 
 \begin{figure}[tb]
 \small
@@ -446,7 +430,7 @@ code, we have had to fill in several missing details.
       {(\textsf{action}(s_n, t) \ne error) \wedge (t \ne \${})
        \wedge ((S, [t, t_0 \ldots t_n]) \lrarrowstar (S', [t_0 \ldots t_n]))}
 \]
-\vspace{-5pt}
+\vspace{-6pt}
 \[
 \infer[\textsc{CR Delete}]
       {(S, [t_0 \ldots t_n]) \crarrow (S, [t_1 \ldots t_n], [\textit{delete}])}
@@ -454,25 +438,28 @@ code, we have had to fill in several missing details.
 \]
 \vspace{-3pt}
 \[
+\hspace{-12pt}
 \infer[\textsc{CR Shift}]
       {(S, [t_0 \ldots t_n]) \crarrow (S, [t_j \ldots t_n], [\textit{shift}_0 \ldots \textit{shift}_j])}
-      {((S, t_0 \ldots t_n) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n]) \wedge 0 \leq j \leq N)
-       \wedge (\textsf{action}(s_0, t_j) \in \{\textit{accept}, \textit{error}\} \vee j = N)}
+      {((S, t_0 \ldots t_n) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n]) \wedge 0 \leq j \leq N_\textit{shifts})
+       \wedge (\textsf{action}(s_0, t_j) \in \{\textit{accept}, \textit{error}\} \vee j = N_\textit{shifts})}
 \]
 
-\caption{The three main reduction rules, one for each repair type, for
-\citet{corchuelo02repairing}. \textsc{CR Insert} creates insert repairs for
-terminals (other than $\$$) which can be inserted at the current state.
-\textsc{CR Delete} creates deletion repairs if we are not at the EOF token $\$$.
-\textsc{CR Shift} parses at most $N$ tokens; if it reaches an accept or error
-state, or if it parses exactly $N$ tokens, then a matching number of shift
+\caption{The repair-creating reduction rules \cite{corchuelo02repairing}.
+\textsc{CR Insert} finds all terminals reachable from the current state and
+creates insert repairs for them (other than the EOF token `$\$$').
+\textsc{CR Delete} creates deletion repairs if user defined input remains.
+\textsc{CR Shift} parses at most $N_\textit{shift}$ tokens; if it reaches an accept or error
+state, or parses exactly $N_\textit{shift}$ tokens, then a matching number of shift
 repairs are created.}
 \label{fig:corchuelo:reductions}
+\vspace*{-15pt}
 \end{figure}
 
 
 \begin{figure}[tb]
-\begin{lstlisting}[numbers=left, multicols=2]
+\begin{multicols}{2}
+\begin{lstlisting}[numbers=left]
 def corchueloetal(pstack, toks):
   todo = [[(pstack, toks, [])]]
   cur_cst = 0
@@ -481,58 +468,86 @@ def corchueloetal(pstack, toks):
       cur_cst += 1
       continue
     n = todo[cur_cst].pop()
-    if action(n.0, n.1) == <!{\textrm{\textit{accept}}}!> \
-       or ends_in_N_shifts(n.2):
+    if action(n[0][-1], n[1]) == <!{\textrm{\textit{accept}}}!> \
+       or ends_in_N_shifts(n[2]):
       return n
-    elif len(n.1) - len(toks) == N_total:
+    elif len(n[1]) - len(toks) == N_total:
       continue
-    for nbr_pstack, nbr_toks, nbr_rprs in \
-        all_cr_star(n.0, n.1):
-      if len(n.2) > 0 and n.2[-1] == <!{\textrm{\textit{delete}}}!> \
-         and nbr_rprs[-1] == <!{\textrm{\textit{insert}}}!>:
+    for nbr in all_cr_star(n.0, n.1):
+      if len(n[2]) > 0 and n[2][-1] == <!{\textrm{\textit{delete}}}!> \
+         and nbr[2][-1] == <!{\textrm{\textit{insert}}}!>:
         continue
       cst = cur_cst + rprs_cst(nbr_rprs)
       for _ in range(len(todo), cst):
         todo.push([])
-      todo[cst].append((nbr_pstack, \
-                        nbr_toks, \
-                        n.2 + nbr_rprs))
+      todo[cst].append((nbr[0], nbr[1], \
+                        n[2] + nbr[2]))
   return None
 
 def rprs_cst(rprs):
   c = 0
   for r in rprs:
-    if r == <!{\textrm{\textit{shift}}}!>:
-      continue
+    if r == <!{\textrm{\textit{shift}}}!>: continue
     c += 1
   return c
 
 def all_cr_star(pstack, toks):
   # Exhaustively apply the <!{$\crarrowstar$}!> relation to
-  # (pstack, toks) and return the resulting list.
+  # (pstack, toks) and return the resulting
+  # list of (pstack, toks, repair) triples.
 \end{lstlisting}
+\columnbreak
+\vspace*{-18pt}
 \caption{The \citet{corchuelo02repairing} algorithm. The main function
 \texttt{corchueloetall} takes in a (\emph{parsing stack}, \emph{token list})
 pair and returns: a (\emph{parsing stack}, \emph{token list}, \emph{repair
 sequence}) triple where \emph{repair sequence} is guaranteed to be a minimal
-cost repair sequence; or \texttt{None} if it failed to find a repair sequence.
+cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\[10pt]
+%
 The algorithm maintains a todo list of lists (which we
 chose to model on \citet[p.~25]{cerecke03phd}); the first sub-list contains
 search nodes of cost 0, the second sub-list contains search nodes of cost 1 and
-so on. The todo list is initialised with the error parsing stack, error token
-index, and an empty repair sequence (line 2). If there are todo items left, a
+so on. The todo list is initialised with the error parsing stack, remaining
+tokens, and an empty repair sequence (line 2). If there are todo items left, a
 lowest cost node $n$ is picked (line 8). If $n$ represents an accept state (line
 9) or if the last $N_\textit{shifts}$ repairs are shifts (line 10), then $n$
 represents a minimal cost repair sequence and the algorithm terminates
 successfully (line 11). If $n$ has already consumed $N_\textit{total}$ tokens,
-then it is not further considered (lines 12, 13). Otherwise, $n$'s neighbours
-are searched for using the $\crarrow$ relation (lines 14, 15, 35--37). To avoid
+then it is discarded (lines 12, 13). Otherwise, $n$'s neighbours
+are gathered using the $\crarrow$ relation (lines 14, 32--35). To avoid
 duplicate repairs, \textit{delete} repairs never follow \textit{insert} repairs
-(lines 16--18). Finally, each neighbour has its repairs costed and it is
-assigned to the correct todo list (lines 19--24).}
+(lines 16--18). Each neighbour has its repairs costed and is then
+assigned to the correct todo sub-list (lines 19--23).\\[10pt]
+%
+The \texttt{rprs\_cst} function returns the cost of a repair sequence. Inserts
+and deletes cost 1, shifts 0.}
 \label{fig:corchuelo:algorithm}
+\end{multicols}
 \end{figure}
 
+As with the original, we explain the approach in two parts. First is a new reduction relation
+$\crarrow$ which defines when individual repairs are created
+(Figure~\ref{fig:corchuelo:reductions}). Second is an algorithm which
+determines when to use the $\crarrow$ relation (Figure~\ref{fig:corchuelo:algorithm}).
+
+As well as several changes for clarity, there are two major differences
+between our explanation and that of \citet{corchuelo02repairing}. First, our
+\textsc{CR Shift} reduction rule has a small, but important, correctness fix:
+the original does not deal with the case where the LR parser needs to be used to
+perform reductions in order to reach an \textit{accept} state but where no
+actual shifts are required (i.e.~\citet{corchuelo02repairing} use the condition
+$0 < j \leq N$, forcing the LR parser to always shift at least one symbol, which
+can lead to non-minimal cost repair sequences).
+Second, \citet{corchuelo02repairing} only explain in prose (spread amongst
+several topics over several pages) what we have captured as an algorithm in
+Figure~\ref{fig:corchuelo:algorithm}: perhaps inevitably when capturing prose as
+code, we have had to fill in several missing details. For example,
+\citet{corchuelo02repairing} never define what the cost of repairs is: for
+simplicities sake, we define the cost of \textit{insert} and \textit{delete} as
+1, and \textit{shift} as 0.\footnote{It is trivial to extend this to variable
+token costs if desired, and our implementation supports this. However, it is
+unclear whether non-uniform token costs are useful in practise
+\cite[p.96]{cerecke03phd}.}
 \section{\cite{kimyi10astar}}
 \label{kimyi}
 
