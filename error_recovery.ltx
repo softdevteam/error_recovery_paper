@@ -569,22 +569,10 @@ unclear whether non-uniform token costs are useful in practise
 
 Both the original description of the \citet{corchuelo02repairing} algorithm, and
 our version of it, have a surprising weakness: they are not capable of finding
-some minimal cost repairs (this insight and the basis of a solution derive
-from \cite[p.~12]{kimyi10astar}, though our solution is slightly different). The
+some minimal cost repairs~\cite[p.~12]{kimyi10astar}. The
 weakness is, perhaps unsurprisingly, in the most complex rule, \textsc{CR Shift}
 which creates multiple shifts in one go. This causes it to miss intermediate
 positions from which minimal cost repair sequences may be found.
-
-The solution is tehrefore simple: at most one shift can be generated at any one
-time so taht intermediate positions are not missed. A replacement reduction rule
-\textsc{CR Shift 2} is shown in Figure~\ref{fig:corchuelo:kimyi}. Relative to
-\textsc{CR Shift}, it is simpler, though it also inevitably slows down the
-search for repair sequences, since more are tried. An example of the additional
-repair sequences it can find is shown in Figure~\ref{fig:crshift2:example}.
-As this example shows, the additional repair sequences can by significantly
-different: while the repair sequences findable by \textsc{CR Shift} all require
-deleting some of the user's input, \textsc{CR Shift 2}'s repair sequences
-include those which require no deletions.
 
 \begin{figure}[tb]
 \small
@@ -653,6 +641,19 @@ new \texttt{CR Shift 2} rule is capable of finding.}
 \label{fig:crshift2:example}
 \end{figure}
 
+The solution is therefore simple: at most one shift can be generated at any one
+time so that intermediate positions are not missed. A replacement reduction rule
+\textsc{CR Shift 2} is shown in Figure~\ref{fig:corchuelo:kimyi} (loosely based
+on the \textsc{R3S-n} rule from \cite[p.~12]{kimyi10astar}, though their rule
+shares the same correctness problem with always requiring a shift that we fixed
+in the previous section for \textsc{CR Shift}). Relative to
+\textsc{CR Shift}, it is simpler, though it also inevitably slows down the
+search for repair sequences, since more are tried. An example of the additional
+repair sequences it can find is shown in Figure~\ref{fig:crshift2:example}.
+As this example shows, the additional repair sequences can by significantly
+different: while the repair sequences findable by \textsc{CR Shift} all require
+deleting some of the user's input, \textsc{CR Shift 2}'s repair sequences
+include those which require no deletions.
 
 \subsection{Implementation considerations}
 \label{corchuelo:implementation}
