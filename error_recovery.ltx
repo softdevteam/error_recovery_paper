@@ -428,9 +428,9 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \small
 \[
 \infer[\textsc{CR Insert}]
-      {(S, [t_0 \ldots t_n]) \crarrow (S', [t_0 \ldots t_n], [\textit{insert}~t])}
-      {(\textsf{action}(s_n, t) \ne error) \wedge (t \ne \${})
-       \wedge ((S, [t, t_0 \ldots t_n]) \lrarrowstar (S', [t_0 \ldots t_n]))}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow (S', [t_0 \ldots t_n], [\textit{insert}~t])}
+      {(\textsf{action}(s_n, t_0) \ne error) \wedge (t \ne \${})
+       \wedge ([s_0 \ldots s_n], [t, t_0 \ldots t_n]) \lrarrowstar (S', [t_0 \ldots t_n])}
 \]
 \vspace{-6pt}
 \[
@@ -445,7 +445,7 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
       {(S, [t_0 \ldots t_n]) \crarrow ([s_0 \ldots s_n], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
       {%
 \begin{array}{c}
-(S, t_0 \ldots t_n) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n])
+(S, [t_0 \ldots t_n]) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n])
  \wedge S \ne [s_0 \ldots s_n] \wedge 0 \leq j \leq N_\textit{shifts}
 \\
  \textsf{action}(s_n, t_j) \in \{\textit{accept}, \textit{error}\} \vee j = N_\textit{shifts}
@@ -544,10 +544,11 @@ First, our
 The original rule always requires at least one token to be shifted. However,
 after a delete repair, for example, all that may be required is one or more
 reductions in order to reach an \textit{accept} state. We fix this in two
-phases: first, we do not require any tokens to have been shifted (i.e.~we use $0
+phases: we do not require any tokens to have been shifted (i.e.~we use $0
 \leq j \leq N_\textit{shifts}$ whereas \citet{corchuelo02repairing} specify $0 <
-j \leq N_\textit{shifts}$); second, to avoid infinite loops, we require the LR
-parser to make progress ($S \ne [s_0 \ldots s_n]$).
+j \leq N_\textit{shifts}$); and then, to avoid the infinite loops that the first
+phase potentially introduces, we require the LR parser to make progress ($S \ne
+[s_0 \ldots s_n]$).
 
 Second, \citet{corchuelo02repairing} only explain in prose (spread amongst
 several topics over several pages) what we have captured as an algorithm in
