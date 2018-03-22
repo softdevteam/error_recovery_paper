@@ -290,6 +290,7 @@ Term: Factor "*" Term
 Factor: "(" Expr ")"
       | "INT" ;
 \end{lstlisting}
+\vspace{-10pt}
 \caption{An example grammar, its corresponding stategraph, and statetable.
   Each item within a state $[N \colon \alpha \bullet \beta]$ references one
   of the rule $N$'s productions; $\alpha$ and $\beta$ each
@@ -380,6 +381,7 @@ the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token.
       {(\textsf{action}(s_n, t_n) = \textit{reduce}\ N \colon \alpha)
        \wedge (\textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s')}
 \]
+\vspace{-15pt}
 \caption{Core reduction rules for $\lrarrow$. \textsc{LR Shift}
 advances the input by one token and grows the parsing stack, while
 \textsc{LR Reduce} unwinds the parsing stack when a production is complete
@@ -451,7 +453,7 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
  \textsf{action}(s_n, t_j) \in \{\textit{accept}, \textit{error}\} 
 \end{array}}
 \]
-
+\vspace{-7pt}
 \caption{The repair-creating reduction rules \cite{corchuelo02repairing}.
 \textsc{CR Insert} finds all terminals reachable from the current state and
 creates insert repairs for them (other than the EOF token `$\$$').
@@ -460,7 +462,7 @@ creates insert repairs for them (other than the EOF token `$\$$').
 state, or parses exactly $N_\textit{shift}$ tokens, then a shift repair per
 token shifted is created.}
 \label{fig:corchuelo:reductions}
-\vspace*{-8pt}
+\vspace*{-10pt}
 \end{figure}
 
 
@@ -505,14 +507,14 @@ def all_cr_star(pstack, toks):
 \end{lstlisting}
 \columnbreak
 \vspace*{-18pt}
-\caption{Our interpretation of the \citet{corchuelo02repairing} algorithm. The main function
+\caption{Our version of the \citet{corchuelo02repairing} algorithm. The main function
 \texttt{corchueloetall} takes in a (\emph{parsing stack}, \emph{token list})
 pair and returns: a (\emph{parsing stack}, \emph{token list}, \emph{repair
 sequence}) triple where \emph{repair sequence} is guaranteed to be a minimal
 cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\[9pt]
 %
 The algorithm maintains a todo list of lists (which we
-chose to model on \citet[p.~25]{cerecke03phd}); the first sub-list contains
+model on \citet[p.~25]{cerecke03phd} rather than the suggestion in \citet{corchuelo02repairing}); the first sub-list contains
 search nodes of cost 0, the second sub-list contains search nodes of cost 1 and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
@@ -530,6 +532,7 @@ The \texttt{rprs\_cst} function returns the cost of a repair sequence. Inserts
 and deletes cost 1, shifts 0.}
 \label{fig:corchuelo:algorithm}
 \end{multicols}
+\vspace*{-15pt}
 \end{figure}
 
 As with the original, we explain the approach in two parts. First is a new reduction relation
@@ -555,7 +558,7 @@ unclear whether non-uniform token costs are useful in practise
 \subsection{Ensuring minimal cost repair sequences aren't missed}
 \label{corchuelo:kimyi}
 
-\textsc{CR Shift 1} is an imperfect rule, with two flaws that mean that it is
+\textsc{CR Shift 1} has two flaws that mean that it is
 unable to generate some minimal cost repair sequences.
 
 \begin{figure}[tb]
@@ -588,7 +591,7 @@ unable to generate some minimal cost repair sequences.
 \end{array}
 }
 \]
-
+\vspace{-10pt}
 \caption{Two progressively improved versions of the \textsc{CR Shift} rule from
 Fig~\ref{fig:corchuelo:reductions}. \textsc{CR Shift 2} fixes the problem that
 \textsc{CR Shift} always forces a shift to occur, which misses repair sequences
@@ -655,6 +658,7 @@ Insert "INT", Shift, Shift, Insert "MULT"
 \end{tabular}
 \end{minipage}
 
+\vspace{-10pt}
 \caption{Repair sequences for the input `\texttt{+ 2 3}' (where an error is
 found at the first token) relative to the grammar from
 Figure~\ref{fig:exprgrammar}. (\subref{fig:crshift2:orig}) shows the three repair
@@ -688,12 +692,14 @@ Figure \ref{fig:corchuelo:kimyi} (as well as incorporating the fix from
 \textsc{CR Shift 1}, it is simpler, though it also inevitably slows down the
 search for repair sequences, as more are tried.
 
-An example of the additional sequences found by \textsc{CR Shift 2} and
-\textsc{CR Shift 3} are shown in Figure~\ref{fig:crshift2:example}.
-As this shows, the additional repair sequences can be significantly different:
-in this case, while the repair sequences findable by \textsc{CR Shift 1} and
-\textsc{CR Shift 2} all require deleting some of the user's input, \textsc{CR
-Shift 3}'s repair sequences include those which require no deletions.
+Examples of the additional repair sequences that \textsc{CR Shift 2} and
+\textsc{CR Shift 3} can produce are shown in Figure~\ref{fig:crshift2:example}. Although
+in this case \textsc{CR Shift 1} produces some minimal cost repair
+sequences, in some cases it finds none, while \textsc{CR Shift 2} or \texttt{CR
+Shift 3} find some. There is also a subtle difference in the style of repair
+sequences found by the various rules as shown in
+Figure~\ref{fig:crshift2:example}: \textsc{CR Shift 3} is much more likely to
+produce repair sequences that don't require deleting user input.
 
 
 \subsection{Implementation considerations}
