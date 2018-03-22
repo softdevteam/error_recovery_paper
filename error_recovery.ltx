@@ -253,7 +253,7 @@ friendly, error messages (see Figure~\ref{fig:javaerror} for an example), but
 allows us to reduce the cascading error problem still further.
 
 We first use one of the more recent algorithms in this family -- that of
-\citet{corchuelo02repairing} -- as a base, slightly correcting and extending it
+\citet{corchuelo02repairing} -- as a base, correcting and extending it
 to form an algorithm \corchueloplus (Section~\ref{corchueloplus}). We
 then show that an even newer algorithm which promises better performance -- that
 of \citet{kimyi10astar} -- has problems which cause it to miss many
@@ -395,13 +395,12 @@ The \citet{fischer79locally} family of error recovery algorithms has many
 members --- far too many to cover them all in one paper (see
 \citet{cerecke03phd} for a fairly comprehensive summary). We therefore start
 with one of the more recent members -- \citet{corchuelo02repairing}. We first
-explain, with one alteration for correctness, the original algorithm
+explain the original algorithm
 (Section~\ref{corchuelo:orig}), although we use different notation
 than the original, fill in several missing details,
 and provide a more formal definition of the overall algorithm. We then
-show that the algorithm needs a further alteration in order that it
-does not miss some minimal cost repair sequences
-(Section~\ref{corchuelo:kimyi}). Since the original description
+make two correctness fixes that ensure that the algorithm can always
+find minimal cost repair sequences (Section~\ref{corchuelo:kimyi}). Since the original description
 gives few details as to how the algorithm might best be implemented, we then
 explain the steps we took to make a performant implementation
 (Section~\ref{corchuelo:implementation}). Finally, we show how the algorithm can
@@ -429,7 +428,7 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \[
 \infer[\textsc{CR Insert}]
       {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow (S', [t_0 \ldots t_n], [\textit{insert}~t])}
-      {(\textsf{action}(s_n, t_0) \ne error) \wedge (t \ne \${})
+      {\textsf{action}(s_n, t) \ne error \wedge t \ne \${}
        \wedge ([s_0 \ldots s_n], [t, t_0 \ldots t_n]) \lrarrowstar (S', [t_0 \ldots t_n])}
 \]
 \vspace{-6pt}
@@ -441,14 +440,15 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \vspace{-3pt}
 \[
 \hspace{-12pt}
-\infer[\textsc{CR Shift}]
+\infer[\textsc{CR Shift 1}]
       {(S, [t_0 \ldots t_n]) \crarrow ([s_0 \ldots s_n], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
       {%
 \begin{array}{c}
 (S, [t_0 \ldots t_n]) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n])
- \wedge S \ne [s_0 \ldots s_n] \wedge 0 \leq j \leq N_\textit{shifts}
+ \wedge 0 < j \leq N_\textit{shifts}
 \\
- \textsf{action}(s_n, t_j) \in \{\textit{accept}, \textit{error}\} \vee j = N_\textit{shifts}
+ j = N_\textit{shifts} \vee
+ \textsf{action}(s_n, t_j) \in \{\textit{accept}, \textit{error}\} 
 \end{array}}
 \]
 
@@ -456,7 +456,7 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \textsc{CR Insert} finds all terminals reachable from the current state and
 creates insert repairs for them (other than the EOF token `$\$$').
 \textsc{CR Delete} creates deletion repairs if user defined input remains.
-\textsc{CR Shift} parses at most $N_\textit{shift}$ tokens; if it reaches an accept or error
+\textsc{CR Shift 1} parses at most $N_\textit{shift}$ tokens; if it reaches an accept or error
 state, or parses exactly $N_\textit{shift}$ tokens, then a shift repair per
 token shifted is created.}
 \label{fig:corchuelo:reductions}
@@ -536,24 +536,12 @@ As with the original, we explain the approach in two parts. First is a new reduc
 $\crarrow$ which defines when individual repairs are created
 (Figure~\ref{fig:corchuelo:reductions}). Second is an algorithm which
 determines when to use the $\crarrow$ relation (Figure~\ref{fig:corchuelo:algorithm}).
-As well as several changes for clarity, there are two major differences
-between our explanation and that of \citet{corchuelo02repairing}.
-
-First, our
-\textsc{CR Shift} reduction rule has an important correctness fix.
-The original rule always requires at least one token to be shifted. However,
-after a delete repair, for example, all that may be required is one or more
-reductions in order to reach an \textit{accept} state. We fix this in two
-phases: we do not require any tokens to have been shifted (i.e.~we use $0
-\leq j \leq N_\textit{shifts}$ whereas \citet{corchuelo02repairing} specify $0 <
-j \leq N_\textit{shifts}$); and then, to avoid the infinite loops that the first
-phase potentially introduces, we require the LR parser to make progress ($S \ne
-[s_0 \ldots s_n]$).
-
-Second, \citet{corchuelo02repairing} only explain in prose (spread amongst
+As well as several changes for clarity, the biggest difference is that
+Figure~\ref{fig:corchuelo:algorithm} captures semi-formally what
+\citet{corchuelo02repairing} explain in prose (spread amongst
 several topics over several pages) what we have captured as an algorithm in
-Figure~\ref{fig:corchuelo:algorithm}: perhaps inevitably when capturing prose as
-code, we have had to fill in several missing details. For example,
+Figure~\ref{fig:corchuelo:algorithm}: perhaps inevitably
+we have had to fill in several missing details. For example,
 \citet{corchuelo02repairing} do not define what the cost of repairs is: for
 simplicities sake, we define the cost of \textit{insert} and \textit{delete} as
 1, and \textit{shift} as 0.\footnote{It is trivial to extend this to variable
@@ -564,96 +552,149 @@ unclear whether non-uniform token costs are useful in practise
 \laurie{do we need an example here? probably...}
 
 
-\subsection{Finding minimal cost repair sequences that are missed by \textsc{CR Shift}}
+\subsection{Ensuring minimal cost repair sequences aren't missed}
 \label{corchuelo:kimyi}
 
-Both the original description of the \citet{corchuelo02repairing} algorithm, and
-our version of it, have a surprising weakness: they are not capable of finding
-some minimal cost repairs~\cite[p.~12]{kimyi10astar}. The
-weakness is, perhaps unsurprisingly, in the most complex rule, \textsc{CR Shift}
-which creates multiple shifts in one go. This causes it to miss intermediate
-positions from which minimal cost repair sequences may be found.
+\textsc{CR Shift 1} is an imperfect rule, with two flaws that mean that it is
+unable to generate some minimal cost repair sequences.
 
 \begin{figure}[tb]
 \small
 \[
+\hspace{-12pt}
 \infer[\textsc{CR Shift 2}]
+      {(S, [t_0 \ldots t_n]) \crarrow ([s_0 \ldots s_n], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
+      {%
+\begin{array}{c}
+(S, [t_0 \ldots t_n]) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n])
+ \wedge 0 \leq j \leq N_\textit{shifts}
+\\
+ (j = 0 \wedge S \ne [s_0 \ldots s_n]) \vee j = N_\textit{shifts} \vee
+ \textsf{action}(s_n, t_j) \in \{\textit{accept}, \textit{error}\}
+\end{array}}
+\]
+
+\[
+\infer[\textsc{CR Shift 3}]
       {(S, [t_0 \ldots t_n]) \crarrow (S', [t_j \ldots t_n], R)}
       {%
 \begin{array}{c}
 (S, [t_0 \ldots t_n]) \lrarrowstar (S', [t_j \ldots t_n])
- \wedge S \ne S'
  \wedge 0 \leq j \leq 1
 \\
- (j = 0 \wedge R = [])
+ (j = 0 \wedge S \ne S' \wedge R = [])
   \vee
   (j = 1 \wedge R = [\textit{shift}])
 \end{array}
 }
 \]
 
-\caption{An improved version of the \textsc{CR Shift} rule from
-Fig~\ref{fig:corchuelo:reductions}. Whereas \textsc{CR Shift} generates multiple
-shift repairs in one go, skipping `intermediate' repair positions, \textsc{CR
-Shift 2} generates at most one shift, exploring all intermediate repair
+\caption{Two progressively improved versions of the \textsc{CR Shift} rule from
+Fig~\ref{fig:corchuelo:reductions}. \textsc{CR Shift 2} fixes the problem that
+\textsc{CR Shift} always forces a shift to occur, which misses repair sequences
+whose final repair is a delete: it allows reductions to occur without
+a corresponding shift. \textsc{CR Shift 3} fixes a problem due
+to \textsc{CR Shift 1} and \textsc{CR Shift 2} generating multiple shift
+repairs in one go, skipping `intermediate' repair positions. \textsc{CR
+Shift 3} generates at most one shift, exploring all intermediate repair
 positions.}
 \label{fig:corchuelo:kimyi}
 \vspace*{-8pt}
 \end{figure}
 
 \begin{figure}
-\begin{tabular}[t]{llll}
+
+\begin{minipage}{0.4\textwidth}
+\begin{tabular}{p{0.02\textwidth}p{0.38\textwidth}}
 \begin{subfigure}{0.02\textwidth}
-\vspace{-31.5pt}
 \caption{}
 \label{fig:crshift2:orig}
 \end{subfigure}
 &
-\hspace{-6pt}
+\begin{minipage}[t]{0.45\textwidth}
+\vspace{-7pt}
 \begin{lstlisting}
 Delete, Delete
-Delete, Shift, Delete
 Delete, Shift, Insert "PLUS"
 Delete, Shift, Insert "MULT"
 \end{lstlisting}
-&
+\end{minipage}
+\\
 \begin{subfigure}{0.02\textwidth}
-\vspace{-31.5pt}
+\vspace{-5.5pt}
 \caption{}
-\label{fig:crshift2:new}
+\label{fig:crshift2:fix1}
 \end{subfigure}
 &
-\hspace{-6pt}
+\begin{minipage}[t]{0.38\textwidth}
+\vspace{-10pt}
+\begin{lstlisting}
+Delete, Shift, Delete
+\end{lstlisting}
+\end{minipage}
+\end{tabular}
+\end{minipage}
+%
+\begin{minipage}{0.48\textwidth}
+\vspace{-20.5pt}
+\begin{tabular}{p{0.02\textwidth}p{0.45\textwidth}}
+\begin{subfigure}{0.02\textwidth}
+\caption{}
+\label{fig:crshift2:fix2}
+\end{subfigure}
+&
+\begin{minipage}[t]{0.45\textwidth}
+\vspace{-7pt}
 \begin{lstlisting}
 Insert "INT", Shift, Delete
 Insert "INT", Shift, Shift, Delete
 Insert "INT", Shift, Shift, Insert "PLUS"
 Insert "INT", Shift, Shift, Insert "MULT"
 \end{lstlisting}
+\end{minipage}
 \end{tabular}
+\end{minipage}
 
 \caption{Repair sequences for the input `\texttt{+ 2 3}' (where an error is
 found at the first token) relative to the grammar from
-Figure~\ref{fig:exprgrammar}. (\subref{fig:crshift2:orig}) shows the four repair
-sequences that the original \textsc{CR Shift} rule is capable of finding.
-(\subref{fig:crshift2:new}) shows the four additional repair sequences that the
-new \texttt{CR Shift 2} rule is capable of finding.}
+Figure~\ref{fig:exprgrammar}. (\subref{fig:crshift2:orig}) shows the three repair
+sequences that the original \textsc{CR Shift 1} rule is capable of finding.
+(\subref{fig:crshift2:fix1}) shows the additional repair sequence that is found by \textsc{CR Shift 2}.
+(\subref{fig:crshift2:fix2}) shows the four additional repair sequences that the
+\texttt{CR Shift 3} rule is capable of finding.}
 \label{fig:crshift2:example}
 \end{figure}
 
-The solution is therefore simple: at most one shift can be generated at any one
-time so that intermediate positions are not missed. A replacement reduction rule
-\textsc{CR Shift 2} is shown in Figure~\ref{fig:corchuelo:kimyi} (loosely based
-on the \textsc{R3S-n} rule from \cite[p.~12]{kimyi10astar}, though their rule
-shares the same correctness problem with always requiring a shift that we fixed
-in the previous section for \textsc{CR Shift}). Relative to
-\textsc{CR Shift}, it is simpler, though it also inevitably slows down the
-search for repair sequences, since more are tried. An example of the additional
-repair sequences it can find is shown in Figure~\ref{fig:crshift2:example}.
-As this example shows, the additional repair sequences can by significantly
-different: while the repair sequences findable by \textsc{CR Shift} all require
-deleting some of the user's input, \textsc{CR Shift 2}'s repair sequences
-include those which require no deletions.
+First, \textsc{CR Shift 1} requires at least one token to be shifted. However,
+after a repair, all that may be required is one or more reductions in order to
+reach an \textit{accept} state. \textsc{CR Shift 2} in Figure~\ref{fig:corchuelo:kimyi}
+shows the two-phase fix which addresses this problem.
+We first change the condition $0 < j \leq N_\textit{shifts}$ to $0 \leq j \leq
+N_\textit{shifts}$ (i.e. we don't force the LR parser to consume any tokens).
+However, this then opens the possibility of an infinite loop. We avoid this by
+saying that, if the input is not advanced, the parsing stack must have changed
+($j = 0 \wedge S \ne S'$). Put another way, in either case, we require progress
+to be made, even if that progress does not require consuming any input.
+
+Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
+at a time. This cause them to miss intermediate
+positions from which minimal cost repair sequences may be found
+(this problem, and the basis of a fix, derive from \cite[p.~12]{kimyi10astar},
+though their suggestion suffers from the problem fixed by \textsc{CR Shift 1}).
+The solution is simple: at most one shift can be generated at any one
+time, so that intermediate positions are not missed. \textsc{CR Shift 3} in
+Figure \ref{fig:corchuelo:kimyi} (as well as incorporating the fix from
+\textsc{CR Shift 2}) generates at most one shift repair at a time. Relative to
+\textsc{CR Shift 1}, it is simpler, though it also inevitably slows down the
+search for repair sequences, as more are tried.
+
+An example of the additional sequences found by \textsc{CR Shift 2} and
+\textsc{CR Shift 3} are shown in Figure~\ref{fig:crshift2:example}.
+As this shows, the additional repair sequences can be significantly different:
+in this case, while the repair sequences findable by \textsc{CR Shift 1} and
+\textsc{CR Shift 2} all require deleting some of the user's input, \textsc{CR
+Shift 3}'s repair sequences include those which require no deletions.
+
 
 \subsection{Implementation considerations}
 \label{corchuelo:implementation}
