@@ -771,7 +771,56 @@ better for a garbage collected language.
 \subsection{Results}
 \section{Related work}
 
-\cite{corchuelo02repairing}
+Error recovery techniques have been explored for so long that there is not a
+definitive reference, or overview of them. However, \citet{degano95comparison}
+contains an overall historical analysis and \citet{cerecke03phd} an excellent
+overview of many of the approaches which build on \citet{fischer79locally}. Both
+must be supplemented with more recent works, such as we have cited in this
+paper,
+
+The biggest limitation of error recovery algorithms in the
+\citet{fischer79locally} family is that they are local: they find repairs at the
+point that an error is discovered, which may be later in the file than the cause
+of the error. Thus even when they successfully recover from an error, the repair
+sequence reported may be very different from the fix the user considers
+appropriate. Perhaps the most common -- and without doubt the most frustrating
+-- example of this is missing a \texttt{\}} character within the method of a
+Java-like languages. \citet{santos18syntax} present an intriguing new approach
+to what has previously been a computationally impractical problem. They use
+machine learning to train a system on syntactically correct programs: when a
+syntax error is encountered, they use their model to suggest appropriate global
+fixes. Although they also use \laurie{the same blackbox data we do} their
+experimental methodology is very different: they are looser in that they only
+consider errors which can be fixed with by a single token (discarding 42\% of
+the data \cite[p.~8]{santos18syntax}) whereas we attempt to fix errors which
+span multiple tokens; they are much stricter in that they focus much more on
+trying to find exactly the same type of repair as the human user actually
+applied themselves. It is thus difficult to directly compare their results to
+ours. However, by the high bar they have set themselves, they are able to repair
+52\% of single-token errors (i.e.~about 30\% of all possible errors; for
+reference, we repair \laurie{XXX\%}). It seems likely that future machine
+learning approaches will improve upon this figure, although the size of the
+problem space suggests it will be hard to get close to 100\%{}. It seems likely
+that an ideal system will mix both deterministic approaches (such as ours) with
+probabilistic approaches (such as \citet{santos18syntax}), possibly even with
+multiple sub-approaches (such as \citet{deJonge12natural}).
+
+Although one of our paper's aims is to find all minimal cost repair sequences,
+it is unclear how best to present them to users leading to questions such as:
+should they be simplified? should a subset be presented? and so on. There is a
+body of work which has tried to understand how best to structure compiler error
+messages (normally in the context of those learning to program). However, the
+results are hard to interpret: some studies find that more complex error
+messages are not useful \cite{nienaltowski08error}, while others suggest they
+are \cite{prather17novices}.
+
+While the programming language world has largely forgotten the approach of
+\citet{aho72minimum}, there are a number of successor works, most recently that
+of~\citet{rajasekaran16error}. These improve on the time complexity, though none
+that we are aware of address the issue of how to present what has been done to
+the user.
+
+\cite{mckenzie95error}
 
 \cite{deJonge12natural}
 
