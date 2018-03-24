@@ -592,12 +592,11 @@ unable to generate some minimal cost repair sequences.
 }
 \]
 \vspace{-10pt}
-\caption{Two progressively improved versions of the \textsc{CR Shift} rule from
-Fig~\ref{fig:corchuelo:reductions}. \textsc{CR Shift 2} fixes the problem that
+\caption{\textsc{CR Shift 2} fixes the problem that
 \textsc{CR Shift} always forces a shift to occur, which misses repair sequences
 whose final repair is a delete: it allows reductions to occur without
-a corresponding shift. \textsc{CR Shift 3} fixes a problem due
-to \textsc{CR Shift 1} and \textsc{CR Shift 2} generating multiple shift
+a corresponding shift. \textsc{CR Shift 3} fixes the problem that both
+\textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shift
 repairs in one go, skipping `intermediate' repair positions. \textsc{CR
 Shift 3} generates at most one shift, exploring all intermediate repair
 positions.}
@@ -705,17 +704,13 @@ produce repair sequences that don't require deleting user input.
 \subsection{Implementation considerations}
 \label{corchuelo:implementation}
 
-The fairly abstract definitions we have given thus far do not obviously lead to
-an efficient implementation and \citet{corchuelo02repairing} give few meaningful
-hints. A handful of techniques are fairly obvious: for example, we do not,
-as \textsc{CR Insert} may suggest, ever copy the list of input. However, we
-tried many other techniques to speed things up, most of which were unsuccessful,
-and a handful of which were too complex to be worth the gain. Ultimately we
-found that two were particularly effective and simple.
+The fairly definitions we have given thus far do not obviously lead to
+an efficient implementation and \citet{corchuelo02repairing} give few useful
+hints. We found, from the many we tried, that two techniques were particularly
+effective at improving performance while remaining fairly simple.
 
 First, we use the same list-of-lists queue data-structure as
-\citet[p.~25]{cerecke03phd}, which is simpler and faster than more general
-data-structures. Rather than a general queue data-structure (probably based on a tree), the todo list
+\citet[p.~25]{cerecke03phd}. Rather than use a general queue data-structure (probably based on a tree), the todo list
 contains one sub-list per cost (i.e.~ the first sub-list contains search nodes
 of cost 0, the second sub-list contains search nodes of cost 1 and so on).
 Since we always know which cost we are currently considering,
@@ -723,8 +718,8 @@ finding the next todo element requires only a single \texttt{pop} of the
 current sub-list (line 8 of Figure~\ref{fig:corchuelo:algorithm}). Similarly,
 adding elements requires a simple \texttt{append} to the relevant sub-list
 (lines 18, 21, 22). This
-data-structure works well in our situation because we only ever search small
-cost values (getting into double digits is unusual for real-world
+data-structure works well in our situation because costs never get very
+big (getting into double digits is unusual for real-world
 grammars); and each neighbour generated from a node with cost $c$ will
 have a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
 
@@ -736,7 +731,7 @@ Every node in such a tree has a reference to a single parent (or \texttt{null} f
 root node) but no references to child nodes. Since our implementation is written
 in Rust -- a language without garbage collection -- we use simple reference
 counting on nodes (i.e.~a parent is only freed when it is not in a todo list and
-no children point to it). When the error recovery algorithm searches, it
+no children point to it). When the error recovery algorithm starts, it
 converts the main parsing stack (a list) into a parent pointer tree; and
 repair sequences start as empty parent pointer trees. The $\crarrow$ part
 of our implementation thus operates exclusively on parent pointer trees.
