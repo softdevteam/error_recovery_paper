@@ -555,7 +555,7 @@ unclear whether non-uniform token costs are useful in practise
 \laurie{do we need an example here? probably...}
 
 
-\subsection{Ensuring minimal cost repair sequences aren't missed}
+\subsection{Ensuring that minimal cost repair sequences aren't missed}
 \label{corchuelo:kimyi}
 
 \textsc{CR Shift 1} has two flaws that mean that it is
@@ -706,7 +706,7 @@ produce repair sequences that don't require deleting user input.
 
 The definitions we have given thus far do not obviously lead to
 an efficient implementation and \citet{corchuelo02repairing} give few useful
-hints. We found that three techniques, of the many we tried, were both
+hints. We found that three techniques, two of them unique to our work, were both
 effective at improving performance while being simple to implement.
 
 First, rather than use a general queue data-structure (probably based on a
@@ -724,21 +724,20 @@ big (getting into double digits is unusual for real-world
 grammars); and each neighbour generated from a node with cost $c$ will
 have a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
 
-Second, the algorithm creates many duplicates as it operates, because the
-$\lrarrow$ relation reduces multiple seemingly distinct search nodes to the same
+Second, the algorithm creates many duplicates, as the
+$\lrarrow$ relation can reduce seemingly distinct search nodes to the same
 neighbour. We therefore modify the queue data-structure above to be a
-list-of-ordered-sets (i.e.~a set which preserves insertion order). This has
+list-of-ordered-hashsets (i.e.~a hashset which preserves insertion order). This has
 near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
-allows us to identify duplicates with near-identical performance to a hashmap.
-This allows us to only add unique triples to the relevant todo list. While this
-clearly doesn't find all duplicates (if an entry $U$ has been removed from the
-todo list, then an equivalent new node $U'$ will not be detected as a duplicate), it
+naturally weeds out duplicates with near-identical performance to an unordered hashset.
+Although this can't find all duplicates (if an entry $U$ has been removed from the
+todo list, then an equivalent node $U'$ will not later be detected as a duplicate), it
 finds enough to be a substantial speed-up, and avoids the impractical overhead of
-remembering all past nodes. For example, even on the simple
-example from Figure~\ref{fig:javaerror}, we observed 54\% nodes being detected as
-duplicates (though this figure varies as the search is inherently
-non-deterministic), with a commensurate effect on performance.
+remembering all past nodes. Although it varies substantially depending on the
+example, this can detect 20\% or more of nodes as duplicates, with a
+commensurate effect on performance.
 
+\label{cactusnodes}
 Third, we do not use lists to represent parsing stacks and repair sequences
 as Figure~\ref{fig:corchuelo:algorithm} may suggest. We found
 that this representation consumes noticeably more memory, and is slightly less
@@ -751,16 +750,69 @@ no children point to it). When the error recovery algorithm starts, it
 converts the main parsing stack (a list) into a parent pointer tree; and
 repair sequences start as empty parent pointer trees. The $\crarrow$ part
 of our implementation thus operates exclusively on parent pointer trees.
-To our surprise, this appears to be a natural fit
-for modern \texttt{malloc} implementations, which we found struggled when we
-used many variable sized objects, and more than makes up for the poorer cache
-performance implied by the inevitable scattering of neighbouring nodes
-throughout memory. However, it is quite possible that a different representation would be
+Although this does mean that neighbouring nodes are scattered throughout
+memory, it naturally leads to memory sharing, which seems to offset
+some of the expected poor cache behaviour; it also seems to be a good
+fit with modern \texttt{malloc} implementations, which are particularly
+efficient when allocating and freeing objects of the same size.
+However, it is quite possible that a different representation would be
 better for a garbage collected language.
 
 
 \subsection{Finding all minimum cost repair sequences}
 \label{corchuelo:allminimumcost}
+
+The algorithm as described to this point non-deterministically completes as soon
+as it has found the first minimal cost repair sequence. This has two effects: a
+single repair sequence is presented to the user (even though it may be very
+difficult to the repair sequence they would expect); and the repair sequence
+presented varies from run to run. In this section we show how the
+\citet{corchuelo02repairing} algorithm can be efficiently extended to find all
+minimal cost repair sequences. We later show that its performance is reasonable
+(Section~\ref{experiment}).
+
+The easiest way to solve the problem is not to stop as soon as the first
+successful repair sequence is found, but instead to continue exploring cost $c$
+as normal, building up a set of successful repair sequences. By definition any
+other minimal cost repair sequences will also cost $c$. Todo sub-lists with a
+cost $> c$ can thus be emptied, saving memory, as soon as the first successful
+repair sequence is found; and, after this point, neighbours with a cost $> c$
+can be immediately discarded.
+
+While this works, it can substantially worsen performance, because there can be
+many remaining nodes in $c$, which may have many remaining neighbours.
+Fortunately, we can substantially improve the situation by merging together
+nodes with \emph{compatible} repair sequences. First we make use of the natural
+properties of the ordered sets in our todo data-structure: we only hash a search
+node's parsing stack and remaining input (i.e.~we do not hash a search node's
+repairs); and we say that two nodes are equal if their parsing stack and
+remaining input are identical, and their repairs compatible. Thus two
+incompatible nodes may have the same hash but will not compare equal. Two nodes
+are compatible if their repairs end in the same number of shifts (which includes
+both ending in zero shifts). This restriction results from the
+two ways that nodes can be deemed successful: if they reach an accept node (line
+9, Figure~\ref{fig:corchuelo:algorithm}) (which is only affected by a node's
+parsing stack); or if they end in $N_\textit{shifts}$ shift repairs (line 10).
+If we merged together nodes which ended in differing numbers of shifts, we would
+obtain different results depending on whether we merged a node with with more
+end shifts into a node with fewer end shifts or vice versa.
+
+We then need to find a sensible representation for merging nodes, because our
+fairly liberal definition of compatibility means that very different repair
+sequences can be merged together (e.g.~the two repair sequences may not be of
+the same length) and that many nodes may be merged into one. A simple, but
+extremely inefficient, representation would be to say that each search node
+stores a set of repair sequences. Instead we use a representation that makes
+further use of parent pointer trees (see Section~\ref{cactusnodes}). Search
+nodes no longer store repair sequences directly, but instead store a parent
+pointer tree of \texttt{RepairMerge} nodes. Such nodes come in three kinds:
+\texttt{Terminator}, the root of the parent pointer tree;
+\texttt{Repair(\textit{r})}, a normal repair \textit{r};
+\texttt{Merge(\textit{r}, \textit{others})} where \textit{others} is
+(notionally) a set of \texttt{RepairMerge} parent pointer trees. Since we don't
+really care at this stage if the set contains duplicates, we model it is a
+parent pointer tree i.e.~\textit{others} is a parent pointer tree of
+\texttt{RepairMerge} parent pointer trees. \laurie{need to show an example}
 
 
 \section{\cite{kimyi10astar}}
