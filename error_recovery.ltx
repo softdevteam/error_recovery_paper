@@ -704,18 +704,19 @@ produce repair sequences that don't require deleting user input.
 \subsection{Implementation considerations}
 \label{corchuelo:implementation}
 
-The fairly definitions we have given thus far do not obviously lead to
+The definitions we have given thus far do not obviously lead to
 an efficient implementation and \citet{corchuelo02repairing} give few useful
-hints. We found, from the many we tried, that two techniques were particularly
-effective at improving performance while remaining fairly simple.
+hints. We found that three techniques, of the many we tried, were both
+effective at improving performance while being simple to implement.
 
-First, we use the same list-of-lists queue data-structure as
-\citet[p.~25]{cerecke03phd}. Rather than use a general queue data-structure (probably based on a tree), the todo list
-contains one sub-list per cost (i.e.~ the first sub-list contains search nodes
+First, rather than use a general queue data-structure (probably based on a
+tree), we use a similar queue data-structure to
+\citet[p.~25]{cerecke03phd}. This consists of one sub-list per cost (i.e.~ the
+first sub-list contains search nodes
 of cost 0, the second sub-list contains search nodes of cost 1 and so on).
-Since we always know which cost we are currently considering,
-finding the next todo element requires only a single \texttt{pop} of the
-current sub-list (line 8 of Figure~\ref{fig:corchuelo:algorithm}). Similarly,
+Since we always know what cost we are currently investigating,
+finding the next todo element requires only a single \texttt{pop}
+(line 8 of Figure~\ref{fig:corchuelo:algorithm}). Similarly,
 adding elements requires a simple \texttt{append} to the relevant sub-list
 (lines 18, 21, 22). This
 data-structure works well in our situation because costs never get very
@@ -723,7 +724,22 @@ big (getting into double digits is unusual for real-world
 grammars); and each neighbour generated from a node with cost $c$ will
 have a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
 
-Second, we do not use lists to represent parsing stacks and repair sequences
+Second, the algorithm creates many duplicates as it operates, because the
+$\lrarrow$ relation reduces multiple seemingly distinct search nodes to the same
+neighbour. We therefore modify the queue data-structure above to be a
+list-of-ordered-sets (i.e.~a set which preserves insertion order). This has
+near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
+allows us to identify duplicates with near-identical performance to a hashmap.
+This allows us to only add unique triples to the relevant todo list. While this
+clearly doesn't find all duplicates (if an entry $U$ has been removed from the
+todo list, then an equivalent new node $U'$ will not be detected as a duplicate), it
+finds enough to be a substantial speed-up, and avoids the impractical overhead of
+remembering all past nodes. For example, even on the simple
+example from Figure~\ref{fig:javaerror}, we observed 54\% nodes being detected as
+duplicates (though this figure varies as the search is inherently
+non-deterministic), with a commensurate effect on performance.
+
+Third, we do not use lists to represent parsing stacks and repair sequences
 as Figure~\ref{fig:corchuelo:algorithm} may suggest. We found
 that this representation consumes noticeably more memory, and is slightly less
 efficient, than using parent pointer trees (often called `cactuses').
