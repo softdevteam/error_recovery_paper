@@ -89,7 +89,7 @@ suffer much less from this problem but have seen little practical use because
 their typical performance was seen as poor and their worse case unbounded.
 In this paper we show that not only can an advanced approach run in acceptable time
 -- which we define as spending a maximum of 0.5s in error recovery per file -- but
-that we can increase the complexity of the problem to finding \emph{all} minimal
+that we can increase the complexity of the problem to finding \emph{all} minimum
 cost recovery options, and still do so within acceptable time. We first extend
 an existing algorithm, before introducing a new, faster, alternative \mf. We
 validate our algorithms with a corpus of \corpussize real-world
@@ -119,11 +119,11 @@ two weaknesses limiting their usefulness: only limited consideration is
 given to the context of the error; and the only recoveries attempted are the
 skipping of input until a pre-determined synchronisation
 token is reached~\cite[p.~3]{degano95comparison} or the insertion of a
-single synchronisation token. Inappropriate recoveries tend to cause a
+single synchronisation token. Inappropriate recoveries cause a
 cascade of spurious syntax errors (see
 Figure~\ref{fig:javaerror} for an example): programmers quickly learn that
 only the position of the first error -- not the reported repair, nor the position of
-subsequent errors -- can really be relied upon to be accurate.
+subsequent errors -- can be relied upon to be accurate.
 
 \begin{figure}[t]
 \begin{minipage}{0.48\textwidth}
@@ -195,14 +195,14 @@ the input equivalent to `\texttt{int x; y;}'). This immediately leads to a spuri
 since `\texttt{y}' on its own is not a valid statement. The \corchueloplus and \mf
 recovery algorithms (both produce the output shown in \subref{lst:javaerror:mf}) also spot the
 error when it encounters `\texttt{y}', and then use the
-Java grammar to find minimal cost repair sequences. These two algorithms find
+Java grammar to find minimum cost repair sequences. These two algorithms find
 and report to the user three separate repair sequences: one can delete `\texttt{y}'
 entirely (`\texttt{int x;}'), or insert a comma
 (`\texttt{int x, y;}'), or insert an equals sign (\texttt{`int x = y;'}). In
 this case, all three repair sequences have the same rank, and are thus presented
 in an arbitrary order. However, it is important to note that the first repair
 sequence is then used to repair the input for subsequent parsing. Presenting all
-three minimal cost repair sequences to the user gives a much greater chance that one
+three minimum cost repair sequences to the user gives a much greater chance that one
 matches their original intention.}
 \label{fig:javaerror}
 %\end{minipage}
@@ -218,7 +218,7 @@ alternative (possibly ambiguous) grammar which allows the parser to recover.
 The implementation complexity of this algorithm, and the challenge of explaining
 to users what has been done, probably explain why it has fallen out of
 favour in programming language circles. A simpler family of algorithms, which
-trace their roots to \citet{fischer79locally}, instead try to find a single minimal cost
+trace their roots to \citet{fischer79locally}, instead try to find a single minimum cost
 \emph{repair sequence} of token insertions and deletions which allow the parser to
 recover. Algorithms in this family are good at recovering from errors and are
 easily adapted to give human-friendly feedback. However, they
@@ -234,30 +234,31 @@ In this paper we first test the following hypothesis:
 
 We (somewhat arbitrarily) define `acceptable time' as 0.5s for error recovery
 per file (i.e.~all errors in a file must be
-recovered from within this time) since we think that even the most demanding user
-will tolerate that delay in order to get better quality results. We
+recovered from within 0.5s) since we think that even the most demanding user
+will tolerate such a delay. We
 strongly validate this hypothesis. To a
 reasonable extent our access to faster hardware made it more likely that we
 can validate this hypothesis than past researchers. However, while existing
-algorithms in the \citet{fischer79locally} family aim to find a single
-minimal cost repair sequence, we also test a second, stronger, hypothesis:
+algorithms in the \citet{fischer79locally} family can find at most a single
+minimum cost repair sequence, we also test a second, stronger, hypothesis:
 
 \begin{description}
-  \item[H2] Nearly all minimal cost repair sequences can be found in acceptable time.
+  \item[H2] The complete set of minimum cost repair sequences can nearly
+    always be found in acceptable time.
 \end{description}
 
 We also strongly validate this hypothesis. In other words, we are able to tackle a
-harder version of the problem than any previous algorithm, and do so in
+harder version of the problem than any previous algorithm, and still do so in
 acceptable time. This not only leads to higher quality, and more programmer
 friendly, error messages (see Figure~\ref{fig:javaerror} for an example), but
 allows us to reduce the cascading error problem still further.
 
 We first use one of the more recent algorithms in this family -- that of
-\citet{corchuelo02repairing} -- as a base, correcting and extending it
-to form an algorithm \corchueloplus (Section~\ref{corchueloplus}). We
+\citet{corchuelo02repairing} -- as a base, correcting and substantially extending it
+to form a new algorithm \corchueloplus (Section~\ref{corchueloplus}). We
 then show that an even newer algorithm which promises better performance -- that
 of \citet{kimyi10astar} -- has problems which cause it to miss many
-minimal cost repair sequences (Section~\ref{kimyi}). However, we are able to use
+minimum cost repair sequences (Section~\ref{kimyi}). However, we are able to use
 it as partial inspiration for an entirely new error recovery algorithm \mf
 (Section~\ref{mf}), which is approximately \mfratioovercorchuelo faster than
 \corchueloplus. We aim for both algorithms to be as simple as possible, so that
@@ -306,7 +307,7 @@ We assume a high-level understanding of the mechanics of parsing in this paper,
 but in this section we provide a handful of definitions, and a brief refresher
 of relevant low-level details, needed to understand the rest of this paper.
 Although the parsing tool we created for this paper is written in Rust, we
-appreciate that this still an unfamiliar language to most readers: code examples
+appreciate that this is still an unfamiliar language to most readers: code examples
 are therefore given in Python which, we hope, is familiar to most.
 
 Although there are many flavours of parsing, the \citet{fischer79locally} family
@@ -360,12 +361,12 @@ returns the goto state for the state $s$ and the nonterminal $N$. We then define
 a reduction relation $\lrarrow$ for $(\textit{parsing stack}, \textit{token
 list})$ pairs with two reduction rules as shown in Figure~\ref{fig:lrreduction}.
 A full LR parse $\lrarrowstar$ repeatedly applies the two $\lrarrow$ reductions
-until neither applies, which means that either \textsf{action}$(s_n, i)$ is:
+until neither applies, which means that \textsf{action}$(s_n, i)$ is either:
 $\textit{accept}$ (i.e.~the input has been fully parsed); or
 $\textit{error}$ (i.e.~an error has been detected at position $i$). A
 full parse of an empty file takes a starting pair of $([0], [t_0 \ldots t_n, \$])$,
-where state $0$ is expected to represent the entry point into the stategraph, $t_0 \ldots t_n$ are
-the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token.
+where state $0$ is expected to represent the entry point into the stategraph, $t_0 \ldots t_n$
+is the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token.
 
 \begin{figure}[t]
 \small
@@ -397,18 +398,19 @@ The \citet{fischer79locally} family of error recovery algorithms has many
 members --- far too many to cover them all in one paper (see
 \citet{cerecke03phd} for a fairly comprehensive summary). We therefore start
 with one of the more recent members -- \citet{corchuelo02repairing}. We first
-explain the original algorithm
-(Section~\ref{corchuelo:orig}), although we use different notation
-than the original, fill in several missing details,
-and provide a more formal definition of the overall algorithm. We then
+explain the original algorithm (Section~\ref{corchuelo:orig}), although we use
+different notation than the original, fill in several missing details, and
+provide a more formal definition. We then
 make two correctness fixes that ensure that the algorithm can always
-find minimal cost repair sequences (Section~\ref{corchuelo:kimyi}). Since the original description
+find minimum cost repair sequences (Section~\ref{corchuelo:kimyi}). Since the original description
 gives few details as to how the algorithm might best be implemented, we then
 explain the steps we took to make a performant implementation
-(Section~\ref{corchuelo:implementation}). Finally, we show how the algorithm can
-be extended to find all minimum cost repair sequences
-(Section~\ref{corchuelo:allminimumcost}). It is this final algorithm that we
-refer to as \corchueloplus and which forms part of our later evaluation.
+(Section~\ref{corchuelo:implementation}). We then show how the algorithm can
+be extended to efficiently find the complete set of minimum cost repair sequences
+(Section~\ref{corchuelo:allminimumcost}). This allows
+us to make an algorithm less susceptible to the cascading error problem
+(Section~\ref{cpctplus}): we refer to this final algorithm
+as \corchueloplus.
 
 
 \subsection{The original algorithm}
@@ -477,7 +479,7 @@ def corchueloetal(pstack, toks):
       cur_cst += 1
       continue
     n = todo[cur_cst].pop()
-    if action(n[0][-1], n[1]) == <!{\textrm{\textit{accept}}}!> \
+    if action(n[0][-1], n[1][0]) == <!{\textrm{\textit{accept}}}!> \
        or ends_in_N_shifts(n[2]):
       return n
     elif len(n[1]) - len(toks) == N_total:
@@ -510,17 +512,18 @@ def all_cr_star(pstack, toks):
 \caption{Our version of the \citet{corchuelo02repairing} algorithm. The main function
 \texttt{corchueloetall} takes in a (\emph{parsing stack}, \emph{token list})
 pair and returns: a (\emph{parsing stack}, \emph{token list}, \emph{repair
-sequence}) triple where \emph{repair sequence} is guaranteed to be a minimal
+sequence}) triple where \emph{repair sequence} is guaranteed to be a minimum
 cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\[9pt]
 %
-The algorithm maintains a todo list of lists (which we
-model on \citet[p.~25]{cerecke03phd} rather than the suggestion in \citet{corchuelo02repairing}); the first sub-list contains
+The algorithm maintains a todo list of lists (modelled
+on \citet[p.~25]{cerecke03phd} rather than the suggestion
+in \citet{corchuelo02repairing}); the first sub-list contains
 search nodes of cost 0, the second sub-list contains search nodes of cost 1 and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
 lowest cost node $n$ is picked (line 8). If $n$ represents an accept state (line
 9) or if the last $N_\textit{shifts}$ repairs are shifts (line 10), then $n$
-represents a minimal cost repair sequence and the algorithm terminates
+represents a minimum cost repair sequence and the algorithm terminates
 successfully (line 11). If $n$ has already consumed $N_\textit{total}$ tokens,
 then it is discarded (lines 12, 13). Otherwise, $n$'s neighbours
 are gathered using the $\crarrow$ relation (lines 14, 32--35). To avoid
@@ -542,8 +545,7 @@ determines when to use the $\crarrow$ relation (Figure~\ref{fig:corchuelo:algori
 As well as several changes for clarity, the biggest difference is that
 Figure~\ref{fig:corchuelo:algorithm} captures semi-formally what
 \citet{corchuelo02repairing} explain in prose (spread amongst
-several topics over several pages) what we have captured as an algorithm in
-Figure~\ref{fig:corchuelo:algorithm}: perhaps inevitably
+several topics over several pages): perhaps inevitably
 we have had to fill in several missing details. For example,
 \citet{corchuelo02repairing} do not define what the cost of repairs is: for
 simplicities sake, we define the cost of \textit{insert} and \textit{delete} as
@@ -555,11 +557,11 @@ unclear whether non-uniform token costs are useful in practise
 \laurie{do we need an example here? probably...}
 
 
-\subsection{Ensuring that minimal cost repair sequences aren't missed}
+\subsection{Ensuring that minimum cost repair sequences aren't missed}
 \label{corchuelo:kimyi}
 
 \textsc{CR Shift 1} has two flaws that mean that it is
-unable to generate some minimal cost repair sequences.
+unable to generate some minimum cost repair sequences.
 
 \begin{figure}[tb]
 \small
@@ -669,7 +671,7 @@ sequences that the original \textsc{CR Shift 1} rule is capable of finding.
 \end{figure}
 
 First, \textsc{CR Shift 1} requires at least one token to be shifted. However,
-after a repair, all that may be required is one or more reductions in order to
+after a non-shift repair, all that may be required is one or more reductions in order to
 reach an \textit{accept} state. \textsc{CR Shift 2} in Figure~\ref{fig:corchuelo:kimyi}
 shows the two-phase fix which addresses this problem.
 We first change the condition $0 < j \leq N_\textit{shifts}$ to $0 \leq j \leq
@@ -680,8 +682,8 @@ saying that, if the input is not advanced, the parsing stack must have changed
 to be made, even if that progress does not require consuming any input.
 
 Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
-at a time. This cause them to miss intermediate
-positions from which minimal cost repair sequences may be found
+at a time. This cause them to skip intermediate
+positions from which minimum cost repair sequences may be found
 (this problem, and the basis of a fix, derive from \cite[p.~12]{kimyi10astar},
 though their suggestion suffers from the problem fixed by \textsc{CR Shift 1}).
 The solution is simple: at most one shift can be generated at any one
@@ -693,7 +695,7 @@ search for repair sequences, as more are tried.
 
 Examples of the additional repair sequences that \textsc{CR Shift 2} and
 \textsc{CR Shift 3} can produce are shown in Figure~\ref{fig:crshift2:example}. Although
-in this case \textsc{CR Shift 1} produces some minimal cost repair
+in this case \textsc{CR Shift 1} produces some minimum cost repair
 sequences, in some cases it finds none, while \textsc{CR Shift 2} or \texttt{CR
 Shift 3} find some. There is also a subtle difference in the style of repair
 sequences found by the various rules as shown in
@@ -717,19 +719,20 @@ of cost 0, the second sub-list contains search nodes of cost 1 and so on).
 Since we always know what cost we are currently investigating,
 finding the next todo element requires only a single \texttt{pop}
 (line 8 of Figure~\ref{fig:corchuelo:algorithm}). Similarly,
-adding elements requires a simple \texttt{append} to the relevant sub-list
+adding elements requires only an \texttt{append} to the relevant sub-list
 (lines 18, 21, 22). This
-data-structure works well in our situation because costs never get very
-big (getting into double digits is unusual for real-world
-grammars); and each neighbour generated from a node with cost $c$ will
+data-structure works well in our situation because costs never get
+big (double digits is unusual for real-world
+grammars); and each neighbour generated from a node with cost $c$ has
 have a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
 
 \label{duplicatenodes}
-Second, the algorithm often creates duplicates due to
-$\lrarrowstar$ repeatedly using the \textsc{LR Reduce} rule (i.e.~two parsing
+Second, the algorithm often creates duplicate nodes due to
+$\lrarrowstar$ repeatedly using the \textsc{LR Reduce} rule (i.e.~two distinct parsing
 stacks $P$ and $P'$ can, after multiple reductions, both reduce to $Q$). We
 therefore modify the queue data-structure to a
-list-of-ordered-hashsets (i.e.~a hashset which preserves insertion order). This has
+list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
+and thus allows list-like integer indexing as well as hash-based lookups.}. This has
 near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 weeds out duplicates with near-identical performance to an unordered hashset.
 Although this cannot detect duplicates when the relevant node has already been popped from
@@ -752,10 +755,10 @@ converts the main parsing stack (a list) into a parent pointer tree; and
 repair sequences start as empty parent pointer trees. The $\crarrow$ part
 of our implementation thus operates exclusively on parent pointer trees.
 Although this does mean that neighbouring nodes are scattered throughout
-memory, it naturally leads to memory sharing; it also seems to be a good
+memory, it naturally leads to memory sharing, which recovers some of
+the good cache behaviour; it also seems to be a good
 fit with modern \texttt{malloc} implementations, which are particularly
-efficient when allocating and freeing objects of the same size; and
-thus it performs surprisingly well in our situation.
+efficient when allocating and freeing objects of the same size.
 However, it is quite possible that a different representation would be
 better for a garbage collected language.
 
@@ -764,10 +767,10 @@ better for a garbage collected language.
 \label{corchuelo:allminimumcost}
 
 The algorithm as described to this point non-deterministically completes as soon
-as it has found a single minimal cost repair sequence.
+as it has found a single minimum cost repair sequence.
 In this section we show how the
 \citet{corchuelo02repairing} algorithm can be efficiently extended to find
-the complete set of minimal cost repair sequences.
+the complete set of minimum cost repair sequences.
 
 The basis of a solution is simple: when a repair sequence of cost $c$ is found to
 be successful, we discard all repair sequences with cost $> c$, and continue
@@ -776,13 +779,14 @@ also of cost $c$), recording each successful node we encounter.
 
 While this works, it can substantially worsen performance, because there can be
 many remaining nodes in $c$, which may, transitively, have many neighbours.
-Fortunately, we can substantially improve the situation by merging together
+Fortunately, we can substantially improve the situation by not only removing
+duplicate nodes but merging together
 \emph{compatible} nodes. Two nodes are compatible iff: their
 parsing stacks are identical; they both have an identical amount of input
 remaining; and their repair sequences are compatible. Two repair sequences
 are compatible if they end in the same number of shifts (including both
 ending in repairs other than shifts). Although it may initially seem that
-any two repair sequences are compatible, we must bear in mind that there are two
+any two repair sequences should be compatible, we must bear in mind that there are two
 ways for a node to be deemed successful: if it reaches an accept node (line 9,
 Figure~\ref{fig:corchuelo:algorithm}) or if it ends in $N_\textit{shifts}$ shift
 repairs (line 10). The former case is only affected by the parsing stack (which
@@ -795,10 +799,9 @@ Our implementation of compatible nodes subsumes our detection of duplicate nodes
 is a list-of-ordered-hashsets. Whereas duplicate detection implicitly considered
 a node's entire contents for hashing and equality, we make two changes: we only
 hash a node's parsing stack and remaining input (i.e.~we do not hash a search
-node's repairs): and we define node equality to be loosened to allow compatible
-repair sequences to be be considered equal. This leads to extremely efficient
-detection of compatible nodes. Note that compatible nodes with identical
-repair sequences (i.e.~duplicates) are discarded at this point.
+node's repairs): and we loosen node equality to allow compatible
+repair sequences to be be considered as equal. This leads to extremely efficient
+detection of compatible nodes.
 
 However, we need to find a sensible representation for merged nodes, because our
 liberal definition of compatibility allows multiple nodes, and very different repair
@@ -815,13 +818,14 @@ In order to do this, we change nodes to refer to an intermediate data-type
 \texttt{RepairMerge} has three variants: \texttt{Terminator}, the root of the
 parent pointer tree; \texttt{Repair(\textit{r})}, a normal repair \textit{r}; and
 \texttt{Merge(\textit{r}, \textit{others})} where \textit{others} is
-a parent pointer tree referencing one or more repair sequences (note that
+a parent pointer tree referencing one or more repair sequences. Note that
 we deliberately don't detect duplicate repair sequences at this stage,
-since the frequent cost is not worth the occasional gain).
+since the frequent cost is not worth the occasional gain.
 \laurie{need to show an example}
 
 
-\subsection{Making use of the complete set of minimal cost repair sequences}
+\subsection{Making use of the complete set of minimum cost repair sequences}
+\label{cpctplus}
 
 
 \section{\cite{kimyi10astar}}
@@ -879,7 +883,7 @@ that an ideal system will mix both deterministic approaches (such as ours) with
 probabilistic approaches (such as \citet{santos18syntax}), possibly even with
 multiple sub-approaches (such as \citet{deJonge12natural}).
 
-Although one of our paper's aims is to find all minimal cost repair sequences,
+Although one of our paper's aims is to find the complete set of minimum cost repair sequences,
 it is unclear how best to present them to users leading to questions such as:
 should they be simplified? should a subset be presented? and so on. There is a
 body of work which has tried to understand how best to structure compiler error
