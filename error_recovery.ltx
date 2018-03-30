@@ -10,6 +10,7 @@
 \usepackage{proof}
 \usepackage{softdev}
 \usepackage{subcaption}
+\usepackage{wrapfig}
 \usepackage{xspace}
 
 \usepackage[ruled]{algorithm2e} % For algorithms
@@ -816,9 +817,6 @@ node's repairs): and we loosen node equality to allow compatible
 repair sequences to be be considered as equal. This leads to efficient
 detection of compatible nodes.
 
-
-\subsubsection{An efficient representation of merged nodes}
-
 Conceptually, merging two nodes together is simple: each search node simply
 needs to store a set of repair sequences, each of which is updated as further
 repairs are found. However, this is an extremely inefficient representation as
@@ -840,6 +838,81 @@ stage).
 
 \subsection{The \corchueloplus algorithm}
 \label{cpctplus}
+\label{rankingrepairs}
+
+The combination of the \textsc{CR Shift 3} rule and the finding of the complete
+set of minimum cost repair sequences means that we have nearly all the key
+ingredients (\textsc{CR Shift 3} and the finding of the complete set of minimum
+cost repair sequences) of our new error recovery algorithm. In this subsection
+we make one final addition to the algorithm that we then call \corchueloplus (in
+homage to its roots in \citet{corchuelo02repairing}).
+
+\begin{figure}[t]
+\begin{tabular}{p{0.02\textwidth}p{0.45\textwidth}p{0.02\textwidth}p{0.45\textwidth}}
+\begin{subfigure}{0.02\textwidth}
+\caption{}
+\label{lst:ranking:java}
+\end{subfigure}
+&
+\begin{minipage}[t]{0.45\textwidth}
+\vspace{-7pt}
+\begin{lstlisting}
+class C {
+    T x = 2 +
+    T y = 3;
+}
+\end{lstlisting}
+\end{minipage}
+&
+\begin{subfigure}{0.02\textwidth}
+\caption{}
+\label{lst:ranking:output}
+\end{subfigure}
+&
+\begin{minipage}[t]{0.45\textwidth}
+\vspace{-7pt}
+\begin{lstlisting}
+Error at line 3 col 7. Repairs found:
+  Insert "COMMA"
+\end{lstlisting}
+\end{minipage}
+\end{tabular}
+\vspace{-10pt}
+\caption{An example showing how the ranking of repair sequences can lessen the
+the cascading error problem. The Java example (\subref{lst:ranking:java}) leads
+to a parsing error on line 3 at `\texttt{y}', with three minimum cost repair
+sequences found: [\textit{insert} \texttt{,}], [\textit{insert} \texttt{?}], and
+[\textit{insert} \texttt{(}]. These repair sequences are then ranked by how far
+they allow parsing to continue successfully. [\textit{insert} \texttt{,}] leads
+to the rest of the file being parsed without further error. [\textit{insert}
+\texttt{?}] causes a cascading error at `\texttt{;}` which must then be resolved
+by completing the ternary expression started by `?' (e.g.~changing line 3 to
+\texttt{T ? y : this}). Similarly, [\textit{insert} \texttt{,}] causes a
+cascading error at `\texttt{;}' which must then be resolved by inserting a
+`\texttt{)}'. Since [\textit{insert} \texttt{,}] is ranked more highly than the
+other repair sequences, they are discarded, leading to the parsing output shown
+in (\subref{lst:ranking:output}).}
+\label{fig:ranking}
+\end{figure}
+
+After we have collected the complete set of minimum cost repair sequences, we
+then rank them by how far ahead they allow parsing to successfully continue, up
+to a limit of $N_\textit{try}$ tokens (which we somewhat arbitrarily set at
+250). We then select one repair sequence from those that rank most highly to
+apply to the input before allowing normal parsing to resume. Particularly on
+real-world grammars, this can substantially decrease the chances of the chosen
+repair sequence causing cascading errors (see Figure~\ref{fig:ranking} for an
+example). Despite initial appearances, we cannot achieve the same effect by
+increasing $N_\textit{shifts}$ to a large value, because each extra token
+explored in the main search exponentially increase the search space. Thus only
+exploring repair sequences which have shown themselves to be at least locally
+successful allows us to improve the quality of repair sequences we make use of
+for relatively little effort.
+
+
+\subsection{A complete example}
+
+\laurie{need a complete example with all intermediate steps for \corchueloplus}
 
 
 \section{\cite{kimyi10astar}}
@@ -875,7 +948,9 @@ The biggest limitation of error recovery algorithms in the
 point that an error is discovered, which may be later in the file than the cause
 of the error. Thus even when they successfully recover from an error, the repair
 sequence reported may be very different from the fix the user considers
-appropriate. Perhaps the most common -- and without doubt the most frustrating
+appropriate (note that this is distinct from the cascading error problem,
+which our ranking of repair sequences in Section~\ref{rankingrepairs} partly
+addresses). Perhaps the most common -- and without doubt the most frustrating
 -- example of this is missing a \texttt{\}} character within the method of a
 Java-like languages. \citet{santos18syntax} use
 machine learning to train a system on syntactically correct programs: when a
