@@ -792,14 +792,14 @@ also of cost $c$), recording each successful node we encounter.
 
 While this works, it can substantially worsen performance, because there can be
 many remaining nodes in $c$, which may, transitively, have many neighbours.
-Fortunately, we can substantially improve the situation by not only removing
+Fortunately, we can substantially improve performance by not only removing
 duplicate nodes but merging together
-\emph{compatible} nodes. Two nodes are compatible iff: their
+\emph{compatible} nodes. Two nodes are compatible if: their
 parsing stacks are identical; they both have an identical amount of input
 remaining; and their repair sequences are compatible. Two repair sequences
 are compatible if they end in the same number of shifts (including both
 ending in repairs other than shifts). Although it may initially seem that
-any two repair sequences should be compatible, we must bear in mind that there are two
+any two repair sequences should be compatible, we have to take into account the two
 ways for a node to be deemed successful: if it reaches an accept state (line 9,
 Figure~\ref{fig:corchuelo:algorithm}) or if it ends in $N_\textit{shifts}$ shift
 repairs (line 10). The former case is only affected by the parsing stack (which
@@ -813,31 +813,32 @@ is a list-of-ordered-hashsets. Whereas duplicate detection implicitly considered
 a node's entire contents for hashing and equality, we make two changes: we only
 hash a node's parsing stack and remaining input (i.e.~we do not hash a search
 node's repairs): and we loosen node equality to allow compatible
-repair sequences to be be considered as equal. This leads to extremely efficient
+repair sequences to be be considered as equal. This leads to efficient
 detection of compatible nodes.
 
-However, we need to find a sensible representation for merged nodes, because our
-liberal definition of compatibility allows multiple nodes, and very different repair
-sequences (including those of different lengths), to be merged into one.
-A simple representation would be for each search node to store a list, or
-set, of repair sequences: we found the constant resizing and duplication of
-sequences caused by such a scheme to be extremely inefficient. Instead we use a
-representation that makes further use of parent pointer trees (see
-Section~\ref{cactusnodes}), which removes the need for resizing, and allows
-efficient sharing of repair sequences across nodes.
 
-In order to do this, we change nodes to refer to an intermediate data-type
-\texttt{RepairMerge} rather than a repair sequence directly.
-\texttt{RepairMerge} has three variants: \texttt{Terminator}, the root of the
-parent pointer tree; \texttt{Repair(\textit{r})}, a normal repair \textit{r}; and
-\texttt{Merge(\textit{r}, \textit{others})} where \textit{others} is
-a parent pointer tree referencing one or more repair sequences. Note that
-we deliberately don't detect duplicate repair sequences at this stage,
-since the frequent cost is not worth the occasional gain.
-\laurie{need to show an example}
+\subsubsection{An efficient representation of merged nodes}
+
+Conceptually, merging two nodes together is simple: each search node simply
+needs to store a set of repair sequences, each of which is updated as further
+repairs are found. However, this is an extremely inefficient representation as
+the sets involved need to be frequently copied. Instead, we use a representation which
+relies on parent pointer trees (for the same reasons as in
+Section~\ref{cactusnodes}).
+
+The basic idea is that search nodes no longer reference a parent pointer tree of
+repairs directly, but instead a parent pair tree of \emph{repair merges}. A
+repair merge is a pair (\textit{repair}, \textit{parents})
+where \textit{repair} is a plain repair and \textit{repairs} is a set of
+parent repair merges. A repair merge (\textit{rpr}, $p_1 \ldots p_n$) can
+be recursively expanded into a list of repair sequences
+$[[$\textit{rpr}$] + p_1$ \ldots $[$\textit{rpr}$] + p_n]$. We further compact
+the representation, and increase sharing, by representing the \textit{parents}
+set as a parent pointer tree (we do not bother weeding out duplicates at this
+stage).
 
 
-\subsection{Making use of the complete set of minimum cost repair sequences}
+\subsection{The \corchueloplus algorithm}
 \label{cpctplus}
 
 
