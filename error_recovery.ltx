@@ -988,7 +988,16 @@ of~\citet{rajasekaran16error}. These improve on the time complexity, though none
 that we are aware of address the issue of how to present what has been done to
 the user.
 
-\cite{mckenzie95error}
+The approach of \citet{mckenzie95error} is similar to
+\citet{corchuelo02repairing}, although the former cannot incorporate shift
+repairs. It tries harder than \corchueloplus to prune out pointless search
+nodes~\cite[p.~12]{mckenzie95error}, such as cycles in the parsing stack,
+although this leads to some minimum cost repairs being
+skipped~\cite{bertsch99failure}. A number of interlocking, sophisticated pruning
+mechanisms which build on this are described in~\citet{cerecke03phd}. These are
+significantly more complex than our merging of compatible nodes; since this
+gives us acceptable performance in practise, we have not investigated other
+pruning mechanisms.
 
 \cite{deJonge12natural}
 
