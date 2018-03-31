@@ -782,8 +782,7 @@ better for a garbage collected language.
 
 The algorithm as described to this point non-deterministically completes as soon
 as it has found a single minimum cost repair sequence.
-In this section we show how the
-\citet{corchuelo02repairing} algorithm can be efficiently extended to find
+In this section we show how the we can efficiently find
 the complete set of minimum cost repair sequences.
 
 The basis of a solution is simple: when a repair sequence of cost $c$ is found to
@@ -795,13 +794,14 @@ While this works, it can substantially worsen performance, because there can be
 many remaining nodes in $c$, which may, transitively, have many neighbours.
 Fortunately, we can substantially improve performance by not only removing
 duplicate nodes but merging together
-\emph{compatible} nodes. Two nodes are compatible if: their
+\emph{compatible} nodes, preserving their distinct repair sequences while still
+reducing the search space. Two nodes are compatible if: their
 parsing stacks are identical; they both have an identical amount of input
 remaining; and their repair sequences are compatible. Two repair sequences
 are compatible if they end in the same number of shifts (including both
 ending in repairs other than shifts). Although it may initially seem that
 any two repair sequences should be compatible, we have to take into account the two
-ways for a node to be deemed successful: if it reaches an accept state (line 9,
+that a node can be deemed successful: if it reaches an accept state (line 9,
 Figure~\ref{fig:corchuelo:algorithm}) or if it ends in $N_\textit{shifts}$ shift
 repairs (line 10). The former case is only affected by the parsing stack (which
 is not an issue in this case, since compatible nodes have identical parsing
@@ -820,31 +820,29 @@ detection of compatible nodes.
 Conceptually, merging two nodes together is simple: each search node simply
 needs to store a set of repair sequences, each of which is updated as further
 repairs are found. However, this is an extremely inefficient representation as
-the sets involved need to be frequently copied. Instead, we use a representation which
-relies on parent pointer trees (for the same reasons as in
-Section~\ref{cactusnodes}).
-
+the sets involved need to be copied and extended as each new repair is found.
+Instead, we use a representation which relies on parent pointer trees (for the
+same reasons as in Section~\ref{cactusnodes}).
 The basic idea is that search nodes no longer reference a parent pointer tree of
-repairs directly, but instead a parent pair tree of \emph{repair merges}. A
+repairs directly, but instead a parent pointer tree of \emph{repair merges}. A
 repair merge is a pair (\textit{repair}, \textit{parents})
-where \textit{repair} is a plain repair and \textit{repairs} is a set of
+where \textit{repair} is a plain repair and \textit{parents} is a set of
 parent repair merges. A repair merge (\textit{rpr}, $p_1 \ldots p_n$) can
-be recursively expanded into a list of repair sequences
-$[[$\textit{rpr}$] + p_1$ \ldots $[$\textit{rpr}$] + p_n]$. We further compact
+be recursively expanded into a set of repair sequences
+$\{[$\textit{rpr}$] + p_1$ \ldots $[$\textit{rpr}$] + p_n\}$. We further compact
 the representation, and increase sharing, by representing the \textit{parents}
 set as a parent pointer tree (we do not bother weeding out duplicates at this
 stage).
 
 
-\subsection{The \corchueloplus algorithm}
+\subsection{Putting together the \corchueloplus algorithm}
 \label{cpctplus}
 \label{rankingrepairs}
 
-The combination of the \textsc{CR Shift 3} rule and the finding of the complete
-set of minimum cost repair sequences means that we have nearly all the key
-ingredients (\textsc{CR Shift 3} and the finding of the complete set of minimum
-cost repair sequences) of our new error recovery algorithm. In this subsection
-we make one final addition to the algorithm that we then call \corchueloplus (in
+The \textsc{CR Shift 3} rule and our ability to find the complete
+set of minimum cost repair sequences are two of the three key ingredients
+in our our new error recovery algorithm. In this subsection
+we make one further addition to the algorithm, calling the result \corchueloplus (in
 homage to its roots in \citet{corchuelo02repairing}).
 
 \begin{figure}[t]
@@ -887,27 +885,31 @@ they allow parsing to continue successfully. [\textit{insert} \texttt{,}] leads
 to the rest of the file being parsed without further error. [\textit{insert}
 \texttt{?}] causes a cascading error at `\texttt{;}` which must then be resolved
 by completing the ternary expression started by `?' (e.g.~changing line 3 to
-\texttt{T ? y : this}). Similarly, [\textit{insert} \texttt{,}] causes a
+\texttt{T ? y : this;}). Similarly, [\textit{insert} \texttt{(}] causes a
 cascading error at `\texttt{;}' which must then be resolved by inserting a
 `\texttt{)}'. Since [\textit{insert} \texttt{,}] is ranked more highly than the
-other repair sequences, they are discarded, leading to the parsing output shown
-in (\subref{lst:ranking:output}).}
+other repair sequences, the latter are discarded, leading to the parsing output shown
+in (\subref{lst:ranking:output}). javac in contrast attempts to insert
+`\texttt{;}' before `\texttt{y}' causing a cascading error on the next token.}
 \label{fig:ranking}
 \end{figure}
 
-After we have collected the complete set of minimum cost repair sequences, we
-then rank them by how far ahead they allow parsing to successfully continue, up
-to a limit of $N_\textit{try}$ tokens (which we somewhat arbitrarily set at
-250). We then select one repair sequence from those that rank most highly to
-apply to the input before allowing normal parsing to resume. Particularly on
-real-world grammars, this can substantially decrease the chances of the chosen
-repair sequence causing cascading errors (see Figure~\ref{fig:ranking} for an
-example). Despite initial appearances, we cannot achieve the same effect by
-increasing $N_\textit{shifts}$ to a large value, because each extra token
-explored in the main search exponentially increase the search space. Thus only
-exploring repair sequences which have shown themselves to be at least locally
-successful allows us to improve the quality of repair sequences we make use of
-for relatively little effort.
+The final step in our new algorithm allows us to somewhat compensate for the
+small value of $N_\textit{shifts}$. This value has to be a small integer (in our
+case 3) because each additional token searched exponentially increases the
+search space. Thus the repair sequences we find can be less than ideal when a
+larger amount of input is considered. Fortunately, we can make use the existence
+of the complete set of minimum cost repair sequences to lessen this weakness.
+After this set has been generated, we rank it by how far repair sequences allow
+parsing to successfully continue, up to a limit of $N_\textit{try}$ tokens
+(which we somewhat arbitrarily set at 250). Since multiple repair sequences may
+be ranked equally highly, we non-deterministically select one, apply its repairs
+to the input, and continue parsing as normal. Particularly on real-world
+grammars, this can substantially decrease the chances of the chosen repair
+sequence causing cascading errors (see Figure~\ref{fig:ranking} for an example).
+It also does so for very little additional computational cost as the complete set of
+minimum cost repair sequences is much smaller than the number of nodes
+searched.
 
 
 \subsection{A complete example}
