@@ -53,6 +53,7 @@
 \newcommand{\corchueloplus}{\textit{CPCT}$^+$\xspace}
 \newcommand{\crarrow}{\rightarrow_{\textrm{\tiny CR}}}
 \newcommand{\crarrowstar}{\rightarrow_{\textrm{\tiny CR}}^*}
+\newcommand{\kyarrow}{\rightarrow_{\textrm{\tiny KY}}}
 \newcommand{\lrarrowstar}{\rightarrow_{\textrm{\tiny LR}}^*}
 \newcommand{\lrarrow}{\rightarrow_{\textrm{\tiny LR}}}
 \newcommand{\mf}{\textit{MF}\xspace}
@@ -292,6 +293,44 @@ recovery system such as \citet{deJonge12natural}.
 
 \section{Background}
 
+% Stategraph for the grammar:
+% 0:  [^ -> . Expr, {'$'}]
+%     'INT' -> 4
+%     '(' -> 1
+%     Factor -> 3
+%     Term -> 2
+%     Expr -> 5
+% 1:  [Factor -> '(' . Expr ')', {')', '*', '+', '$'}]
+%     Term -> 2
+%     Expr -> 6
+%     '(' -> 1
+%     Factor -> 3
+%     'INT' -> 4
+% 2:  [Expr -> Term . '+' Expr, {')', '$'}]
+%     [Expr -> Term ., {')', '$'}]
+%     '+' -> 7
+% 3:  [Term -> Factor ., {')', '+', '$'}]
+%     [Term -> Factor . '*' Term, {')', '+', '$'}]
+%     '*' -> 8
+% 4:  [Factor -> 'INT' ., {')', '*', '+', '$'}]
+% 5:  [^ -> Expr ., {'$'}]
+% 6:  [Factor -> '(' Expr . ')', {')', '*', '+', '$'}]
+%     ')' -> 9
+% 7:  [Expr -> Term '+' . Expr, {')', '$'}]
+%     Factor -> 3
+%     Term -> 2
+%     'INT' -> 4
+%     Expr -> 10
+%     '(' -> 1
+% 8:  [Term -> Factor '*' . Term, {')', '+', '$'}]
+%     'INT' -> 4
+%     Term -> 11
+%     Factor -> 3
+%     '(' -> 1
+% 9:  [Factor -> '(' Expr ')' ., {')', '*', '+', '$'}]
+% 10: [Expr -> Term '+' Expr ., {')', '$'}]
+% 11: [Term -> Factor '*' Term ., {')', '+', '$'}]
+
 \begin{figure}[t]
 \begin{lstlisting}
 %start Expr
@@ -385,13 +424,13 @@ is the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token
 \begin{figure}[t]
 \small
 \[
-\infer[(\textsc{LR Shift})]
+\infer[\textsc{LR Shift}]
       {([s0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_n, s'], [t_1 \ldots t_n])}
       {\textsf{action}(s_n, t_n) = \textit{shift}\ s'}
 \]
 \vspace{-3pt}
 \[
-\infer[(\textsc{LR Reduce})]
+\infer[\textsc{LR Reduce}]
       {([s0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'], [t_0 \ldots t_n])}
       {(\textsf{action}(s_n, t_n) = \textit{reduce}\ N \colon \alpha)
        \wedge (\textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s')}
@@ -919,6 +958,180 @@ searched.
 
 \section{\cite{kimyi10astar}}
 \label{kimyi}
+
+Algorithms in the \citet{fischer79locally} family have unbounded worse case
+performance. A simple example on real-world grammars are unbalanced brackets
+(e.g.~in expressions such as `\texttt{x = f(();}'): each additional unmatched
+bracket exponentially increases the search space. For example, on a modern machine
+with a Java grammar, the \corchueloplus algorithm takes about 0.3s to find
+repair for 3 unmatched brackets, 3s for 4 unmatched brackets, and 6 unmatched
+brackets caused our 32GiB test machine to run out of RAM.
+
+While such cases are fairly rare, it would be better if they did not occur at
+all. \citet{kimyi10astar} propose a new error recovery -- which is in the
+\citet{fischer79locally} family, but by far its most radical member --  which
+claims to almost entirely remove such performance problems. This work has not,
+to the best of our knowledge, received prior attention in the community, despite
+this promise. In this section we therefore provide a brief overview of this work
+(Section~\ref{kimyi:overview}). We then show that the algorithm contains two serious flaws
+which mean that it misses minimum cost repair sequences
+(Section~\ref{kimyi:flaws}). These flaws are not easily fixed in the context of
+the algorithm, but parts of the approach serve as inspiration for our later
+error recovery algorithm (Section~\ref{mf}).
+
+
+\subsection{An overview of the algorithm}
+\label{kimyi:overview}
+
+\citet{kimyi10astar} explicitly inherits many of the ideas from
+\citet{corchuelo02repairing}, adding two significant novelties: it uses the A*
+algorithm~\cite{hart68astar} to delay, and thus often to avoid, unpromising
+search nodes; and it can insert non-terminals as well as terminals into repair
+sequences, subsuming many search nodes (which can be thought of as a more
+powerful version of merging compatible nodes). This allows examples with
+thousands of unmatched brackets to be repaired in a few seconds.
+
+
+\subsubsection{The A* algorithm and the \textsf{dist} function}
+
+\begin{figure}[t]
+\begin{minipage}{0.65\textwidth}
+\begin{lstlisting}[numbers=left]
+def mk_dist(sgraph, terminals, eof_idx):
+  table = [<!$\infty$!>] * len(sgraph) * len(terminals)
+  table[sgraph.final_state * len(terminals) \
+        + eof_idx] = 0
+  while True:
+    chgd = False
+    for i in range(sgraph.len_states):
+      for sym, end_st in sgraph.edges(i):
+        if isinstance(sym, Nonterminal):
+          d = min_sentence_cost(sym.nt_idx)
+        else:
+          assert isinstance(sym, Terminal)
+          off = i * len(terminals) + sym.term_idx
+          if table[off] != 0:
+            table[off] = 0
+            chgd = True
+          d = 1
+        for j in range(len(terminals)):
+          this_off = i * len(terminals) + j
+          end_off = end_st * len(terminals) + j
+          if table[end_off] != <!$\infty$!> \
+             && table[end_off] + d < table[this_off]:
+            table[this_off] = table[end_off] + d
+            chgd = True
+    if not chgd:
+      break
+\end{lstlisting}
+\end{minipage}%
+\begin{minipage}{0.35\textwidth}
+\vspace{-47pt}
+\begin{tabular}{ccccccc}
+\toprule
+      & \multicolumn{6}{c}{$t$} \\
+        \cmidrule(lr){2-7}
+$s$ & \texttt{*} & \texttt{+} & \texttt{(} & \texttt{)} & \texttt{INT} & \$ \\
+\midrule
+0 & 1 & 1 & 0 & 2 & 0 & 1 \\
+1 & 1 & 1 & 0 & 1 & 0 & $\infty$ \\
+2 & 2 & 0 & 1 & 3 & 1 & $\infty$ \\
+3 & 0 & 3 & 1 & 3 & 1 & $\infty$ \\
+4 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+5 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & 0 \\
+6 & $\infty$ & $\infty$ & $\infty$ & 0 & $\infty$ & $\infty$ \\
+7 & 1 & 1 & 0 & 2 & 0 & $\infty$ \\
+8 & 1 & 2 & 0 & 2 & 0 & $\infty$ \\
+9 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+10 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+11 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\caption{A fixed-point algorithm for the \textit{dist(s, t)} function (left) and the
+resulting distance table (right) for the grammar from
+Figure~\ref{fig:exprgrammar}. The algorithm takes in the stategraph, a set of
+terminals, and the index of the \$ terminal (line 1) and returns a table with
+one column per terminal and one row per state. The table starts with every entry
+set to $\infty$ (line 2) except for the final state's \$ terminal which is set
+to 0 (lines 3, 4): entries monotonically reduce to a minimum of 0. For each
+state $i$ in the stategraph (line 7), the algorithm explores all of its outgoing edges
+(via the \texttt{edges} function (line 8)), each of which is labelled with a
+symbol \texttt{sym} and points to another state with index \texttt{end\_st}. If
+the edge's symbol is a terminal then by definition the cost of reaching that
+terminal from state $i$ is 0 (lines 13-16). We then calculate the cost of the
+edge: if the label's symbol is a nonterminal, we return the cost of the minimal
+sentence matching that nonterminal (line 10; the algorithm for this is very
+similar to \textit{dist} itself); if a terminal we return a cost of 1 (line 17).
+If the cost of $t$ in \texttt{end\_st} plus the distance to \texttt{end\_st} is
+lower than the cost of $t$ in $i$ then we update the latter (lines 19--24).}
+\label{fig:kimyi:dist}
+\end{figure}
+
+Since the A* algorithm is not a particularly common one in compilers or parsers,
+we first start with a brief recap. The A* algorithm finds optimal paths through
+a graph where each edge has an associated cost $c$. The current known lowest
+cost to reach a node $n$ from the start node is represented by $d(n)$. A
+heuristic $h(n)$ returns an estimate of the cost to reach a success node from
+$n$. In order that the algorithm finds the shortest path between the start node
+and a success node, the heuristic must be a `admissible' -- an
+underapproximation of the cost from the current node $n$ to a success node
+$s(n)$ (i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
+used to order nodes by their distance and heuristic i.e.~by $d(n) + h(n)$. On
+each iteration the node with the lowest combined cost is selected and its
+neighbours entered into the priority queue. The search terminates when the first
+success node is found.
+
+The heuristic used in \citet{kimyi10astar} is \textsf{dist(s, t)} which is best
+summarised as follows: if we are in parsing state $s$, what is the cost of the
+minimum route through the stategraph to a state $s'$ (where $s$ and $s'$ may be
+the same state) where the terminal $t$ is an outgoing edge? If no such route
+exists, \textsf{dist} returns $\infty$. While \citet{kimyi10astar} provide a
+specification of \textsf{dist}, we provide a simple fixed-point algorithm
+(Figure~\ref{fig:kimyi:dist}). The result is cached in a table at the point
+of grammar generation with entries looked up during the search.
+
+\begin{figure}
+\small
+\[
+\infer[\textsc{KY Insert}]
+      {([s_0 \ldots s_n], [t_0 \ldots t_n], t) \kyarrow ([s_0 \ldots s_n, s'], [t_0 \ldots t_n], t + 1, [\textit{insert}~t])}
+      {s_n \xrightarrow{t} s' \wedge t \ne \${}
+       \wedge dist(s', t_0) < \infty}
+\]
+\vspace{-3pt}
+\[
+\infer[\textsc{KY Reduce}]
+      {([s0 \ldots s_n], [t_0 \ldots t_n], 1) \kyarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'], [t_0 \ldots t_n], 1, [\textit{insert}~\beta])}
+      {[N: \alpha \bullet \beta] \in \textsf{core($s_n$)}
+       \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'}
+\]
+\vspace{-4pt}
+\[
+\infer[\textsc{KY Delete}]
+      {(S, [t_0 \ldots t_n], 1) \kyarrow (S, [t_1 \ldots t_n], 1, [\textit{delete}])}
+      {t_0 \ne \$}
+\]
+\vspace{-3pt}
+\[
+\hspace{-12pt}
+\infer[\textsc{KY Shift}]
+      {(S, [t_0 \ldots t_n], t) \kyarrow (S', [t_1 \ldots t_n], 1, [\textit{shift}])}
+      {(S, [t_0 \ldots t_n]) \lrarrowstar (S', [t_1 \ldots t_n])}
+\]
+\vspace{-7pt}
+\caption{\laurie{KimYi rules}}
+\end{figure}
+
+\subsection{Flaws}
+\label{kimyi:flaws}
+
+\begin{lstlisting}
+      S: T U 'c';
+      T: 'a';
+      U: 'b';
+\end{lstlisting}
+\laurie{with input 'c'}
 
 
 \section{\mf}
