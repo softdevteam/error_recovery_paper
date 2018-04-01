@@ -1015,12 +1015,7 @@ terminates when the first success node is found.
 \infer[\textsc{KY Insert}]
       {([s_0 \ldots s_n], [t_0 \ldots t_n], t) \kyarrow ([s_0 \ldots s_n, s'],
        [t_0 \ldots t_n], \top, [\textit{insert}~t], d)}
-      {%
-\begin{array}{c}
-       s_n \xrightarrow{\text{~~t~~}} s' \wedge t \ne \${}
-\\
-       (T = \bot \wedge d = 0) \vee (T = \top \wedge d = dist(s', t_0) < \infty)
-\end{array}}
+      {s_n \xrightarrow{\text{~~t~~}} s' \wedge t \ne \${} \wedge d = dist(s', t_0) < \infty)}
 \]
 \vspace{-3pt}
 \[
