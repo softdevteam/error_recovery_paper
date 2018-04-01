@@ -956,43 +956,122 @@ searched.
 \laurie{need a complete example with all intermediate steps for \corchueloplus}
 
 
-\section{\cite{kimyi10astar}}
+\section{The Kim and Yi algorithm}
 \label{kimyi}
 
 Algorithms in the \citet{fischer79locally} family have unbounded worse case
-performance. A simple example on real-world grammars are unbalanced brackets
+performance, which is easily seen on inputs with unbalanced brackets
 (e.g.~in expressions such as `\texttt{x = f(();}'): each additional unmatched
 bracket exponentially increases the search space. For example, on a modern machine
 with a Java grammar, the \corchueloplus algorithm takes about 0.3s to find
-repair for 3 unmatched brackets, 3s for 4 unmatched brackets, and 6 unmatched
-brackets caused our 32GiB test machine to run out of RAM.
+the complete set of minimum cost repair sequences for 3 unmatched brackets, 3s
+for 4 unmatched brackets, and 6 unmatched brackets caused our 32GiB test machine
+to run out of RAM.
 
 While such cases are fairly rare, it would be better if they did not occur at
 all. \citet{kimyi10astar} propose a new error recovery -- which is in the
 \citet{fischer79locally} family, but by far its most radical member --  which
 claims to almost entirely remove such performance problems. This work has not,
 to the best of our knowledge, received prior attention in the community, despite
-this promise. In this section we therefore provide a brief overview of this work
+this promise. In this section we provide a brief overview of this work,
+with enough information to understand the details relevant to this paper but,
+in the interest of brevity, without several less important details which a real
+implementation would need to consider. We also adjust the algorithm's style to
+match this paper's and correct several minor mistakes
 (Section~\ref{kimyi:overview}). We then show that the algorithm contains two serious flaws
 which mean that it misses minimum cost repair sequences
 (Section~\ref{kimyi:flaws}). These flaws are not easily fixed in the context of
-the algorithm, but parts of the approach serve as inspiration for our later
-error recovery algorithm (Section~\ref{mf}).
+the algorithm, but parts of the approach serve as inspiration for our \mf
+error recovery algorithm.
 
 
 \subsection{An overview of the algorithm}
 \label{kimyi:overview}
 
-\citet{kimyi10astar} explicitly inherits many of the ideas from
-\citet{corchuelo02repairing}, adding two significant novelties: it uses the A*
+The \citet{kimyi10astar} algorithm takes \citet{corchuelo02repairing} as a base,
+adding two significant novelties: it uses the A*
 algorithm~\cite{hart68astar} to delay, and thus often to avoid, unpromising
-search nodes; and it can insert non-terminals as well as terminals into repair
-sequences, subsuming many search nodes (which can be thought of as a more
-powerful version of merging compatible nodes). This allows examples with
+search nodes; and it can insert non-terminals, sidestepping many insert
+repairs entirely. This allows examples with
 thousands of unmatched brackets to be repaired in a few seconds.
 
+Since the A* algorithm is not a particularly common one in parsers,
+we first start with a brief recap. The A* algorithm finds optimal paths through
+a graph where each edge has an associated cost $c$. The current known lowest
+cost to reach a node $n$ from the start node is represented by $d(n)$. A
+heuristic $h(n)$ returns an estimate of the cost to reach a success node from
+$n$. In order that the algorithm finds the shortest path between the start node
+and a success node, the heuristic must be `admissible', meaning that it must
+never overestimate the cost to reach a success node (but it may safely
+underestimate this cost i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
+used to order nodes by their distance and heuristic i.e.~by $d(n) + h(n)$. On
+each iteration a node in the queue with the lowest $d(n) + h(n)$ is selected, and
+its neighbours explored and entered into the priority queue. The search
+terminates when the first success node is found.
 
-\subsubsection{The A* algorithm and the \textsf{dist} function}
+\begin{figure}
+\small
+\[
+\infer[\textsc{KY Insert}]
+      {([s_0 \ldots s_n], [t_0 \ldots t_n], t) \kyarrow ([s_0 \ldots s_n, s'],
+       [t_0 \ldots t_n], \top, [\textit{insert}~t], d)}
+      {%
+\begin{array}{c}
+       s_n \xrightarrow{\text{~~t~~}} s' \wedge t \ne \${}
+\\
+       (T = \bot \wedge d = 0) \vee (T = \top \wedge d = dist(s', t_0) < \infty)
+\end{array}}
+\]
+\vspace{-3pt}
+\[
+\infer[\textsc{KY Reduce}]
+      {([s0 \ldots s_n], [t_0 \ldots t_n], \bot) \kyarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'],
+       [t_0 \ldots t_n], \bot, [\textit{insert}~\beta_0 \ldots \textit{insert}~\beta_n], 0)}
+      {[N: \alpha \bullet \beta_0 \ldots \beta_n] \in \textsf{core($s_n$)}
+       \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'}
+\]
+\vspace{-4pt}
+\[
+\infer[\textsc{KY Delete}]
+      {(S, [t_0 \ldots t_n], \bot) \kyarrow (S, [t_1 \ldots t_n], \bot, [\textit{delete}], 0)}
+      {t_0 \ne \$}
+\]
+\vspace{-3pt}
+\[
+\hspace{-12pt}
+\infer[\textsc{KY Shift}]
+      {(S, [t_0 \ldots t_n], t) \kyarrow (S', [t_1 \ldots t_n], \bot, [\textit{shift}], 0)}
+      {(S, [t_0 \ldots t_n]) \lrarrowstar (S', [t_1 \ldots t_n])}
+\]
+\vspace{-12pt}
+\caption{The main \citet{kimyi10astar} reduction rules from (\textit{parsing
+stack}, \textit{token list}, \textit{t}) to (\textit{parsing stack},
+\textit{token list}, \textit{t}, \textit{repairs}, \textit{heuristic}).
+\textsc{KY Insert} finds terminals in the stategraph
+($\xrightarrow{\text{~~t~~}}$) which lead to a state with a finite distance to
+the next input token as \textit{insert} repairs. \textsc{KY Reduce} finds items
+in the core (or `kernel') stategraph which would lead to a reduction if the
+sequence of symbols (terminals and non-terminals) $\beta_0 \ldots \beta_n$ were
+to be found; it then optimistically creates insert repairs for each, and
+performs the corresponding reduction. \textsc{KY Delete} is virtually identical
+to \textsc{CR Delete}. \textsc{KY Shift} is similar to \textsc{CR Shift} but
+has to always shift a single symbol to avoid creating repairs which
+duplicate those found by \textsc{KY Reduce}.}
+\label{fig:kimyi:rules}
+\end{figure}
+
+The \citet{kimyi10astar} algorithm itself comes in two main parts. First is a
+relation $\kyarrow$ which defines when individual repairs are created
+(Figure~\ref{fig:kimyi:rules}). Unlike the $\crarrow$ relation, these rules are
+from (\textit{parsing stack}, \textit{token list}, \textit{t}) to
+(\textit{parsing stack}, \textit{token list}, \textit{t}, \textit{repairs},
+\textit{heuristic}). Of these values, $t$ is the least intuitive: in essence,
+its job is to counteract a weakness with the A* heuristic used, which doesn't
+take into account reductions or deletions. Since the only rule which makes use
+of the heuristic is \textsc{KY Insert}, it is the only rule to set $t = \top$.
+This means that search nodes created by \textsc{KY Insert} can't be interfered
+with by \textsc{KY Reduce} or \textsc{KY Delete}, preventing the heuristic
+from being undermined.
 
 \begin{figure}[t]
 \begin{minipage}{0.65\textwidth}
@@ -1027,7 +1106,7 @@ def mk_dist(sgraph, terminals, eof_idx):
 \end{minipage}%
 \begin{minipage}{0.35\textwidth}
 \vspace{-47pt}
-\begin{tabular}{ccccccc}
+\begin{tabular}{rcccccc}
 \toprule
       & \multicolumn{6}{c}{$t$} \\
         \cmidrule(lr){2-7}
@@ -1068,60 +1147,19 @@ lower than the cost of $t$ in $i$ then we update the latter (lines 19--24).}
 \label{fig:kimyi:dist}
 \end{figure}
 
-Since the A* algorithm is not a particularly common one in compilers or parsers,
-we first start with a brief recap. The A* algorithm finds optimal paths through
-a graph where each edge has an associated cost $c$. The current known lowest
-cost to reach a node $n$ from the start node is represented by $d(n)$. A
-heuristic $h(n)$ returns an estimate of the cost to reach a success node from
-$n$. In order that the algorithm finds the shortest path between the start node
-and a success node, the heuristic must be a `admissible' -- an
-underapproximation of the cost from the current node $n$ to a success node
-$s(n)$ (i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
-used to order nodes by their distance and heuristic i.e.~by $d(n) + h(n)$. On
-each iteration the node with the lowest combined cost is selected and its
-neighbours entered into the priority queue. The search terminates when the first
-success node is found.
-
-The heuristic used in \citet{kimyi10astar} is \textsf{dist(s, t)} which is best
+The A* heuristic used is \textsf{dist(s, t)} which is best
 summarised as follows: if we are in parsing state $s$, what is the cost of the
 minimum route through the stategraph to a state $s'$ (where $s$ and $s'$ may be
 the same state) where the terminal $t$ is an outgoing edge? If no such route
 exists, \textsf{dist} returns $\infty$. While \citet{kimyi10astar} provide a
-specification of \textsf{dist}, we provide a simple fixed-point algorithm
+specification of \textsf{dist}, we provide a fixed-point algorithm
 (Figure~\ref{fig:kimyi:dist}). The result is cached in a table at the point
-of grammar generation with entries looked up during the search.
+of grammar generation with entries looked up during the search. Note that we
+assume the existence of a function \textsf{min\_sentence\_cost(N)} which returns
+the length of the minimum sentence(s) which match the non-terminal $N$: this
+function is a relatively simple variation of the traditional parsing nullable
+computation.
 
-\begin{figure}
-\small
-\[
-\infer[\textsc{KY Insert}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n], t) \kyarrow ([s_0 \ldots s_n, s'], [t_0 \ldots t_n], t + 1, [\textit{insert}~t])}
-      {s_n \xrightarrow{t} s' \wedge t \ne \${}
-       \wedge dist(s', t_0) < \infty}
-\]
-\vspace{-3pt}
-\[
-\infer[\textsc{KY Reduce}]
-      {([s0 \ldots s_n], [t_0 \ldots t_n], 1) \kyarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'], [t_0 \ldots t_n], 1, [\textit{insert}~\beta])}
-      {[N: \alpha \bullet \beta] \in \textsf{core($s_n$)}
-       \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'}
-\]
-\vspace{-4pt}
-\[
-\infer[\textsc{KY Delete}]
-      {(S, [t_0 \ldots t_n], 1) \kyarrow (S, [t_1 \ldots t_n], 1, [\textit{delete}])}
-      {t_0 \ne \$}
-\]
-\vspace{-3pt}
-\[
-\hspace{-12pt}
-\infer[\textsc{KY Shift}]
-      {(S, [t_0 \ldots t_n], t) \kyarrow (S', [t_1 \ldots t_n], 1, [\textit{shift}])}
-      {(S, [t_0 \ldots t_n]) \lrarrowstar (S', [t_1 \ldots t_n])}
-\]
-\vspace{-7pt}
-\caption{\laurie{KimYi rules}}
-\end{figure}
 
 \subsection{Flaws}
 \label{kimyi:flaws}
