@@ -4,6 +4,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 
+\usepackage{adjustbox}
 \usepackage{booktabs}
 \usepackage{listings}
 \usepackage{multicol}
@@ -1069,7 +1070,7 @@ with by \textsc{KY Reduce} or \textsc{KY Delete}, preventing the heuristic
 from being undermined.
 
 \begin{figure}[t]
-\begin{minipage}{0.65\textwidth}
+\begin{adjustbox}{valign=t,minipage=.65\textwidth}
 \begin{lstlisting}[numbers=left]
 def mk_dist(sgraph, terminals, eof_idx):
   table = [<!$\infty$!>] * len(sgraph) * len(terminals)
@@ -1098,9 +1099,9 @@ def mk_dist(sgraph, terminals, eof_idx):
     if not chgd:
       break
 \end{lstlisting}
-\end{minipage}%
-\begin{minipage}{0.35\textwidth}
-\vspace{-47pt}
+\end{adjustbox}%
+\begin{adjustbox}{valign=t,minipage=.35\textwidth}
+\small
 \begin{tabular}{rcccccc}
 \toprule
       & \multicolumn{6}{c}{$t$} \\
@@ -1121,7 +1122,7 @@ $s$ & \texttt{*} & \texttt{+} & \texttt{(} & \texttt{)} & \texttt{INT} & \$ \\
 11 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
 \bottomrule
 \end{tabular}
-\end{minipage}
+\end{adjustbox}
 \caption{A fixed-point algorithm for the \textit{dist(s, t)} function (left) and the
 resulting distance table (right) for the grammar from
 Figure~\ref{fig:exprgrammar}. The algorithm takes in the stategraph, a set of
@@ -1156,15 +1157,103 @@ function is a relatively simple variation of the traditional parsing nullable
 computation.
 
 
-\subsection{Flaws}
+\subsection{Problems with the algorithm}
 \label{kimyi:flaws}
 
+\begin{figure}
+\begin{adjustbox}{valign=t,minipage=.04\textwidth}
+\begin{subfigure}{0.04\textwidth}
+\caption{}
+\label{fig:kimyi:flaw:grammar}
+\end{subfigure}
+\end{adjustbox}%
+\begin{adjustbox}{valign=t,minipage=.18\textwidth}
 \begin{lstlisting}
-      S: T U 'c';
-      T: 'a';
-      U: 'b';
+S: T 'b' 'c';
+T: 'a';
 \end{lstlisting}
-\laurie{with input 'c'}
+\end{adjustbox}%
+\begin{adjustbox}{valign=t,minipage=.04\textwidth}
+\begin{subfigure}{0.04\textwidth}
+\caption{}
+\label{fig:kimyi:flaw:stategraph}
+\end{subfigure}
+\end{adjustbox}%
+\begin{adjustbox}{valign=t,minipage=.35\textwidth}
+\begin{lstlisting}
+0: [^ -> . S, {'$'}]
+   S -> 2
+   'A' -> 3
+   T -> 1
+1: [S -> T . 'B' 'C', {'$'}]
+   'B' -> 4
+2: [^ -> S ., {'$'}]
+3: [T -> 'A' ., {'B'}]
+4: [S -> T 'B' . 'C', {'$'}]
+   'C' -> 5
+5: [S -> T 'B' 'C' ., {'$'}]
+\end{lstlisting}
+\end{adjustbox}%
+\begin{adjustbox}{valign=t,minipage=.04\textwidth}
+\begin{subfigure}{0.04\textwidth}
+\caption{}
+\label{fig:kimyi:flaw:dist}
+\end{subfigure}
+\end{adjustbox}%
+\begin{adjustbox}{valign=t,minipage=.3\textwidth}
+\small
+\begin{tabular}{rcccc}
+\toprule
+      & \multicolumn{4}{c}{$t$} \\
+        \cmidrule(lr){2-5}
+$s$ & \texttt{a} & \texttt{b} & \texttt{c} & \$ \\
+\midrule
+0 & 0 & 1 & 2 & 3 \\
+1 & $\infty$ & 0 & 1 & $\infty$ \\
+2 & $\infty$ & $\infty$ & $\infty$ & 0 \\
+3 & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+4 & $\infty$ & $\infty$ & 0 & $\infty$ \\
+5 & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\caption{Given the grammar in (\subref{fig:kimyi:flaw:grammar}) and the input
+`c' \citet{kimyi10astar} is unable to find any repair sequences; \corchueloplus,
+in contrast, is able to find a repair seqence [\textit{insert a}, \textit{insert
+b}]. The stategraph for the grammar is shown in
+(\subref{fig:kimyi:flaw:stategraph}) and the \textit{dist} table in
+(\subref{fig:kimyi:flaw:dist}). The search starts in state 0: \textsc{KY Insert}
+and \textsc{KY Delete} both match (the latter is an uninteresting dead-end so we
+ignore it here). The new \textsc{KY Insert} search node is found via the edge
+from state 0 labelled with terminal $a$: this moves the search to state $3$,
+with a heuristic of 0, $t = \top$, and a repair [\textit{insert a}]. However no
+rules match the new search node: there are no terminals directly reachable from
+state 3; \textsc{KY Reduce} is not applicable since $t = \top$; and \textsc{KY
+Shift} is not applicable since the next token in the user's input is `c' which,
+even after reductions, cannot be reached from state 3.}
+\label{fig:kimyi:flaw}
+\end{figure}
+
+The combination of the $\kyarrow$ rules (in particular \textsc{KY Reduce}'s
+ability to insert nonterminals) and the \textsf{dist} function leads to dramatic
+performance improvements as reported by \citet{kimyi10astar}. Unfortunately the
+algorithm contains two separate flaws which lead it to produce incorrect
+results. The first flaw is that the \textsf{dist} heuristic does not take into
+account reductions or deletions: hence the heuristic is only valid for chains of
+inserts via \textsc{KY Insert}. The second flaw results from trying to fix the
+first: the $t$ part of the $\kyarrow$ relation is a hack to ensure that
+\textsc{KY Reduce} and \textsc{KY Delete} cannot match when the heuristic $> 0$.
+Unfortunately this hack is too restrictive, sometimes trapping the search in
+parsing states from which it cannot escape, and sometimes stopping it from
+searching states which would produce a lower cost repair sequence.
+Figure~\ref{fig:kimyi:flaw} shows an example where the search gets trapped and
+the algorithm is unable to find a repair sequence, whereas \corchueloplus is
+able to. These flaws also cause the algorithm to return non-minimum cost repair
+sequences. For example, given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
+'a' 'a' 'd';} and the input `a c d', the algorithm returns a repair sequence
+[\textit{insert b}, \textit{shift}, \textit{insert a}, \textit{insert a}]
+whereas \corchueloplus finds a lower cost repair sequence [\textit{insert b},
+\textit{delete}].
 
 
 \section{\mf}
