@@ -1070,11 +1070,11 @@ with by \textsc{KY Reduce} or \textsc{KY Delete}, preventing the heuristic
 from being undermined.
 
 \begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=.65\textwidth}
+\begin{adjustbox}{valign=t,minipage=.52\textwidth}
 \begin{lstlisting}[numbers=left]
-def mk_dist(sgraph, terminals, eof_idx):
-  table = [<!$\infty$!>] * len(sgraph) * len(terminals)
-  table[sgraph.final_state * len(terminals) \
+def mk_dist(sgraph, terms, eof_idx):
+  table = [<!$\infty$!>] * len(sgraph) * len(terms)
+  table[sgraph.final_state * len(terms) \
         + eof_idx] = 0
   while True:
     chgd = False
@@ -1084,45 +1084,25 @@ def mk_dist(sgraph, terminals, eof_idx):
           d = min_sentence_cost(sym.nt_idx)
         else:
           assert isinstance(sym, Terminal)
-          off = i * len(terminals) + sym.term_idx
+          off = i * len(terms) + sym.term_idx
           if table[off] != 0:
             table[off] = 0
             chgd = True
           d = 1
-        for j in range(len(terminals)):
-          this_off = i * len(terminals) + j
-          end_off = end_st * len(terminals) + j
-          if table[end_off] != <!$\infty$!> \
-             && table[end_off] + d < table[this_off]:
-            table[this_off] = table[end_off] + d
-            chgd = True
+        for j in range(len(terms)):
+          this_off = i * len(terms) + j
+          end_off = end_st * len(terms) + j
+          if table[end_off] != <!$\infty$!>:
+            other_cost = table[end_off] + d
+            if other_cost < table[this_off]:
+              table[this_off] = other_cost
+              chgd = True
     if not chgd:
       break
 \end{lstlisting}
 \end{adjustbox}%
-\begin{adjustbox}{valign=t,minipage=.35\textwidth}
-\small
-\begin{tabular}{rcccccc}
-\toprule
-      & \multicolumn{6}{c}{$t$} \\
-        \cmidrule(lr){2-7}
-$s$ & \texttt{*} & \texttt{+} & \texttt{(} & \texttt{)} & \texttt{INT} & \$ \\
-\midrule
-0 & 1 & 1 & 0 & 2 & 0 & 1 \\
-1 & 1 & 1 & 0 & 1 & 0 & $\infty$ \\
-2 & 2 & 0 & 1 & 3 & 1 & $\infty$ \\
-3 & 0 & 3 & 1 & 3 & 1 & $\infty$ \\
-4 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
-5 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & 0 \\
-6 & $\infty$ & $\infty$ & $\infty$ & 0 & $\infty$ & $\infty$ \\
-7 & 1 & 1 & 0 & 2 & 0 & $\infty$ \\
-8 & 1 & 2 & 0 & 2 & 0 & $\infty$ \\
-9 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
-10 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
-11 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
-\bottomrule
-\end{tabular}
-\end{adjustbox}
+\begin{adjustbox}{valign=t,minipage=.48\textwidth}
+\vspace{-9.5pt}
 \caption{A fixed-point algorithm for the \textit{dist(s, t)} function (left) and the
 resulting distance table (right) for the grammar from
 Figure~\ref{fig:exprgrammar}. The algorithm takes in the stategraph, a set of
@@ -1139,7 +1119,8 @@ edge: if the label's symbol is a nonterminal, we return the cost of the minimal
 sentence matching that nonterminal (line 10; the algorithm for this is very
 similar to \textit{dist} itself); if a terminal we return a cost of 1 (line 17).
 If the cost of $t$ in \texttt{end\_st} plus the distance to \texttt{end\_st} is
-lower than the cost of $t$ in $i$ then we update the latter (lines 19--24).}
+lower than the cost of $t$ in $i$ then we update the latter (lines 19--25).}
+\end{adjustbox}
 \label{fig:kimyi:dist}
 \end{figure}
 
