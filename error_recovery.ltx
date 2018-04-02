@@ -58,6 +58,8 @@
 \newcommand{\lrarrowstar}{\rightarrow_{\textrm{\tiny LR}}^*}
 \newcommand{\lrarrow}{\rightarrow_{\textrm{\tiny LR}}}
 \newcommand{\mf}{\textit{MF}\xspace}
+\newcommand{\mfarrow}{\rightarrow_{\textrm{\tiny MF}}}
+\newcommand{\mfarrowstar}{\rightarrow_{\textrm{\tiny MF}}^*}
 
 \include{experimentstats}
 
@@ -1258,8 +1260,78 @@ properties.
 \section{\mf}
 \label{mf}
 
-\subsection{Ambiguity}
-\label{disambiguation}
+In this section we present a new recovery algorithm \mf: the motivation behind
+this algorithm is to see if the A* algorithm and a heuristic can be developed
+that do not compromise correctness. As with \corchueloplus, \mf finds the
+complete set of minimum cost repair sequences, although it uses different
+reduction rules and the A* algorithm to speed up the search. While
+\corchueloplus and \mf find precisely the same repair sequences, \mf does so
+faster. However, \mf requires more up-front calculations, that require slightly
+more implementation effort: \mf is approximately 950LoC whereas \corchueloplus
+is approximately 700LoC.
+
+In this Section, we first provide an overview of the algorithm
+(Section~\ref{mf:overview}) before describing in detail the steps needed to
+calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
+
+
+\subsection{An overview of \mf}
+\label{mf:overview}
+
+\begin{figure}[t]
+\small
+\[
+\infer[\textsc{MF Insert}]
+      {([s_0 \ldots s_n], [t_0 \ldots t_n])
+       \mfarrow ([s_0 \ldots s_n, s'], [t_0 \ldots t_n], [\textit{insert}~t], d)}
+      {\textsf{action}(s_n, t) = \textit{shift}~s' \wedge t \ne \${}
+       \wedge d = \textsf{dyn\_dist}(s', t_0) < \infty}
+\]
+\vspace{-3pt}
+\[
+\infer[\textsc{MF Reduce}]
+      {([s0 \ldots s_n], [t_0 \ldots t_n]) \mfarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'],
+       [t_0 \ldots t_n], [], d)}
+      {N: \alpha \in \textsf{core\_reduces}(s_n)
+       \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'
+       \wedge d = \textsf{dyn\_dist}(s', t_0) < \infty}
+\]
+\vspace{-4pt}
+\[
+\infer[\textsc{MF Delete}]
+      {(S, [t_0, t_1 \ldots t_n]) \kyarrow (S, [t_1 \ldots t_n], [\textit{delete}], d)}
+      {t_0 \ne \$
+       \wedge d = \textsf{dyn\_dist}(s_n, t_1) < \infty}
+\]
+\vspace{-3pt}
+\[
+\hspace{-12pt}
+\infer[\textsc{MF Shift}]
+      {([s_0 \ldots s_n], [t_0, t_1 \ldots t_n])
+       \mfarrow ([s_0 \ldots s_n, s'], [t_1 \ldots t_n], [\textit{shift}], d)}
+      {\textsf{action}(s_n, t_0) = \textit{shift}~s'
+       \wedge d = \textsf{dyn\_dist}(s', t_1) < \infty}
+\]
+\vspace{-12pt}
+\caption{The repair-creating rules for \mf. \textit{dyn\_dist} is the \mf A*
+heuristic: unlike \citet{kimyi10astar}, every rule makes use of the heuristic.
+\textit{nonterm\_reduces}($s_n$) returns the set of non-terminals which are
+reduced by state $s_n$ (since the set naturally weeds out duplicates, this
+avoids the problem that the statetable for state $s_n$ may reference nonterminal
+$R$ repeatedly).}
+\label{fig:mf:rules}
+\end{figure}
+
+We introduce a new reduction relation $\mfarrow$, whose rules are shown in
+Figure~\ref{fig:mf:rules}. There are two main features to these rules: they do
+not use the $\lrarrow$ (in this sense being closer to \citet{mckenzie95error}
+than either \citet{corchuelo02repairing} or \citet{kimyi10astar}); and each rule
+uses a new A* heuristic \textsf{dyn\_dist} which takes into account reductions
+and deletions.
+
+
+\subsection{\texttt{dyn\_dist}}
+\label{mf:dyn_dist}
 
 
 \section{Experiment}
