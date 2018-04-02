@@ -492,7 +492,7 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \vspace{-6pt}
 \[
 \infer[\textsc{CR Delete}]
-      {(S, [t_0 \ldots t_n]) \crarrow (S, [t_1 \ldots t_n], [\textit{delete}])}
+      {(S, [t_0, t_1 \ldots t_n]) \crarrow (S, [t_1 \ldots t_n], [\textit{delete}])}
       {t_0 \ne \$}
 \]
 \vspace{-3pt}
@@ -1014,20 +1014,20 @@ terminates when the first success node is found.
 \infer[\textsc{KY Insert}]
       {([s_0 \ldots s_n], [t_0 \ldots t_n], t) \kyarrow ([s_0 \ldots s_n, s'],
        [t_0 \ldots t_n], \top, [\textit{insert}~t], d)}
-      {s_n \xrightarrow{\text{~~t~~}} s' \wedge t \ne \${} \wedge d = dist(s', t_0) < \infty)}
+      {s_n \xrightarrow{\text{~~t~~}} s' \wedge t \ne \${} \wedge d = \textsf{dist}(s', t_0) < \infty)}
 \]
 \vspace{-3pt}
 \[
 \infer[\textsc{KY Reduce}]
       {([s0 \ldots s_n], [t_0 \ldots t_n], \bot) \kyarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'],
        [t_0 \ldots t_n], \bot, [\textit{insert}~\beta_0 \ldots \textit{insert}~\beta_n], 0)}
-      {[N: \alpha \bullet \beta_0 \ldots \beta_n] \in \textsf{core($s_n$)}
+      {[N: \alpha \bullet \beta_0 \ldots \beta_n] \in \textsf{core}(s_n)
        \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'}
 \]
 \vspace{-4pt}
 \[
 \infer[\textsc{KY Delete}]
-      {(S, [t_0 \ldots t_n], \bot) \kyarrow (S, [t_1 \ldots t_n], \bot, [\textit{delete}], 0)}
+      {(S, [t_0, t_1 \ldots t_n], \bot) \kyarrow (S, [t_1 \ldots t_n], \bot, [\textit{delete}], 0)}
       {t_0 \ne \$}
 \]
 \vspace{-3pt}
@@ -1038,9 +1038,9 @@ terminates when the first success node is found.
       {(S, [t_0 \ldots t_n]) \lrarrowstar (S', [t_1 \ldots t_n])}
 \]
 \vspace{-12pt}
-\caption{The main \citet{kimyi10astar} reduction rules from (\textit{parsing
+\caption{The repair-creating rules for \citet{kimyi10astar} operate from (\textit{parsing
 stack}, \textit{token list}, \textit{t}) to (\textit{parsing stack},
-\textit{token list}, \textit{t}, \textit{repairs}, \textit{heuristic}).
+\textit{token list}, \textit{t}, \textit{repairs}, \textit{heuristic}) tuples.
 \textsc{KY Insert} finds terminals in the stategraph
 ($\xrightarrow{\text{~~t~~}}$) which lead to a state with a finite distance to
 the next input token as \textit{insert} repairs. \textsc{KY Reduce} finds items
@@ -1216,7 +1216,7 @@ even after reductions, cannot be reached from state 3.}
 The combination of the $\kyarrow$ rules (in particular \textsc{KY Reduce}'s
 ability to insert nonterminals) and the \textsf{dist} function lead to dramatic
 performance improvements as reported by \citet{kimyi10astar}. Unfortunately the
-algorithm contains two separate flaws which lead it to produce incorrect
+algorithm contains two flaws which lead it to produce incorrect
 results.
 
 The first flaw is that the \textsf{dist} heuristic does not take into
@@ -1233,8 +1233,26 @@ These flaws also cause the algorithm to return non-minimum cost repair
 sequences. For example, given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
 'a' 'a' 'd';} and the input `a c d', the algorithm incorrectly returns the repair sequence
 [\textit{insert b}, \textit{shift}, \textit{insert a}, \textit{insert a}]
-instead of the minimum cost repair seqence [\textit{insert b}, \textit{delete}].
+instead of the minimum cost repair sequence [\textit{insert b}, \textit{delete}].
 In both cases, \corchueloplus correctly finds minimum cost repair sequences.
+
+Both flaws can be fixed by revisiting an old friend: if we apply the same change to
+\textsc{KY Shift} as we did to \textsc{CR Shift} (see
+Figure~\ref{fig:corchuelo:kimyi}), the problem disappears. The reason this works
+is that if \texttt{KY Shift} can perform reductions without having to consume
+input, then the search can never get trapped as it did in
+Figure~\ref{fig:kimyi:flaw}. Unfortunately applying the \textsc{CR Shift 3} fix
+to \textsc{KY Shift} turns the \citet{kimyi10astar} algorithm into a slower
+version of \citet{corchuelo02repairing}, since reductions are now duplicated
+between \textsc{KY Reduce} and \textsc{KY Shift}. Removing \textsc{KY Reduce}
+turns the algorithm into an almost literal copy of \citet{corchuelo02repairing},
+with the mostly minor difference that \textsc{CR Insert} operates on the
+statetable and \textsc{KY Insert} on the stategraph.\footnote{Though note that
+for parsers which allow conflict resolution, such as Yacc, this means that
+\textsc{KY Insert} can produce results which can't be parsed by the
+statetable~\cite[p.~53, 54]{cerecke03phd}.}. As this may suggest, we have been
+unable to find fixes to the algorithm that maintain its claimed performance
+properties.
 
 
 \section{\mf}
