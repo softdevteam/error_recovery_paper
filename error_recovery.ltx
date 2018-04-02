@@ -974,16 +974,15 @@ all. \citet{kimyi10astar} propose a new error recovery -- which is in the
 \citet{fischer79locally} family, but by far its most radical member --  which
 claims to almost entirely remove such performance problems. This work has not,
 to the best of our knowledge, received prior attention in the community, despite
-this promise. In this section we provide a brief overview of this work,
-with enough information to understand the details relevant to this paper but,
-in the interest of brevity, without several less important details which a real
+this promise. In this section we provide a brief overview of this work: we
+give enough information to understand the details relevant to this paper but
+we elide several details which a real
 implementation would need to consider. We also adjust the algorithm's style to
-match this paper's and correct several minor mistakes
-(Section~\ref{kimyi:overview}). We then show that the algorithm contains two serious flaws
+match this paper's and correct several minor mistakes. We then show that the
+algorithm contains two serious flaws
 which mean that it misses minimum cost repair sequences
-(Section~\ref{kimyi:flaws}). These flaws are not easily fixed in the context of
-the algorithm, but parts of the approach serve as inspiration for our \mf
-error recovery algorithm.
+(Section~\ref{kimyi:flaws}). These flaws are not easily fixed, but parts of the
+approach serve as inspiration for our \mf error recovery algorithm.
 
 
 \subsection{An overview of the algorithm}
@@ -992,22 +991,21 @@ error recovery algorithm.
 The \citet{kimyi10astar} algorithm takes \citet{corchuelo02repairing} as a base,
 adding two significant novelties: it uses the A*
 algorithm~\cite{hart68astar} to delay, and thus often to avoid, unpromising
-search nodes; and it can insert non-terminals, sidestepping many insert
-repairs entirely. This allows examples with
+search nodes; and it can insert non-terminals, sidestepping many inserts
+of terminals entirely. This allows examples with
 thousands of unmatched brackets to be repaired in a few seconds.
 
 Since the A* algorithm is not a particularly common one in parsers,
-we first start with a brief recap. The A* algorithm finds optimal paths through
+we first start with a brief recap. The A* algorithm finds minimum cost paths through
 a graph where each edge has an associated cost $c$. The current known lowest
 cost to reach a node $n$ from the start node is represented by $d(n)$. A
-heuristic $h(n)$ returns an estimate of the cost to reach a success node from
-$n$. In order that the algorithm finds the shortest path between the start node
-and a success node, the heuristic must be `admissible', meaning that it must
-never overestimate the cost to reach a success node (but it may safely
-underestimate this cost i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
-used to order nodes by their distance and heuristic i.e.~by $d(n) + h(n)$. On
-each iteration a node in the queue with the lowest $d(n) + h(n)$ is selected, and
-its neighbours explored and entered into the priority queue. The search
+heuristic $h(n)$ returns an estimate of the additional cost needed to reach a success node from
+$n$. The heuristic must be `admissible': it must
+never overestimate the cost to reach a success node; however, it may safely
+underestimate (i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
+used to order nodes by their $d(n) + h(n)$. On
+each iteration the node in the queue with the lowest $d(n) + h(n)$ is selected,
+its neighbours explored and each entered into the priority queue. The search
 terminates when the first success node is found.
 
 \begin{figure}
@@ -1061,20 +1059,19 @@ relation $\kyarrow$ which defines when individual repairs are created
 (Figure~\ref{fig:kimyi:rules}). Unlike the $\crarrow$ relation, these rules are
 from (\textit{parsing stack}, \textit{token list}, \textit{t}) to
 (\textit{parsing stack}, \textit{token list}, \textit{t}, \textit{repairs},
-\textit{heuristic}). Of these values, $t$ is the least intuitive: in essence,
-its job is to counteract a weakness with the A* heuristic used, which doesn't
-take into account reductions or deletions. Since the only rule which makes use
-of the heuristic is \textsc{KY Insert}, it is the only rule to set $t = \top$.
-This means that search nodes created by \textsc{KY Insert} can't be interfered
-with by \textsc{KY Reduce} or \textsc{KY Delete}, preventing the heuristic
-from being undermined.
+\textit{heuristic}) tuples. Of these values, $t$ is the least intuitive: in essence,
+it counteracts the fact that, as we will soon see, the A* heuristic used doesn't
+take into account reductions or deletions. Since \textsc{KY Insert} is the only
+rule which uses the heuristic, it sets $t = \top$ to prevent
+\textsc{KY Reduce} and \textsc{KY Delete} from making the heuristic inadmissible.
+Only \textsc{KY Shift} can turn $t = \top$ into $\bot$.
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.52\textwidth}
 \begin{lstlisting}[numbers=left]
 def mk_dist(sgraph, terms, eof_idx):
   table = [<!$\infty$!>] * len(sgraph) * len(terms)
-  table[sgraph.final_state * len(terms) \
+  table[sgraph.accept_state * len(terms) \
         + eof_idx] = 0
   while True:
     chgd = False
@@ -1103,31 +1100,31 @@ def mk_dist(sgraph, terms, eof_idx):
 \end{adjustbox}%
 \begin{adjustbox}{valign=t,minipage=.48\textwidth}
 \vspace{-9.5pt}
-\caption{A fixed-point algorithm for the \textit{dist(s, t)} function (left) and the
-resulting distance table (right) for the grammar from
-Figure~\ref{fig:exprgrammar}. The algorithm takes in the stategraph, a set of
-terminals, and the index of the \$ terminal (line 1) and returns a table with
-one column per terminal and one row per state. The table starts with every entry
-set to $\infty$ (line 2) except for the final state's \$ terminal which is set
+\caption{A fixed-point algorithm for the \textit{dist(s, t)} function.
+The algorithm takes in the stategraph, an (arbitrarily but fixed) ordered list of
+terminals, and the index of the \$ terminal (line 1), and returns a table with
+one column per terminal and one row per state. Every entry starts
+at $\infty$ (line 2) except for the accept state's (i.e.~the only state with
+an \textit{accept} action) `\$' terminal which is set
 to 0 (lines 3, 4): entries monotonically reduce to a minimum of 0. For each
-state $i$ in the stategraph (line 7), the algorithm explores all of its outgoing edges
-(via the \texttt{edges} function (line 8)), each of which is labelled with a
-symbol \texttt{sym} and points to another state with index \texttt{end\_st}. If
+state $i$ in the stategraph (line 7), the algorithm explores its outgoing edges
+(via the \texttt{edges} function (line 8)), each of which: is labelled with a
+symbol \texttt{sym}; and points to another state with index \texttt{end\_st}. If
 the edge's symbol is a terminal then by definition the cost of reaching that
 terminal from state $i$ is 0 (lines 13-16). We then calculate the cost of the
 edge: if the label's symbol is a nonterminal, we return the cost of the minimal
-sentence matching that nonterminal (line 10; the algorithm for this is very
-similar to \textit{dist} itself); if a terminal we return a cost of 1 (line 17).
+sentence matching that nonterminal (line 10); if a terminal we return a cost of 1 (line 17).
 If the cost of $t$ in \texttt{end\_st} plus the distance to \texttt{end\_st} is
-lower than the cost of $t$ in $i$ then we update the latter (lines 19--25).}
-\end{adjustbox}
+lower than the cost of $t$ in $i$ then we update the latter (lines 19--25).
+A table created by this algorithm can be seen in Figure~\ref{fig:kimyi:flaw:dist}.}
 \label{fig:kimyi:dist}
+\end{adjustbox}
 \end{figure}
 
 The A* heuristic used is \textsf{dist(s, t)} which is best
 summarised as follows: if we are in parsing state $s$, what is the cost of the
 minimum route through the stategraph to a state $s'$ (where $s$ and $s'$ may be
-the same state) where the terminal $t$ is an outgoing edge? If no such route
+the same state), where $s'$ has the terminal $t$ as an outgoing edge? If no such route
 exists, \textsf{dist} returns $\infty$. While \citet{kimyi10astar} provide a
 specification of \textsf{dist}, we provide a fixed-point algorithm
 (Figure~\ref{fig:kimyi:dist}). The result is cached in a table at the point
@@ -1198,17 +1195,18 @@ $s$ & \texttt{a} & \texttt{b} & \texttt{c} & \$ \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
-\caption{Given the grammar in (\subref{fig:kimyi:flaw:grammar}) and the input
-`c' \citet{kimyi10astar} is unable to find any repair sequences; \corchueloplus,
-in contrast, is able to find a repair seqence [\textit{insert a}, \textit{insert
-b}]. The stategraph for the grammar is shown in
+\caption{\laurie{stategraph needs to be drawn} Given the grammar in
+(\subref{fig:kimyi:flaw:grammar}) and the input
+`c' \citet{kimyi10astar} is unable to find any repair sequences while \corchueloplus
+is able to find a repair seqence [\textit{insert a}, \textit{insert
+b}]. The grammar's stategraph is shown in
 (\subref{fig:kimyi:flaw:stategraph}) and the \textit{dist} table in
 (\subref{fig:kimyi:flaw:dist}). The search starts in state 0: \textsc{KY Insert}
-and \textsc{KY Delete} both match (the latter is an uninteresting dead-end so we
-ignore it here). The new \textsc{KY Insert} search node is found via the edge
+and \textsc{KY Delete} both match (the latter an uninteresting dead-end which we
+ignore). The new \textsc{KY Insert} search node is found via the edge
 from state 0 labelled with terminal $a$: this moves the search to state $3$,
-with a heuristic of 0, $t = \top$, and a repair [\textit{insert a}]. However no
-rules match the new search node: there are no terminals directly reachable from
+with a heuristic $\textsf{dist(0, `c')} = 2$, $t = \top$, and a repair [\textit{insert a}]. However, no
+rules match the new search node: there are no edges labelled with terminals from
 state 3; \textsc{KY Reduce} is not applicable since $t = \top$; and \textsc{KY
 Shift} is not applicable since the next token in the user's input is `c' which,
 even after reductions, cannot be reached from state 3.}
@@ -1216,10 +1214,12 @@ even after reductions, cannot be reached from state 3.}
 \end{figure}
 
 The combination of the $\kyarrow$ rules (in particular \textsc{KY Reduce}'s
-ability to insert nonterminals) and the \textsf{dist} function leads to dramatic
+ability to insert nonterminals) and the \textsf{dist} function lead to dramatic
 performance improvements as reported by \citet{kimyi10astar}. Unfortunately the
 algorithm contains two separate flaws which lead it to produce incorrect
-results. The first flaw is that the \textsf{dist} heuristic does not take into
+results.
+
+The first flaw is that the \textsf{dist} heuristic does not take into
 account reductions or deletions: hence the heuristic is only valid for chains of
 inserts via \textsc{KY Insert}. The second flaw results from trying to fix the
 first: the $t$ part of the $\kyarrow$ relation is a hack to ensure that
@@ -1228,13 +1228,13 @@ Unfortunately this hack is too restrictive, sometimes trapping the search in
 parsing states from which it cannot escape, and sometimes stopping it from
 searching states which would produce a lower cost repair sequence.
 Figure~\ref{fig:kimyi:flaw} shows an example where the search gets trapped and
-the algorithm is unable to find a repair sequence, whereas \corchueloplus is
-able to. These flaws also cause the algorithm to return non-minimum cost repair
+the algorithm is unable to find a repair sequence.
+These flaws also cause the algorithm to return non-minimum cost repair
 sequences. For example, given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
-'a' 'a' 'd';} and the input `a c d', the algorithm returns a repair sequence
+'a' 'a' 'd';} and the input `a c d', the algorithm incorrectly returns the repair sequence
 [\textit{insert b}, \textit{shift}, \textit{insert a}, \textit{insert a}]
-whereas \corchueloplus finds a lower cost repair sequence [\textit{insert b},
-\textit{delete}].
+instead of the minimum cost repair seqence [\textit{insert b}, \textit{delete}].
+In both cases, \corchueloplus correctly finds minimum cost repair sequences.
 
 
 \section{\mf}
