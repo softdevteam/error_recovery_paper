@@ -96,7 +96,7 @@ In this paper we show that not only can an advanced approach run in acceptable t
 -- which we define as spending a maximum of 0.5s in error recovery per file -- but
 that we can increase the complexity of the problem to finding \emph{all} minimum
 cost recovery options, and still do so within acceptable time. We first extend
-an existing algorithm \lukas{mention its name here? see comment in Figure 1}, before introducing a new, faster, alternative \mf. We
+Corchuelo et al.'s algorithm, before introducing a new, faster, alternative \mf. We
 validate our algorithms with a corpus of \corpussize real-world
 syntactically invalid Java programs: \mf is able to find recovery options for
 \mfsuccessrate of these in acceptable time.
@@ -197,18 +197,15 @@ dealing with it. \texttt{javac} (\subref{lst:javaerror:javac}) spots the error
 when it encounters `\texttt{y}'. Its error recovery heuristic then
 repairs the input by inserting a semicolon before `\texttt{y}' (i.e.~making
 the input equivalent to `\texttt{int x; y;}'). This immediately leads to a spurious second parse error,
-since `\texttt{y}' on its own is not a valid statement. The \corchueloplus \lukas{This is the first mentioned of the extended Corchuelo algorithm so at this point we don't know yet what this is.} and \mf
-recovery algorithms (both produce the output shown in \subref{lst:javaerror:mf}) also spot the
-error when it encounters `\texttt{y}', and then use the
-Java grammar to find minimum cost repair sequences. These two algorithms find
-and report to the user three separate repair sequences: one can delete `\texttt{y}'
+since `\texttt{y}' on its own is not a valid statement. The two new error
+recovery algorithms (\corchueloplus and \mf) we introduce in this paper both
+produce the output shown in (\subref{lst:javaerror:mf}): after spotting an error
+when parsing encounters `\texttt{y}', they then use the Java grammar to find the
+complete set of minimum cost repair sequences (unlike previous approaches which
+non-determinstically find one minimum cost repair sequence). In this case three
+repair sequences are reported to the user: one can delete `\texttt{y}'
 entirely (`\texttt{int x;}'), or insert a comma
-(`\texttt{int x, y;}'), or insert an equals sign (\texttt{`int x = y;'}). In
-this case, all three repair sequences have the same rank, and are thus presented
-in an arbitrary order. However, it is important to note that the first repair
-sequence is then used to repair the input for subsequent parsing. Presenting all
-three minimum cost repair sequences to the user gives a much greater chance that one
-matches their original intention.}
+(`\texttt{int x, y;}'), or insert an equals sign (\texttt{`int x = y;'}).}
 \label{fig:javaerror}
 %\end{minipage}
 %\end{tabular}
@@ -415,11 +412,11 @@ returns the action for the state $s$ and token $t$
 or \emph{error} if no such action exists; and \textsf{goto}$(s, N)$
 returns the goto state for the state $s$ and the nonterminal $N$. We then define
 a reduction relation $\lrarrow$ for $(\textit{parsing stack}, \textit{token
-list})$ pairs with two reduction rules \lukas{do we consider the shift rule as a reduction rule? or should we just write `two rules` here or maybe even `two rules, shift and reduce`?}as shown in Figure~\ref{fig:lrreduction}.
-A full LR parse $\lrarrowstar$ repeatedly applies the two $\lrarrow$ reductions
-until neither applies, which means that \textsf{action}$(s_n, i)$ \lukas{i should be a terminal?} is either:
+list})$ pairs with two reduction rules as shown in Figure~\ref{fig:lrreduction}.
+A full LR parse $\lrarrowstar$ repeatedly applies the two $\lrarrow$ rules
+until neither applies, which means that \textsf{action}$(s_n, t_0)$ is either:
 $\textit{accept}$ (i.e.~the input has been fully parsed); or
-$\textit{error}$ (i.e.~an error has been detected at position $i$ \lukas{also change this back to terminal?}). A
+$\textit{error}$ (i.e.~an error has been detected at the terminal $t_0$). A
 full parse of an empty file takes a starting pair of $([0], [t_0 \ldots t_n, \$])$,
 where state $0$ is expected to represent the entry point into the stategraph, $t_0 \ldots t_n$
 is the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token.
@@ -429,20 +426,21 @@ is the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token
 \[
 \infer[\textsc{LR Shift}]
       {([s0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_n, s'], [t_1 \ldots t_n])}
-      {\textsf{action}(s_n, t_n) = \textit{shift}\ s'}
+      {\textsf{action}(s_n, t_0) = \textit{shift}\ s'}
 \]
 \vspace{-3pt}
 \[
 \infer[\textsc{LR Reduce}]
       {([s0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'], [t_0 \ldots t_n])}
-      {(\textsf{action}(s_n, t_n) = \textit{reduce}\ N \colon \alpha)
+      {(\textsf{action}(s_n, t_0) = \textit{reduce}\ N \colon \alpha)
        \wedge (\textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s')}
 \]
 \vspace{-15pt}
-\caption{Core reduction rules for $\lrarrow$. \textsc{LR Shift}
+\caption{Reduction rules for $\lrarrow$ relative to $(\textit{parsing stack},
+\textit{token list})$ pairs. \textsc{LR Shift}
 advances the input by one token and grows the parsing stack, while
-\textsc{LR Reduce} unwinds the parsing stack when a production is complete
-before moving to a new state. \lukas{LR action for shift/reduce should be action(sn, t0)}}
+\textsc{LR Reduce} unwinds (`reduces') the parsing stack when a production is
+complete before moving to a new (`goto') state.}
 \label{fig:lrreduction}
 \end{figure}
 
