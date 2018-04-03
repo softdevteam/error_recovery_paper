@@ -96,9 +96,9 @@ In this paper we show that not only can an advanced approach run in acceptable t
 -- which we define as spending a maximum of 0.5s in error recovery per file -- but
 that we can increase the complexity of the problem to finding \emph{all} minimum
 cost recovery options, and still do so within acceptable time. We first extend
-an existing algorithm, before introducing a new, faster, alternative \mf. We
+an existing algorithm \lukas{mention its name here? see comment in Figure 1}, before introducing a new, faster, alternative \mf. We
 validate our algorithms with a corpus of \corpussize real-world
-syntactically invalid of Java programs: \mf is able to find recovery options for
+syntactically invalid Java programs: \mf is able to find recovery options for
 \mfsuccessrate of these in acceptable time.
 \end{abstract}
 
@@ -197,7 +197,7 @@ dealing with it. \texttt{javac} (\subref{lst:javaerror:javac}) spots the error
 when it encounters `\texttt{y}'. Its error recovery heuristic then
 repairs the input by inserting a semicolon before `\texttt{y}' (i.e.~making
 the input equivalent to `\texttt{int x; y;}'). This immediately leads to a spurious second parse error,
-since `\texttt{y}' on its own is not a valid statement. The \corchueloplus and \mf
+since `\texttt{y}' on its own is not a valid statement. The \corchueloplus \lukas{This is the first mentioned of the extended Corchuelo algorithm so at this point we don't know yet what this is.} and \mf
 recovery algorithms (both produce the output shown in \subref{lst:javaerror:mf}) also spot the
 error when it encounters `\texttt{y}', and then use the
 Java grammar to find minimum cost repair sequences. These two algorithms find
@@ -415,11 +415,11 @@ returns the action for the state $s$ and token $t$
 or \emph{error} if no such action exists; and \textsf{goto}$(s, N)$
 returns the goto state for the state $s$ and the nonterminal $N$. We then define
 a reduction relation $\lrarrow$ for $(\textit{parsing stack}, \textit{token
-list})$ pairs with two reduction rules as shown in Figure~\ref{fig:lrreduction}.
+list})$ pairs with two reduction rules \lukas{do we consider the shift rule as a reduction rule? or should we just write `two rules` here or maybe even `two rules, shift and reduce`?}as shown in Figure~\ref{fig:lrreduction}.
 A full LR parse $\lrarrowstar$ repeatedly applies the two $\lrarrow$ reductions
-until neither applies, which means that \textsf{action}$(s_n, i)$ is either:
+until neither applies, which means that \textsf{action}$(s_n, i)$ \lukas{i should be a terminal?} is either:
 $\textit{accept}$ (i.e.~the input has been fully parsed); or
-$\textit{error}$ (i.e.~an error has been detected at position $i$). A
+$\textit{error}$ (i.e.~an error has been detected at position $i$ \lukas{also change this back to terminal?}). A
 full parse of an empty file takes a starting pair of $([0], [t_0 \ldots t_n, \$])$,
 where state $0$ is expected to represent the entry point into the stategraph, $t_0 \ldots t_n$
 is the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token.
@@ -442,7 +442,7 @@ is the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token
 \caption{Core reduction rules for $\lrarrow$. \textsc{LR Shift}
 advances the input by one token and grows the parsing stack, while
 \textsc{LR Reduce} unwinds the parsing stack when a production is complete
-before moving to a new state.}
+before moving to a new state. \lukas{LR action for shift/reduce should be action(sn, t0)}}
 \label{fig:lrreduction}
 \end{figure}
 
