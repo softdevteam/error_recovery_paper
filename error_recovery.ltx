@@ -572,7 +572,7 @@ cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\
 The algorithm maintains a todo list of lists (modelled
 on \citet[p.~25]{cerecke03phd} rather than the suggestion
 in \citet{corchuelo02repairing}); the first sub-list contains
-search nodes of cost 0, the second sub-list contains search nodes of cost 1 and
+nodes of cost 0, the second sub-list contains nodes of cost 1 and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
 lowest cost node $n$ is picked (line 8). If $n$ represents an accept state (line
@@ -768,8 +768,8 @@ effective at improving performance while being simple to implement.
 First, rather than use a general queue data-structure (probably based on a
 tree), we use a similar queue data-structure to
 \citet[p.~25]{cerecke03phd}. This consists of one sub-list per cost (i.e.~ the
-first sub-list contains search nodes
-of cost 0, the second sub-list contains search nodes of cost 1 and so on).
+first sub-list contains nodes
+of cost 0, the second sub-list contains nodes of cost 1 and so on).
 Since we always know what cost we are currently investigating,
 finding the next todo element requires only a single \texttt{pop}
 (line 8 of Figure~\ref{fig:corchuelo:algorithm}). Similarly,
@@ -876,13 +876,13 @@ node's repairs): and we loosen node equality to allow compatible
 repair sequences to be be considered as equal. This leads to efficient
 detection of compatible nodes.
 
-Conceptually, merging two nodes together is simple: each search node simply
+Conceptually, merging two nodes together is simple: each node simply
 needs to store a set of repair sequences, each of which is updated as further
 repairs are found. However, this is an extremely inefficient representation as
 the sets involved need to be copied and extended as each new repair is found.
 Instead, we use a representation which relies on parent pointer trees (for the
 same reasons as in Section~\ref{cactusnodes}).
-The basic idea is that search nodes no longer reference a parent pointer tree of
+The basic idea is that nodes no longer reference a parent pointer tree of
 repairs directly, but instead a parent pointer tree of \emph{repair merges}. A
 repair merge is a pair (\textit{repair}, \textit{merged}) where
 where \textit{repair} is a plain repair and \textit{merged} is a (possibly null) set of
@@ -956,13 +956,14 @@ in (\subref{lst:ranking:output}). javac in contrast attempts to insert
 The final step in our new algorithm allows us to somewhat compensate for the
 small value of $N_\textit{shifts}$. This value has to be a small integer (in our
 case 3) because each additional token searched exponentially increases the
-search space. Thus the repair sequences we find can be less than ideal when a
-larger amount of input is considered. Fortunately, we can make use the existence
-of the complete set of minimum cost repair sequences to lessen this weakness.
-After this set has been generated, we rank it by how far repair sequences allow
+search space. Thus the repair sequences we find can be less than ideal when further
+user input is considered. Fortunately, we can use the
+complete set of minimum cost repair sequences to lessen this weakness.
+After this set has been generated, we then simplify it: we remove the shift
+repairs from the ends of sequences and remove duplicates. We then rank members by how far they allow
 parsing to successfully continue, up to a limit of $N_\textit{try}$ tokens
-(which we somewhat arbitrarily set at 250). Since multiple repair sequences may
-be ranked equally highly, we non-deterministically select one, apply its repairs
+(which we somewhat arbitrarily set at 250). We then (non-deterministically)
+select one of the top ranked repair sequences, apply its repairs
 to the input, and continue parsing as normal. Particularly on real-world
 grammars, this can substantially decrease the chances of the chosen repair
 sequence causing cascading errors (see Figure~\ref{fig:ranking} for an example).
@@ -1001,7 +1002,7 @@ match this paper's and correct several minor mistakes. We then show that the
 algorithm contains two serious flaws
 which mean that it misses minimum cost repair sequences
 (Section~\ref{kimyi:flaws}). These flaws are not easily fixed, but parts of the
-approach serve as inspiration for our \mf error recovery algorithm.
+approach serve as inspiration for our new \mf error recovery algorithm.
 
 
 \subsection{An overview of the algorithm}
@@ -1010,7 +1011,7 @@ approach serve as inspiration for our \mf error recovery algorithm.
 The \citet{kimyi10astar} algorithm takes \citet{corchuelo02repairing} as a base,
 adding two significant novelties: it uses the A*
 algorithm~\cite{hart68astar} to delay, and thus often to avoid, unpromising
-search nodes; and it can insert non-terminals, sidestepping many inserts
+nodes; and it can insert non-terminals, avoiding many inserts
 of terminals entirely. This allows examples with
 thousands of unmatched brackets to be repaired in a few seconds.
 
@@ -1079,7 +1080,7 @@ relation $\kyarrow$ which defines when individual repairs are created
 from (\textit{parsing stack}, \textit{token list}, \textit{t}) to
 (\textit{parsing stack}, \textit{token list}, \textit{t}, \textit{repairs},
 \textit{heuristic}) tuples. Of these values, $t$ is the least intuitive: in essence,
-it counteracts the fact that, as we will soon see, the A* heuristic used doesn't
+it is intended to counteract the fact that the A* heuristic used in the approach doesn't
 take into account reductions or deletions. Since \textsc{KY Insert} is the only
 rule which uses the heuristic, it sets $t = \top$ to prevent
 \textsc{KY Reduce} and \textsc{KY Delete} from making the heuristic inadmissible.
@@ -1222,10 +1223,10 @@ b}]. The grammar's stategraph is shown in
 (\subref{fig:kimyi:flaw:stategraph}) and the \textit{dist} table in
 (\subref{fig:kimyi:flaw:dist}). The search starts in state 0: \textsc{KY Insert}
 and \textsc{KY Delete} both match (the latter an uninteresting dead-end which we
-ignore). The new \textsc{KY Insert} search node is found via the edge
+ignore). The new \textsc{KY Insert} node is found via the edge
 from state 0 labelled with terminal $a$: this moves the search to state $3$,
 with a heuristic $\textsf{dist(0, `c')} = 2$, $t = \top$, and a repair [\textit{insert a}]. However, no
-rules match the new search node: there are no edges labelled with terminals from
+rules match the new node: there are no edges labelled with terminals from
 state 3; \textsc{KY Reduce} is not applicable since $t = \top$; and \textsc{KY
 Shift} is not applicable since the next token in the user's input is `c' which,
 even after reductions, cannot be reached from state 3.}
@@ -1257,10 +1258,9 @@ In both cases, \corchueloplus correctly finds minimum cost repair sequences.
 
 Both flaws can be fixed by revisiting an old friend: if we apply the same change to
 \textsc{KY Shift} as we did to \textsc{CR Shift} (see
-Figure~\ref{fig:corchuelo:kimyi}), the problem disappears. The reason this works
-is that if \texttt{KY Shift} can perform reductions without having to consume
-input, then the search can never get trapped as it did in
-Figure~\ref{fig:kimyi:flaw}. Unfortunately applying the \textsc{CR Shift 3} fix
+Figure~\ref{fig:corchuelo:kimyi}), the problem disappears, because
+the altered \textsc{KY Shift} can perform reductions without having to
+consume input. Unfortunately applying the \textsc{CR Shift 3} fix
 to \textsc{KY Shift} turns the \citet{kimyi10astar} algorithm into a slower
 version of \citet{corchuelo02repairing}, since reductions are now duplicated
 between \textsc{KY Reduce} and \textsc{KY Shift}. Removing \textsc{KY Reduce}
@@ -1269,7 +1269,7 @@ with the mostly minor difference that \textsc{CR Insert} operates on the
 statetable and \textsc{KY Insert} on the stategraph.\footnote{Though note that
 for parsers which allow conflict resolution, such as Yacc, this means that
 \textsc{KY Insert} can produce results which can't be parsed by the
-statetable~\cite[p.~53, 54]{cerecke03phd}.}. As this may suggest, we have been
+statetable~\cite[p.~53, 54]{cerecke03phd}.}. We have been
 unable to find fixes to the algorithm that maintain its claimed performance
 properties.
 
