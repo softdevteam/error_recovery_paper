@@ -838,15 +838,34 @@ duplicate nodes but merging together
 reducing the search space. Two nodes are compatible if: their
 parsing stacks are identical; they both have an identical amount of input
 remaining; and their repair sequences are compatible. Two repair sequences
-are compatible if they end in the same number of shifts (including both
-ending in repairs other than shifts). Although it may initially seem that
-any two repair sequences should be compatible, we have to take into account the two
-that a node can be deemed successful: if it reaches an accept state (line 9,
+are compatible:
+
+\begin{enumerate}
+   \item if they both end in the same number ($n \ge 0$) of shifts.
+   \item if one repair sequence ends in a delete, the other repair sequence also
+ends in a delete.
+\end{enumerate}
+
+The first condition is a result of having to take into account
+that a node can be deemed successful in two ways: if it reaches an accept state (line 9,
 Figure~\ref{fig:corchuelo:algorithm}) or if it ends in $N_\textit{shifts}$ shift
-repairs (line 10). The former case is only affected by the parsing stack (which
-is not an issue in this case, since compatible nodes have identical parsing
-stacks), but the latter is clearly affected by the number of shift repairs at
+repairs (line 10). The former case is only affected by the parsing stack (and is
+thus unaffected by compatible nodes which have identical parsing stacks),
+but the latter requires care with the number of shift repairs at
 the end of the sequence.
+
+The second condition relates to the weak form of compatible merging inherited
+from \citet[p.~8]{corchuelo02repairing}: delete repairs are never followed by an
+insert (see Figure~\ref{fig:corchuelo:algorithm}) since [\textit{delete},
+\textit{insert x}] always leads to the same node as [\textit{insert x},
+\textit{delete}]. Although this is largely subsumed
+by compatible node merging, we keep it as a separate optimisation because it helps to slightly
+lessen worse case performance: it is the most common way of creating compatible nodes; our
+use of the todo list means that we would not catch every case; and the
+duplicate repair sequences are uninteresting from a user perspective, so we
+would have to weed them out later anyway. The latter case is important because
+though merging of compatible states is a substantial optimisation,
+each merge consumes memory, which is wasted if we later throw it away.
 
 Our implementation of compatible nodes subsumes our detection of duplicate nodes
 (Section~\ref{duplicatenodes}), relying on the fact that our todo data-structure
