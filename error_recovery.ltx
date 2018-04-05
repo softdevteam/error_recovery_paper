@@ -884,14 +884,14 @@ Instead, we use a representation which relies on parent pointer trees (for the
 same reasons as in Section~\ref{cactusnodes}).
 The basic idea is that search nodes no longer reference a parent pointer tree of
 repairs directly, but instead a parent pointer tree of \emph{repair merges}. A
-repair merge is a pair (\textit{repair}, \textit{parents})
-where \textit{repair} is a plain repair and \textit{parents} is a set of
-parent repair merges. A repair merge (\textit{rpr}, $p_1 \ldots p_n$) can
-be recursively expanded into a set of repair sequences
-$\{[$\textit{rpr}$] + p_1$ \ldots $[$\textit{rpr}$] + p_n\}$. We further compact
-the representation, and increase sharing, by representing the \textit{parents}
-set as a parent pointer tree (we do not bother weeding out duplicates at this
-stage).
+repair merge is a pair (\textit{repair}, \textit{merged}) where
+where \textit{repair} is a plain repair and \textit{merged} is a (possibly null) set of
+repair merge sequences. The reason for using a pair apart is twofold: we can quickly
+perform the compatibility checks on \textit{repair} alone; and we avoid allocating
+additional memory for nodes which have not yet been subject to a merge. The small
+downside to this scheme is that expanding nodes into repair sequences requires
+recursively expanding both the normal parent pointer tree of \textit{repair}s
+and the merged parent pointer trees of \textit{merged}.
 
 
 \subsection{Putting together the \corchueloplus algorithm}
