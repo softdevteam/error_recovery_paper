@@ -516,7 +516,7 @@ creates insert repairs for them (other than the EOF token `$\$$').
 \textsc{CR Delete} creates deletion repairs if user defined input remains.
 \textsc{CR Shift 1} parses at most $N_\textit{shift}$ tokens; if it reaches an accept or error
 state, or parses exactly $N_\textit{shift}$ tokens, then a shift repair per
-token shifted is created.}
+token shifted is created.\lukas{Shouldn't the condition of CR SHIFT1 at the beginning be something like this? $([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s_0 \ldots s_n, s_{n+1} \ldots s_j], [t_j \ldots t_n])$ Also is there a $\wedge$ or $\vee$ missing before $j=N_{shifts}$? Also in the bottom of CR Shift 1 we are using $[s_0 \ldots s_n]$ on the RHS of $\crarrow$ instead of $S'$.}}
 \label{fig:corchuelo:reductions}
 \vspace*{-10pt}
 \end{figure}
@@ -564,7 +564,7 @@ def all_cr_star(pstack, toks):
 \columnbreak
 \vspace*{-18pt}
 \caption{Our version of the \citet{corchuelo02repairing} algorithm. The main function
-\texttt{corchueloetall} takes in a (\emph{parsing stack}, \emph{token list})
+\texttt{corchueloetal} takes in a (\emph{parsing stack}, \emph{token list})
 pair and returns: a (\emph{parsing stack}, \emph{token list}, \emph{repair
 sequence}) triple where \emph{repair sequence} is guaranteed to be a minimum
 cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\[9pt]
@@ -575,14 +575,14 @@ in \citet{corchuelo02repairing}); the first sub-list contains
 nodes of cost 0, the second sub-list contains nodes of cost 1 and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
-lowest cost node $n$ is picked (line 8). If $n$ represents an accept state (line
+lowest cost node $n$ is picked (line 8\lukas{Maybe say lines 4-8, since the skipping of empty cost nodes is part of picking a lowest cost node?}). If $n$ represents an accept state (line
 9) or if the last $N_\textit{shifts}$ repairs are shifts (line 10), then $n$
 represents a minimum cost repair sequence and the algorithm terminates
 successfully (line 11). If $n$ has already consumed $N_\textit{total}$ tokens,
 then it is discarded (lines 12, 13). Otherwise, $n$'s neighbours
 are gathered using the $\crarrow$ relation (lines 14, 32--35). To avoid
 duplicate repairs, \textit{delete} repairs never follow \textit{insert} repairs
-(lines 16--18). Each neighbour has its repairs costed and is then
+(lines 15--17). Each neighbour has its repairs costed and is then
 assigned to the correct todo sub-list (lines 19--23).\\[9pt]
 %
 The \texttt{rprs\_cst} function returns the cost of a repair sequence. Inserts
@@ -720,7 +720,7 @@ Figure~\ref{fig:exprgrammar}. (\subref{fig:crshift2:orig}) shows the three repai
 sequences that the original \textsc{CR Shift 1} rule is capable of finding.
 (\subref{fig:crshift2:fix1}) shows the additional repair sequence that is found by \textsc{CR Shift 2}.
 (\subref{fig:crshift2:fix2}) shows the four additional repair sequences that the
-\texttt{CR Shift 3} rule is capable of finding.}
+\textsc{CR Shift 3} rule is capable of finding.}
 \label{fig:crshift2:example}
 \end{figure}
 
@@ -732,11 +732,11 @@ We first change the condition $0 < j \leq N_\textit{shifts}$ to $0 \leq j \leq
 N_\textit{shifts}$ (i.e. we don't force the LR parser to consume any tokens).
 However, this then opens the possibility of an infinite loop. We avoid this by
 saying that, if the input is not advanced, the parsing stack must have changed
-($j = 0 \wedge S \ne S'$). Put another way, in either case, we require progress
+($j = 0 \wedge S \ne S'$ \lukas{shouldn't Fig.6 then read the same?}). Put another way, in either case, we require progress
 to be made, even if that progress does not require consuming any input.
 
 Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
-at a time. This cause them to skip intermediate
+at a time. This causes them to skip intermediate
 positions from which minimum cost repair sequences may be found
 (this problem, and the basis of a fix, derive from \cite[p.~12]{kimyi10astar},
 though their suggestion suffers from the problem fixed by \textsc{CR Shift 1}).
@@ -750,7 +750,7 @@ search for repair sequences, as more are tried.
 Examples of the additional repair sequences that \textsc{CR Shift 2} and
 \textsc{CR Shift 3} can produce are shown in Figure~\ref{fig:crshift2:example}. Although
 in this case \textsc{CR Shift 1} produces some minimum cost repair
-sequences, in some cases it finds none, while \textsc{CR Shift 2} or \texttt{CR
+sequences, in some cases it finds none, while \textsc{CR Shift 2} or \textsc{CR
 Shift 3} find some. There is also a subtle difference in the style of repair
 sequences found by the various rules as shown in
 Figure~\ref{fig:crshift2:example}: \textsc{CR Shift 3} is much more likely to
