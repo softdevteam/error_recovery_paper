@@ -492,21 +492,25 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \vspace{-6pt}
 \[
 \infer[\textsc{CR Delete}]
-      {(S, [t_0, t_1 \ldots t_n]) \crarrow (S, [t_1 \ldots t_n], [\textit{delete}])}
+      {([s_0 \ldots s_n], [t_0, t_1 \ldots t_n])
+       \crarrow
+       ([s_0 \ldots s_n], [t_1 \ldots t_n], [\textit{delete}])}
       {t_0 \ne \$}
 \]
 \vspace{-3pt}
 \[
 \hspace{-12pt}
 \infer[\textsc{CR Shift 1}]
-      {(S, [t_0 \ldots t_n]) \crarrow ([s_0 \ldots s_n], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n])
+       \crarrow
+       ([s'_0 \ldots s'_n], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
       {%
 \begin{array}{c}
-(S, [t_0 \ldots t_n]) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n])
+([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s'_n], [t_j \ldots t_n])
  \wedge 0 < j \leq N_\textit{shifts}
 \\
  j = N_\textit{shifts} \vee
- \textsf{action}(s_n, t_j) \in \{\textit{accept}, \textit{error}\} 
+ \textsf{action}(s'_n, t_j) \in \{\textit{accept}, \textit{error}\} 
 \end{array}}
 \]
 \vspace{-7pt}
@@ -516,7 +520,7 @@ creates insert repairs for them (other than the EOF token `$\$$').
 \textsc{CR Delete} creates deletion repairs if user defined input remains.
 \textsc{CR Shift 1} parses at most $N_\textit{shift}$ tokens; if it reaches an accept or error
 state, or parses exactly $N_\textit{shift}$ tokens, then a shift repair per
-token shifted is created.\lukas{Shouldn't the condition of CR SHIFT1 at the beginning be something like this? $([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s_0 \ldots s_n, s_{n+1} \ldots s_j], [t_j \ldots t_n])$ Also is there a $\wedge$ or $\vee$ missing before $j=N_{shifts}$? Also in the bottom of CR Shift 1 we are using $[s_0 \ldots s_n]$ on the RHS of $\crarrow$ instead of $S'$.}}
+token shifted is created.}
 \label{fig:corchuelo:reductions}
 \vspace*{-10pt}
 \end{figure}
@@ -575,7 +579,7 @@ in \citet{corchuelo02repairing}); the first sub-list contains
 nodes of cost 0, the second sub-list contains nodes of cost 1 and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
-lowest cost node $n$ is picked (line 8\lukas{Maybe say lines 4-8, since the skipping of empty cost nodes is part of picking a lowest cost node?}). If $n$ represents an accept state (line
+lowest cost node $n$ is picked (line 4--8). If $n$ represents an accept state (line
 9) or if the last $N_\textit{shifts}$ repairs are shifts (line 10), then $n$
 represents a minimum cost repair sequence and the algorithm terminates
 successfully (line 11). If $n$ has already consumed $N_\textit{total}$ tokens,
@@ -622,26 +626,26 @@ unable to generate some minimum cost repair sequences.
 \[
 \hspace{-12pt}
 \infer[\textsc{CR Shift 2}]
-      {(S, [t_0 \ldots t_n]) \crarrow ([s_0 \ldots s_n], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_n], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
       {%
 \begin{array}{c}
-(S, [t_0 \ldots t_n]) \lrarrowstar ([s_0 \ldots s_n], [t_j \ldots t_n])
+([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s'_n], [t_j \ldots t_n])
  \wedge 0 \leq j \leq N_\textit{shifts}
 \\
- (j = 0 \wedge S \ne [s_0 \ldots s_n]) \vee j = N_\textit{shifts} \vee
- \textsf{action}(s_n, t_j) \in \{\textit{accept}, \textit{error}\}
+ (j = 0 \wedge [s_0 \ldots s_n] \ne [s'_0 \ldots s'_n]) \vee j = N_\textit{shifts} \vee
+ \textsf{action}(s'_n, t_j) \in \{\textit{accept}, \textit{error}\}
 \end{array}}
 \]
 
 \[
 \infer[\textsc{CR Shift 3}]
-      {(S, [t_0 \ldots t_n]) \crarrow (S', [t_j \ldots t_n], R)}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_n], [t_j \ldots t_n], R)}
       {%
 \begin{array}{c}
-(S, [t_0 \ldots t_n]) \lrarrowstar (S', [t_j \ldots t_n])
+([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s_n], [t_j \ldots t_n])
  \wedge 0 \leq j \leq 1
 \\
- (j = 0 \wedge S \ne S' \wedge R = [])
+ (j = 0 \wedge [s_0 \ldots s_n] \ne [s'_0 \ldots s_n] \wedge R = [])
   \vee
   (j = 1 \wedge R = [\textit{shift}])
 \end{array}
@@ -732,8 +736,8 @@ shows the two-phase fix which addresses this problem.
 We first change the condition $0 < j \leq N_\textit{shifts}$ to $0 \leq j \leq
 N_\textit{shifts}$ (i.e.~we don't force the LR parser to consume any tokens).
 However, this then opens the possibility of an infinite loop. We avoid this by
-saying that, if the input is not advanced, the parsing stack must have changed
-($j = 0 \wedge S \ne S'$ \lukas{shouldn't Fig.6 then read the same?}). Put another way, in either case, we require progress
+saying that, if the input is not advanced, the parsing stack must have changed.
+Put another way, in either case, we require progress
 to be made, even if that progress does not require consuming any input.
 
 Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
@@ -1275,17 +1279,15 @@ properties.
 \section{\mf}
 \label{mf}
 
-In this section we present a new recovery algorithm \mf: the motivation behind
-this algorithm is to see if the A* algorithm and a heuristic can be developed
-that do not compromise correctness. As with \corchueloplus, \mf finds the
-complete set of minimum cost repair sequences, although it uses different
-reduction rules and the A* algorithm to speed up the search. While
+In this section we present a new recovery algorithm \mf. As with \corchueloplus,
+\mf finds the complete set of minimum cost repair sequences, although it does so
+using the A* algorithm. While
 \corchueloplus and \mf find precisely the same repair sequences, \mf does so
-faster. However, \mf requires more up-front calculations, that require slightly
+in less time. However, \mf requires more up-front calculations that require slightly
 more implementation effort: \mf is approximately 950LoC whereas \corchueloplus
 is approximately 700LoC.
 
-In this Section, we first provide an overview of the algorithm
+We first provide an overview of the algorithm
 (Section~\ref{mf:overview}) before describing in detail the steps needed to
 calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
 
