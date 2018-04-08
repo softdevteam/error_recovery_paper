@@ -40,6 +40,24 @@
     escapeinside={{<!}{!>}},
 }
 
+% from https://tex.stackexchange.com/questions/264361/skipping-line-numbers-in-lstlisting#264373
+\let\origthelstnumber\thelstnumber
+\makeatletter
+\newcommand*\Suppressnumber{%
+  \lst@AddToHook{OnNewLine}{%
+    \let\thelstnumber\relax%
+     \advance\c@lstnumber-\@ne\relax%
+    }%
+}
+
+\newcommand*\Reactivatenumber[1]{%
+  \setcounter{lstnumber}{\numexpr#1-1\relax}
+  \lst@AddToHook{OnNewLine}{%
+   \let\thelstnumber\origthelstnumber%
+   \refstepcounter{lstnumber}
+  }%
+}
+
 \setcopyright{none}
 
 \bibliographystyle{ACM-Reference-Format}
@@ -546,7 +564,7 @@ def corchueloetal(pstack, toks):
       if len(n[2]) > 0 and n[2][-1] == <!{\textrm{\textit{delete}}}!> \
          and nbr[2][-1] == <!{\textrm{\textit{insert}}}!>:
         continue
-      cst = cur_cst + rprs_cst(nbr_rprs)
+      cst = cur_cst + rprs_cst(nbr[2])
       for _ in range(len(todo), cst):
         todo.push([])
       todo[cst].append((nbr[0], nbr[1], \
@@ -1299,52 +1317,110 @@ calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
 \small
 \[
 \infer[\textsc{MF Insert}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n])
-       \mfarrow ([s_0 \ldots s_n, s'], [t_0 \ldots t_n], [\textit{insert}~t], d)}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n], [r_0 \ldots r_n])
+       \mfarrow ([s_0 \ldots s_n, s'], [t_0 \ldots t_n], [r_0 \ldots r_n, \textit{insert}~t], d)}
       {\textsf{action}(s_n, t) = \textit{shift}~s' \wedge t \ne \${}
-       \wedge d = \textsf{dyn\_dist}(s', t_0) < \infty}
+       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{insert}~t], s', t_0) < \infty}
 \]
 \vspace{-3pt}
 \[
 \infer[\textsc{MF Reduce}]
-      {([s0 \ldots s_n], [t_0 \ldots t_n]) \mfarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'],
-       [t_0 \ldots t_n], [], d)}
+      {([s0 \ldots s_n], [t_0 \ldots t_n], [r_0 \ldots r_n])
+       \mfarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'],
+       [t_0 \ldots t_n], [r_0 \ldots r_n], d)}
       {N: \alpha \in \textsf{core\_reduces}(s_n)
        \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'
-       \wedge d = \textsf{dyn\_dist}(s', t_0) < \infty}
+       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n], s', t_0) < \infty}
 \]
 \vspace{-4pt}
 \[
 \infer[\textsc{MF Delete}]
-      {(S, [t_0, t_1 \ldots t_n]) \kyarrow (S, [t_1 \ldots t_n], [\textit{delete}], d)}
+      {(S, [t_0, t_1 \ldots t_n], [r_0 \ldots r_n])
+       \mfarrow
+       (S, [t_1 \ldots t_n], [r_0 \ldots r_n, \textit{delete}], d)}
       {t_0 \ne \$
-       \wedge d = \textsf{dyn\_dist}(s_n, t_1) < \infty}
+       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{delete}], s_n, t_1) < \infty}
 \]
 \vspace{-3pt}
 \[
 \hspace{-12pt}
 \infer[\textsc{MF Shift}]
-      {([s_0 \ldots s_n], [t_0, t_1 \ldots t_n])
-       \mfarrow ([s_0 \ldots s_n, s'], [t_1 \ldots t_n], [\textit{shift}], d)}
+      {([s_0 \ldots s_n], [t_0, t_1 \ldots t_n], [r_0 \ldots r_n])
+       \mfarrow
+       ([s_0 \ldots s_n, s'], [t_1 \ldots t_n], [r_0 \ldots r_n, \textit{shift}], d)}
       {\textsf{action}(s_n, t_0) = \textit{shift}~s'
-       \wedge d = \textsf{dyn\_dist}(s', t_1) < \infty}
+       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{shift}], s', t_1) < \infty}
 \]
 \vspace{-12pt}
 \caption{The repair-creating rules for \mf. \textit{dyn\_dist} is the \mf A*
-heuristic: unlike \citet{kimyi10astar}, every rule makes use of the heuristic.
+heuristic: unlike \citet{kimyi10astar}, every rule makes use of the \textit{dyn\_dist} heuristic.
 \textit{nonterm\_reduces}($s_n$) returns the set of non-terminals which are
-reduced by state $s_n$ (since the set naturally weeds out duplicates, this
-avoids the problem that the statetable for state $s_n$ may reference nonterminal
-$R$ repeatedly).}
+reduced by state $s_n$.}
 \label{fig:mf:rules}
 \end{figure}
 
+At a high level -- and much of the low level -- our description of \mf is
+deliberately similar to \corchueloplus, hopefully allowing the reader
+to both easily digest \mf and pick out the differences to \corchueloplus.
+
 We introduce a new reduction relation $\mfarrow$, whose rules are shown in
-Figure~\ref{fig:mf:rules}. There are two main features to these rules: they do
-not use the $\lrarrow$ (in this sense being closer to \citet{mckenzie95error}
-than either \citet{corchuelo02repairing} or \citet{kimyi10astar}); and each rule
-uses a new A* heuristic \textsf{dyn\_dist} which takes into account reductions
-and deletions.
+Figure~\ref{fig:mf:rules}. Their most obvious features are that the relation is
+from \textit{(parsing stack, token list, repair sequence)} to \textit{(parsing
+stack, token list, repair sequence, heuristic)} tuples and that each rule
+uses a new A* heuristic \textsf{dyn\_dist} (which takes into account the
+current repair sequence, as well as reductions
+and deletions; see Section~\ref{mf:dyn_dist}). Less obviously the rules do not
+use the $\lrarrow$ relation. \textsc{MF Shift} and \textsc{MF Reduce} subsume
+the functionality of \textsc{LR Shift} and \textsc{LR Reduce} (making this aspect of \mf
+closer in spirit to \citet{mckenzie95error} than either \citet{corchuelo02repairing}
+or \citet{kimyi10astar}).
+
+\begin{figure}[t]
+\begin{adjustbox}{valign=t,minipage=.55\textwidth}
+\begin{lstlisting}[numbers=left]
+def mf(pstack, toks):<!\Suppressnumber!>
+    ...<!\Reactivatenumber{14}!>
+    for nbr in all_mf_star(n.0, n.1, n.2):
+      if len(n[2]) > 0 and n[2][-1] == <!{\textrm{\textit{delete}}}!> \
+         and nbr[2][-1] == <!{\textrm{\textit{insert}}}!>:
+        continue
+      cst = cur_cst + rprs_cst(nbr[2]) + nbr[3]
+      for _ in range(len(todo), cst):
+        todo.push([])
+      todo[cst].append((nbr[0], nbr[1], \
+                        n[2] + nbr[2]))
+  return None
+\end{lstlisting}
+\end{adjustbox}%
+\begin{adjustbox}{valign=t,minipage=.45\textwidth}
+\begin{lstlisting}[numbers=left,firstnumber=25]
+def all_mf_star(pstack, toks, rprs):
+  # Exhaustively apply the <!{$\mfarrowstar$}!> relation to
+  # (pstack, toks, rprs) and return the
+  # resulting list of (pstack, toks, rprs,
+  # heuristic) tuples.
+\end{lstlisting}
+\end{adjustbox}
+\vspace*{-8pt}
+\caption{The main \mf algorithm. Lines 2--13 (inc.) are identical to those of
+Figure~\ref{fig:corchuelo:algorithm}. The main difference between \corchueloplus
+and \mf is the use of the A* heuristic, which allows nodes to be deferred beyond
+beyond their actual cost. In other words a node $c$ with a heuristic $h$ is
+placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
+\label{fig:mf:algorithm}
+\end{figure}
+
+The main part of the \mf algorithm is similar to that of \corchueloplus
+(compare Figure~\ref{fig:corchuelo:algorithm} and Figure~\ref{fig:mf:algorithm}). The
+main difference between the two is that the A* heuristic in
+\mf is used to place nodes later in the todo list than \corchueloplus. Because the
+A* heuristic used is admissible (i.e.~it never overestimates the distance to a
+success node) and consistent (i.e.~the total estimated cost to reach a success
+node is monotonically non-decreasing) we know that neighbouring nodes will
+always be at the same, or greater, cost as the current node. This allows us to
+use a simple, and efficient, variant of the A* algorithm than. Finally,
+compatible node merging, repair sequence simplification, and so on are identical
+to that in \corchueloplus.
 
 
 \subsection{\texttt{dyn\_dist}}
