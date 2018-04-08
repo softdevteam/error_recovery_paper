@@ -1110,7 +1110,7 @@ Only \textsc{KY Shift} can turn $t = \top$ into $\bot$.
 \begin{adjustbox}{valign=t,minipage=.52\textwidth}
 \begin{lstlisting}[numbers=left]
 def mk_dist(sgraph, terms, eof_idx):
-  table = [<!$\infty$!>] * len(sgraph) * len(terms)
+  table = [<!$\infty$!>] * sgraph.len_states * len(terms)
   table[sgraph.accept_state * len(terms) \
         + eof_idx] = 0
   while True:
@@ -1200,16 +1200,16 @@ T: 'a';
 \begin{adjustbox}{valign=t,minipage=.35\textwidth}
 \begin{lstlisting}
 0: [^ -> . S, {'$'}]
-   S -> 2
-   'A' -> 3
-   T -> 1
-1: [S -> T . 'B' 'C', {'$'}]
-   'B' -> 4
-2: [^ -> S ., {'$'}]
-3: [T -> 'A' ., {'B'}]
-4: [S -> T 'B' . 'C', {'$'}]
-   'C' -> 5
-5: [S -> T 'B' 'C' ., {'$'}]
+   'a' -> 1
+   T -> 2
+   S -> 3
+1: [T -> 'a' ., {'b'}]
+2: [S -> T . 'b' 'c', {'$'}]
+   'b' -> 4
+3: [^ -> S ., {'$'}]
+4: [S -> T 'b' . 'c', {'$'}]
+   'c' -> 5
+5: [S -> T 'b' 'c' ., {'$'}]
 \end{lstlisting}
 \end{adjustbox}%
 \begin{adjustbox}{valign=t,minipage=.04\textwidth}
@@ -1227,9 +1227,9 @@ T: 'a';
 $s$ & \texttt{a} & \texttt{b} & \texttt{c} & \$ \\
 \midrule
 0 & 0 & 1 & 2 & 3 \\
-1 & $\infty$ & 0 & 1 & $\infty$ \\
-2 & $\infty$ & $\infty$ & $\infty$ & 0 \\
-3 & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+1 & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+2 & $\infty$ & 0 & 1 & $\infty$ \\
+3 & $\infty$ & $\infty$ & $\infty$ & 0 \\
 4 & $\infty$ & $\infty$ & 0 & $\infty$ \\
 5 & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
 \bottomrule
@@ -1393,7 +1393,7 @@ def mf(pstack, toks):<!\Suppressnumber!>
 \end{lstlisting}
 \end{adjustbox}%
 \begin{adjustbox}{valign=t,minipage=.45\textwidth}
-\begin{lstlisting}[numbers=left,firstnumber=25]
+\begin{lstlisting}[numbers=left,firstnumber=24]
 def all_mf_star(pstack, toks, rprs):
   # Exhaustively apply the <!{$\mfarrowstar$}!> relation to
   # (pstack, toks, rprs) and return the
@@ -1423,8 +1423,126 @@ compatible node merging, repair sequence simplification, and so on are identical
 to that in \corchueloplus.
 
 
-\subsection{\texttt{dyn\_dist}}
+\subsection{The \texttt{dyn\_dist} heuristic}
 \label{mf:dyn_dist}
+
+The most significant difference between \mf and \corchueloplus is the use of the
+\textsf{dyn\_dist} A* heuristic. Part of \textsf{dyn\_dist} is based on the
+\textsf{dist} heuristic that of \citet{kimyi10astar}, but \textsf{dyn\_dist} also
+takes into account reductions (statically) and deletions (dynamically).
+
+
+\begin{figure}[t]
+\begin{adjustbox}{valign=t,minipage=.55\textwidth}
+\begin{lstlisting}[numbers=left]
+def mk_dyn_dist(sgraph, stable, terms, eof_idx):
+  table = [<!$\infty$!>] * len(sgraph) * len(terms)
+  table[sgraph.accept_state * len(terms) \
+        + eof_idx] = 0
+  while True:
+    chgd = False
+    for i in range(sgraph.len_states):
+      for sym, end_st in sgraph.edges(i):<!\Suppressnumber!>
+        ...<!\Reactivatenumber{26}!>
+        for st_idx in goto_states(sgraph, \
+                                  stable, i):
+          for j in range(len(terms)):
+            this_off = i * len(terms) + j
+            end_off = st_idx * len(terms) + j
+            if table[end_off] != <!$\infty$!> \
+               and other_cost < table[this_off]:
+              table[this_off] = other_cost
+              chgd = True
+    if not chgd:
+      break
+\end{lstlisting}
+\end{adjustbox}
+\begin{adjustbox}{valign=t,minipage=.44\textwidth}
+\begin{lstlisting}[numbers=left,firstnumber=37]
+def goto_states(sgraph, stable, st_idx):
+  gs = set()
+  for nonterm, prod, dot in \
+      sgraph.core_state(st_idx):
+    if dot < len(prod.syms):
+      continue
+    prev = set([i])
+    for _ in len(prod.syms):
+      next = set()
+      for i in prev:
+        next.union(sgraph.rev_edges(i))
+      prev = next
+    for i in prev:
+      goto_st = stable.goto(i, nonterm)
+      if goto_st is not None:
+        gs.add(goto_st_idx)
+\end{lstlisting}
+\end{adjustbox}
+\caption{A fixed-point algorithm for the static component of the
+\textit{dyn\_dist} function, returning a distance table which takes into account
+reductions. \texttt{goto\_states} returns the set of state indexes which a state
+\textit{st\_idx} may end up in after all possible reductions and gotos have
+occurred. To calculate this, all core items of a state with a dot at the end are
+considered (lines 39--42). We then recursively iterate backwards over the graph
+(using \texttt{rev\_edges(i)} which returns all the states which which have an
+edge pointing to state \texttt{i}), exploring all possible reduction routes that
+could be encountered dynamically (lines 43--48) --- note that this makes the
+algorithm a static underapproximation of what might be encountered dynamically.
+We then take the resulting set and calculate the set of states which one could
+then goto (lines 49--52). Lines 9--25 of \texttt{mk\_dyn\_dist} are identical to
+that of the \textit{dist} function (see Figure~\ref{fig:kimyi:dist}) i.e.~they
+follow insertion sequences. As part of the fixed-point algorithm, we also allow
+goto states to (monotonically) reduce the known cost to reach a terminal from a
+state (lines 26--34).}
+\label{fig:kimyi:dist}
+\end{figure}
+
+\begin{figure}[t]
+\begin{adjustbox}{valign=t,minipage=0.3\textwidth}
+\begin{tabular}{rcccc}
+\toprule
+      & \multicolumn{4}{c}{$t$} \\
+        \cmidrule(lr){2-5}
+$s$ & \texttt{a} & \texttt{b} & \texttt{c} & \$ \\
+\midrule
+0 & 0 & 1 & 2 & 3 \\
+1 & $\infty$ & 0 & 1 & 2 \\
+2 & $\infty$ & 0 & 1 & 2 \\
+3 & $\infty$ & $\infty$ & $\infty$ & 0 \\
+4 & $\infty$ & $\infty$ & 0 & 1 \\
+5 & $\infty$ & $\infty$ & $\infty$ & 0 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\begin{adjustbox}{valign=t,minipage=0.68\textwidth}
+\caption{The \textit{dyn\_dist} table for the grammar from
+Figure~\ref{fig:kimyi:flaw}. Relative to \textit{dyn}, many fewer entries are
+$\infty$, because reductions are taken into account. For example, consider state
+1, whose sole parsing item leads to a reduction, and a goto to state 2: state
+1's distances will then be the same, or less than, those of state 1. Notice also
+that every state now has a distance to the \$ terminal, since every (reachable)
+state must, ultimately, via reductions and insertions be able to reach the
+accept state.}
+\label{fig:mf:dist:example}
+\end{adjustbox}
+\end{figure}
+
+The \textsf{dist(s, t)} heuristic returns the distance of the sequence of token
+insertions from state $s$ such that a state $s'$ can be found which has an
+outgoing edge labelled with $t$. A distance of $\infty$ means that no such
+sequence of token insertions can be found. This heuristic is correct, as far as
+it goes, but the information it contains is not enough: unless we take into
+account reductions, any search based upon the heuristic can get trapped
+(Section~\ref{kimyi:flaws}). Fortunately, it is possible to statically
+underapproximate the distance if reductions are taken into account. The basic
+idea is simple: as well as taking into account the cost of a sequence of token
+insertions in a distance, we also take into account all possible reduction and
+goto paths. We do so whilst also bearing in mind that token insertions and
+reductions can be intertwined (i.e.~we need to consider that a valid way of
+reaching $s'$ might be a reduction, a token insertion, another reduction and so
+on). Fortunately, not only is this a natural candidate for a fixed-point
+algorithm, but we are able to follow a very similar structure to that used to
+calculate the distance table for  \textsf{dist}. Figure~\ref{fig:mf:dist:static}
+shows the static part of \textsf{dyn\_dist}.
 
 
 \section{Experiment}
