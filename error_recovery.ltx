@@ -1361,16 +1361,15 @@ reduced by state $s_n$.}
 
 At a high level -- and much of the low level -- our description of \mf is
 deliberately similar to \corchueloplus, hopefully allowing the reader
-to both easily digest \mf and pick out the differences to \corchueloplus.
+to both easily digest \mf and pick out the differences from \corchueloplus.
 
 We introduce a new reduction relation $\mfarrow$, whose rules are shown in
 Figure~\ref{fig:mf:rules}. Their most obvious features are that the relation is
 from \textit{(parsing stack, token list, repair sequence)} to \textit{(parsing
 stack, token list, repair sequence, heuristic)} tuples and that each rule
-uses a new A* heuristic \textsf{dyn\_dist} (which takes into account the
-current repair sequence, as well as reductions
-and deletions; see Section~\ref{mf:dyn_dist}). Less obviously the rules do not
-use the $\lrarrow$ relation. \textsc{MF Shift} and \textsc{MF Reduce} subsume
+uses a new A* heuristic \textsf{dyn\_dist} (which takes into account reductions
+and deletions; see Section~\ref{mf:dyn_dist}). Less obviously, the rules do not
+use the $\lrarrow$ relation: \textsc{MF Shift} and \textsc{MF Reduce} subsume
 the functionality of \textsc{LR Shift} and \textsc{LR Reduce} (making this aspect of \mf
 closer in spirit to \citet{mckenzie95error} than either \citet{corchuelo02repairing}
 or \citet{kimyi10astar}).
@@ -1402,7 +1401,7 @@ def all_mf_star(pstack, toks, rprs):
 \end{lstlisting}
 \end{adjustbox}
 \vspace*{-8pt}
-\caption{The main \mf algorithm. Lines 2--13 (inc.) are identical to those of
+\caption{The main \mf algorithm. Lines 2--13 are identical to those of
 Figure~\ref{fig:corchuelo:algorithm}. The main difference between \corchueloplus
 and \mf is the use of the A* heuristic, which allows nodes to be deferred beyond
 beyond their actual cost. In other words a node $c$ with a heuristic $h$ is
@@ -1410,27 +1409,26 @@ placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
 \label{fig:mf:algorithm}
 \end{figure}
 
-The main part of the \mf algorithm is similar to that of \corchueloplus
-(compare Figure~\ref{fig:corchuelo:algorithm} and Figure~\ref{fig:mf:algorithm}). The
-main difference between the two is that the A* heuristic in
-\mf is used to place nodes later in the todo list than \corchueloplus. Because the
-A* heuristic used is admissible (i.e.~it never overestimates the distance to a
+The main part of the \mf algorithm is deliberately similar to that of \corchueloplus
+(compare Figure~\ref{fig:corchuelo:algorithm} and Figure~\ref{fig:mf:algorithm}). Because
+\textsc{dyn\_dist} is both admissible (i.e.~it never overestimates the distance to a
 success node) and consistent (i.e.~the total estimated cost to reach a success
 node is monotonically non-decreasing) we know that neighbouring nodes will
 always be at the same, or greater, cost as the current node. This allows us to
-use a simple, and efficient, variant of the A* algorithm than. Finally,
-compatible node merging, repair sequence simplification, and so on are identical
+use a simple, and efficient, variant of the A* algorithm that is virtually
+identical to the algorithm of \corchueloplus. However, it is important to note that
+\textsf{dyn\_dist} is used to place nodes later in the todo list than \corchueloplus.
+Finally, compatible node merging, repair sequence simplification, and so on are identical
 to that in \corchueloplus.
 
 
 \subsection{The \texttt{dyn\_dist} heuristic}
 \label{mf:dyn_dist}
 
-The most significant difference between \mf and \corchueloplus is the use of the
-\textsf{dyn\_dist} A* heuristic. Part of \textsf{dyn\_dist} is based on the
-\textsf{dist} heuristic that of \citet{kimyi10astar}, but \textsf{dyn\_dist} also
-takes into account reductions (statically) and deletions (dynamically).
-
+\textsf{dyn\_dist} comes in static and dynamic parts: the former handles insertion
+sequences and reductions; and the latter handles deletions. The static part
+extends the distance table algorithm used in \textsf{dist} while the dynamic part
+is new. In this subsection we explain both parts.
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.55\textwidth}
@@ -1480,19 +1478,20 @@ def goto_states(sgraph, stable, st_idx):
 \caption{A fixed-point algorithm for the static component of the
 \textit{dyn\_dist} function, returning a distance table which takes into account
 reductions. \texttt{goto\_states} returns the set of state indexes which a state
-\textit{st\_idx} may end up in after all possible reductions and gotos have
+\textit{st\_idx} may end up in after all possible reductions have
 occurred. To calculate this, all core items of a state with a dot at the end are
 considered (lines 39--42). We then recursively iterate backwards over the graph
 (using \texttt{rev\_edges(i)} which returns all the states which which have an
 edge pointing to state \texttt{i}), exploring all possible reduction routes that
-could be encountered dynamically (lines 43--48) --- note that this makes the
-algorithm a static underapproximation of what might be encountered dynamically.
-We then take the resulting set and calculate the set of states which one could
-then goto (lines 49--52). Lines 9--25 of \texttt{mk\_dyn\_dist} are identical to
-that of the \textit{dist} function (see Figure~\ref{fig:kimyi:dist}) i.e.~they
-follow insertion sequences. As part of the fixed-point algorithm, we also allow
-goto states to (monotonically) reduce the known cost to reach a terminal from a
-state (lines 26--34).}
+could be encountered dynamically (lines 43--48). The underlying idea is that an
+item $[N: \alpha \bullet]$ will cause $|\alpha|$ items to be popped from the
+parsing stack; we thus iterate backwards $|\alpha|$ times over the stategraph
+(line 44), recording at each point the states we can reach (lines 46--47).
+We then take the resulting set and map each element to the state it will goto
+(lines 49--52). Lines 9--25 of \texttt{mk\_dyn\_dist} are identical to
+that of the \texttt{mk\_dist} function (see Figure~\ref{fig:kimyi:dist}) (i.e.~they
+follow insertion sequences). We then take into account the goto states as
+part of the distance calculation (lines 26--34).}
 \label{fig:kimyi:dist}
 \end{figure}
 
@@ -1514,34 +1513,45 @@ $s$ & \texttt{a} & \texttt{b} & \texttt{c} & \$ \\
 \end{tabular}
 \end{adjustbox}
 \begin{adjustbox}{valign=t,minipage=0.68\textwidth}
+\vspace{-13pt}
 \caption{The \textit{dyn\_dist} table for the grammar from
 Figure~\ref{fig:kimyi:flaw}. Relative to \textit{dyn}, many fewer entries are
 $\infty$, because reductions are taken into account. For example, consider state
 1, whose sole parsing item leads to a reduction, and a goto to state 2: state
-1's distances will then be the same, or less than, those of state 1. Notice also
+1's distances will then be $\le$ those of state 1. Notice also
 that every state now has a distance to the \$ terminal, since every (reachable)
-state must, ultimately, via reductions and insertions be able to reach the
+state must via reductions and insertions be able to reach the
 accept state.}
 \label{fig:mf:dist:example}
 \end{adjustbox}
 \end{figure}
 
-The \textsf{dist(s, t)} heuristic returns the distance of the sequence of token
-insertions from state $s$ such that a state $s'$ can be found which has an
-outgoing edge labelled with $t$. A distance of $\infty$ means that no such
-sequence of token insertions can be found. This heuristic is correct, as far as
-it goes, but the information it contains is not enough: unless we take into
-account reductions, any search based upon the heuristic can get trapped
-(Section~\ref{kimyi:flaws}). Fortunately, it is possible to statically
-underapproximate the distance if reductions are taken into account. The basic
+
+The most significant difference between \mf and \corchueloplus is the use of the
+\textsf{dyn\_dist} A* heuristic. Part of \textsf{dyn\_dist} is based on the
+\textsf{dist} heuristic of \citet{kimyi10astar}, with the important
+difference that \textsf{dyn\_dist} takes into account reductions and deletions.
+Reductions are taken into account statically by using a more sophisticated
+algorithm to calculate a distance table. However, deletions can only be dealt
+with by considering the user's input, and are thus handled dynamically. In this
+subsection we explain both aspects.
+
+The \textsf{dist} heuristic of \citet{kimyi10astar} builds a distance table of
+states and tokens, such that \textsf{dist(s, t)} returns the cumulative cost of
+the sequence of token insertions from state $s$ such that a state $s'$ can be
+found which has an outgoing edge labelled with $t$. This is a useful base,
+but we also need to take into account reductions to stop any search which
+uses the heuristic from getting trapped (Section~\ref{kimyi:flaws}). Fortunately,
+it is relatively easy to statically
+underapproximate the effect of reductions into account. The basic
 idea is simple: as well as taking into account the cost of a sequence of token
-insertions in a distance, we also take into account all possible reduction and
-goto paths. We do so whilst also bearing in mind that token insertions and
-reductions can be intertwined (i.e.~we need to consider that a valid way of
+insertions in a distance, we also take into account all possible reduction
+paths. Note that reductions and token insertions can be intertwined, thus
+(i.e.~a valid way of
 reaching $s'$ might be a reduction, a token insertion, another reduction and so
 on). Fortunately, not only is this a natural candidate for a fixed-point
 algorithm, but we are able to follow a very similar structure to that used to
-calculate the distance table for  \textsf{dist}. Figure~\ref{fig:mf:dist:static}
+calculate the distance table for \textsf{dist}. Figure~\ref{fig:mf:dist:static}
 shows the static part of \textsf{dyn\_dist}.
 
 
