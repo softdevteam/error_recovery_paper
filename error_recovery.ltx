@@ -683,76 +683,50 @@ positions.}
 \vspace*{-8pt}
 \end{figure}
 
-\begin{figure}[t]
-\hspace*{-21.5pt}
-\begin{minipage}[t]{0.58\textwidth}
-\begin{tabular}{p{0.02\textwidth}p{0.55\textwidth}}
-\begin{subfigure}{0.02\textwidth}
-\caption{}
-\label{fig:crshift2:orig}
-\end{subfigure}
-&
-\begin{minipage}[t]{0.45\textwidth}
-\vspace{-7pt}
-\begin{lstlisting}
-Delete "+", Delete "2"
-Delete "+", Shift "2", Insert "PLUS"
-Delete "+", Shift "2", Insert "MULT"
-Insert "INT", Shift "+", Shift "2", Insert "PLUS"
-Insert "INT", Shift "+", Shift "2", Insert "MULT"
-\end{lstlisting}
-\end{minipage}
-\end{tabular}
-\end{minipage}%
-%
-\begin{minipage}[t]{0.5\textwidth}
-\begin{tabular}{p{0.02\textwidth}p{0.48\textwidth}}
-\begin{subfigure}{0.02\textwidth}
-\vspace{-19.5pt}
-\caption{}
-\label{fig:crshift2:fix1}
-\end{subfigure}
-&
-\begin{minipage}[t]{0.48\textwidth}
-\vspace{-17pt}
-\begin{lstlisting}
-Delete "+", Shift "2", Delete "3"
-Insert "INT", Shift "+", Shift "2", Delete "3"
-\end{lstlisting}
-\end{minipage}
-\\
-\begin{subfigure}{0.02\textwidth}
-\vspace{-6.25pt}
-\caption{}
-\label{fig:crshift2:fix2}
-\end{subfigure}
-&
-\begin{minipage}[t]{0.48\textwidth}
-\vspace{-10.25pt}
-\begin{lstlisting}
-Insert "INT", Shift "+", Delete "2"
-\end{lstlisting}
-\end{minipage}
-\end{tabular}
-\end{minipage}
 
+\begin{figure}[t]
+\begin{tabular}{llll}
+\begin{subfigure}{0.02\textwidth}
+\vspace{-31.5pt}
+\caption{}
+\label{lst:crshift2:crshift2}
+\end{subfigure}
+&
+\begin{lstlisting}
+Delete "3", Delete "+"
+Delete "3", Keep "+", Insert "INT"
+Insert "PLUS", Keep "3", Keep "+", Insert "INT"
+Insert "MULT", Keep "3", Keep "+", Insert "INT"
+\end{lstlisting}
+&
+\begin{subfigure}{0.02\textwidth}
+\vspace{-31.5pt}
+\caption{}
+\label{lst:crshift2:crshift3}
+\end{subfigure}
+&
+\begin{lstlisting}
+<! \vspace{-27pt} !>
+Insert "MULT", Keep "3", Delete "+"
+Insert "PLUS", Keep "3", Delete "+"
+\end{lstlisting}
+\end{tabular}
 \vspace{-10pt}
-\caption{Repair sequences for the input `\texttt{+ 2 3}' (where an error is
-found at the first token) relative to the grammar from
-Figure~\ref{fig:exprgrammar}. (\subref{fig:crshift2:orig}) shows the five repair
-sequences that the original \textsc{CR Shift 1} rule is capable of finding.
-(\subref{fig:crshift2:fix1}) shows the two additional repair sequences that are
-found by \textsc{CR Shift 2} (both of which require reductions/gotos to reach an
-accept state, but neither of which has any symbols left to shift).
-(\subref{fig:crshift2:fix2}) shows the additional repair sequence that the
-\textsc{CR Shift 3} rule is capable of finding.}
+\caption{Given the input `\texttt{2 3 +}' and the grammar from
+Figure~\ref{fig:exprgrammar}, \textsc{CR Shift 1} is unable to find any repair
+sequences (because it does not perform the reductions/gotos necessary after
+\textit{insert} repairs at the end of input to reach an accept state). With
+\textsc{CR Shift 2} it can find 4 minimum cost repair sequences
+(\subref{lst:crshift2:crshift2}) and with \textsc{CR Shift 3} a further 2
+minimum cost repair sequences (i.e.~6 in total)
+(\subref{lst:crshift2:crshift3}).}
 \label{fig:crshift2:example}
 \end{figure}
 
 First, \textsc{CR Shift 1} requires at least one token to be shifted. However,
-after a non-shift repair, all that may be required is one or more applications
-of \textsc{LR Reduce} in order to
-reach an \textit{accept} state. \textsc{CR Shift 2} in Figure~\ref{fig:corchuelo:kimyi}
+after a non-shift repair, all that may be needed to reach a useful next node
+(or indeed an \textit{accept} state) is one or more reductions/gotos via
+\textsc{LR Reduce}. \textsc{CR Shift 2} in Figure~\ref{fig:corchuelo:kimyi}
 shows the two-phase fix which addresses this problem.
 We first change the condition $0 < j \leq N_\textit{shifts}$ to $0 \leq j \leq
 N_\textit{shifts}$ (i.e.~we don't force the LR parser to consume any tokens).
@@ -773,11 +747,10 @@ Figure \ref{fig:corchuelo:kimyi} (as well as incorporating the fix from
 \textsc{CR Shift 1}, it is simpler, though it also inevitably slows down the
 search for repair sequences, as more are tried.
 
-Examples of the additional repair sequences that \textsc{CR Shift 2} and
-\textsc{CR Shift 3} can produce are shown in Figure~\ref{fig:crshift2:example}. Although
-in this case \textsc{CR Shift 1} produces some minimum cost repair
-sequences, in some cases it finds none, while \textsc{CR Shift 2} or \textsc{CR
-Shift 3} find some.
+The problems with \textsc{CR Shift 1}, in particular, can be severe.
+Figure~\ref{fig:crshift2:example} shows an example input where \textsc{CR Shift
+1} is unable to find any repair sequences, \textsc{CR Shift 2} some, and
+\textsc{CR Shift 3} all minimum cost repair sequences.
 
 
 \subsection{Implementation considerations}
