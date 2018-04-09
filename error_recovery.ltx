@@ -521,14 +521,14 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \infer[\textsc{CR Shift 1}]
       {([s_0 \ldots s_n], [t_0 \ldots t_n])
        \crarrow
-       ([s'_0 \ldots s'_n], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
+       ([s'_0 \ldots s'_m], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
       {%
 \begin{array}{c}
-([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s'_n], [t_j \ldots t_n])
+([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s'_m], [t_j \ldots t_n])
  \wedge 0 < j \leq N_\textit{shifts}
 \\
  j = N_\textit{shifts} \vee
- \textsf{action}(s'_n, t_j) \in \{\textit{accept}, \textit{error}\} 
+ \textsf{action}(s'_m, t_j) \in \{\textit{accept}, \textit{error}\} 
 \end{array}}
 \]
 \vspace{-7pt}
@@ -644,26 +644,26 @@ unable to generate some minimum cost repair sequences.
 \[
 \hspace{-12pt}
 \infer[\textsc{CR Shift 2}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_n], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_m], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
       {%
 \begin{array}{c}
-([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s'_n], [t_j \ldots t_n])
+([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s'_m], [t_j \ldots t_n])
  \wedge 0 \leq j \leq N_\textit{shifts}
 \\
- (j = 0 \wedge [s_0 \ldots s_n] \ne [s'_0 \ldots s'_n]) \vee j = N_\textit{shifts} \vee
- \textsf{action}(s'_n, t_j) \in \{\textit{accept}, \textit{error}\}
+ (j = 0 \wedge [s_0 \ldots s_n] \ne [s'_0 \ldots s'_m]) \vee j = N_\textit{shifts} \vee
+ \textsf{action}(s'_m, t_j) \in \{\textit{accept}, \textit{error}\}
 \end{array}}
 \]
 
 \[
 \infer[\textsc{CR Shift 3}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_n], [t_j \ldots t_n], R)}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_m], [t_j \ldots t_n], R)}
       {%
 \begin{array}{c}
-([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s_n], [t_j \ldots t_n])
+([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s_m], [t_j \ldots t_n])
  \wedge 0 \leq j \leq 1
 \\
- (j = 0 \wedge [s_0 \ldots s_n] \ne [s'_0 \ldots s_n] \wedge R = [])
+ (j = 0 \wedge [s_0 \ldots s_n] \ne [s'_0 \ldots s_m] \wedge R = [])
   \vee
   (j = 1 \wedge R = [\textit{shift}])
 \end{array}
