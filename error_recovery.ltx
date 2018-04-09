@@ -503,9 +503,9 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \small
 \[
 \infer[\textsc{CR Insert}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_n], [t_0 \ldots t_n], [\textit{insert}~t])}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_m], [t_0 \ldots t_n], [\textit{insert}~t])}
       {\textsf{action}(s_n, t) \ne error \wedge t \ne \${}
-       \wedge ([s_0 \ldots s_n], [t, t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s'_n], [t_0 \ldots t_n])}
+       \wedge ([s_0 \ldots s_n], [t, t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s'_m], [t_0 \ldots t_n])}
 \]
 \vspace{-6pt}
 \[
@@ -741,9 +741,9 @@ Insert "INT", Shift "+", Delete "2"
 found at the first token) relative to the grammar from
 Figure~\ref{fig:exprgrammar}. (\subref{fig:crshift2:orig}) shows the five repair
 sequences that the original \textsc{CR Shift 1} rule is capable of finding.
-(\subref{fig:crshift2:fix1}) shows the two additional repair sequences that is found by \textsc{CR Shift 2}. While it
-seems as if \textsc{CR Shift 1} should also be able to find the second repair sequence, it ultimately rejects it
-as the sequence requires reductions after `\texttt{delete "3"}` before reaching an accept state, which \textsc{CR Shift 1} can't do.
+(\subref{fig:crshift2:fix1}) shows the two additional repair sequences that are
+found by \textsc{CR Shift 2} (both of which require reductions/gotos to reach an
+accept state, but neither of which has any symbols left to shift).
 (\subref{fig:crshift2:fix2}) shows the additional repair sequence that the
 \textsc{CR Shift 3} rule is capable of finding.}
 \label{fig:crshift2:example}
