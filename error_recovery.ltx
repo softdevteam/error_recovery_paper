@@ -863,7 +863,7 @@ many remaining nodes in $c$, which may, transitively, have many neighbours.
 
 We therefore need a scheme which gives us most of the performance benefit of
 duplicate detection but which still records all possible repair sequences.
-Our solution is to merge together
+Our solution is to \lukas{remove duplicate detection and instead} merge together
 \emph{compatible} nodes, preserving their distinct repair sequences while still
 reducing the search space. Two nodes are compatible if: their
 parsing stacks are identical; they both have an identical amount of input
@@ -980,13 +980,14 @@ in (\subref{lst:ranking:output}). javac in contrast attempts to insert
 \end{figure}
 
 The final step in our new algorithm allows us to somewhat compensate for the
-small value of $N_\textit{shifts}$. This value has to be a small integer (in our
+small value of $N_\textit{shifts}$. This value has to be a small integer (in our \lukas{and Corchuelo's}
 case 3) because each additional token searched exponentially increases the
 search space. Thus the repair sequences we find can be less than ideal when further
 user input is considered. Fortunately, we can use the
 complete set of minimum cost repair sequences to lessen this weakness.
 After this set has been generated, we then simplify it: we remove the shift
-repairs from the ends of sequences and remove duplicates. We then rank members by how far they allow
+repairs from the ends of sequences and remove duplicates \lukas{not sure
+how removing shifts can lead to more duplicates. maybe try and show this in 3.6}. We then rank members by how far they allow
 parsing to successfully continue, up to a limit of $N_\textit{try}$ tokens
 (which we somewhat arbitrarily set at 250). We then (non-deterministically)
 select one of the top ranked repair sequences, apply its repairs
