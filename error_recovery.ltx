@@ -503,9 +503,9 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \small
 \[
 \infer[\textsc{CR Insert}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow (S', [t_0 \ldots t_n], [\textit{insert}~t])}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_n], [t_0 \ldots t_n], [\textit{insert}~t])}
       {\textsf{action}(s_n, t) \ne error \wedge t \ne \${}
-       \wedge ([s_0 \ldots s_n], [t, t_0 \ldots t_n]) \lrarrowstar (S', [t_0 \ldots t_n])}
+       \wedge ([s_0 \ldots s_n], [t, t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s'_n], [t_0 \ldots t_n])}
 \]
 \vspace{-6pt}
 \[
@@ -604,8 +604,9 @@ successfully (line 11). If $n$ has already consumed $N_\textit{total}$ tokens,
 then it is discarded (lines 12, 13). Otherwise, $n$'s neighbours
 are gathered using the $\crarrow$ relation (lines 14, 32--35). To avoid
 duplicate repairs, \textit{delete} repairs never follow \textit{insert} repairs
-(lines 15--17). Each neighbour has its repairs costed and is then
-assigned to the correct todo sub-list (lines 19--23).\\[9pt]
+(lines 15--17). Each neighbour has its repairs costed (line 18) and is then
+assigned to the correct todo sub-list (lines 21--22) after they were
+added to the todo list (line 19-20).\\[9pt]
 %
 The \texttt{rprs\_cst} function returns the cost of a repair sequence. Inserts
 and deletes cost 1, shifts 0.}
@@ -740,7 +741,9 @@ Insert "INT", Shift "+", Delete "2"
 found at the first token) relative to the grammar from
 Figure~\ref{fig:exprgrammar}. (\subref{fig:crshift2:orig}) shows the five repair
 sequences that the original \textsc{CR Shift 1} rule is capable of finding.
-(\subref{fig:crshift2:fix1}) shows the two additional repair sequences that is found by \textsc{CR Shift 2}.
+(\subref{fig:crshift2:fix1}) shows the two additional repair sequences that is found by \textsc{CR Shift 2}. While it
+seems as if \textsc{CR Shift 1} should also be able to find the second repair sequence, it ultimately rejects it
+as the sequence requires reductions after `\texttt{delete "3"}` before reaching an accept state, which \textsc{CR Shift 1} can't do.
 (\subref{fig:crshift2:fix2}) shows the additional repair sequence that the
 \textsc{CR Shift 3} rule is capable of finding.}
 \label{fig:crshift2:example}
@@ -798,7 +801,7 @@ adding elements requires only an \texttt{append} to the relevant sub-list
 data-structure works well in our situation because costs never get
 big (double digits is unusual for real-world
 grammars); and each neighbour generated from a node with cost $c$ has
-have a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
+a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
 
 \label{duplicatenodes}
 Second, the algorithm often creates duplicate nodes due to
@@ -842,7 +845,7 @@ better for a garbage collected language.
 
 The algorithm as described to this point non-deterministically completes as soon
 as it has found a single minimum cost repair sequence.
-In this section we show how the we can efficiently find
+In this section we show how we can efficiently find
 the complete set of minimum cost repair sequences.
 
 The basis of a solution is simple: when a repair sequence of cost $c$ is found to
@@ -883,7 +886,7 @@ by compatible node merging, we keep it as a separate optimisation because it hel
 lessen worse case performance: it is the most common way of creating compatible nodes; our
 use of the todo list means that we would not catch every case; and the
 duplicate repair sequences are uninteresting from a user perspective, so we
-would have to weed them out later anyway. The latter case is important because
+would have to weed them out later anyway. The latter \lukas{what is this referring to? which is the former case?} case is important because
 though merging of compatible states is a substantial optimisation,
 each merge consumes memory, which is wasted if we later throw it away.
 
@@ -905,7 +908,7 @@ same reasons as in Section~\ref{cactusnodes}).
 The basic idea is that nodes no longer reference a parent pointer tree of
 repairs directly, but instead a parent pointer tree of \emph{repair merges}. A
 repair merge is a pair (\textit{repair}, \textit{merged}) where
-where \textit{repair} is a plain repair and \textit{merged} is a (possibly null) set of
+\textit{repair} is a plain repair and \textit{merged} is a (possibly null) set of
 repair merge sequences. The reason for using a pair apart is twofold: we can quickly
 perform the compatibility checks on \textit{repair} alone; and we avoid allocating
 additional memory for nodes which have not yet been subject to a merge. The small
