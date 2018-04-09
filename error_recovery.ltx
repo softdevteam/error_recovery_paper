@@ -785,7 +785,7 @@ Shift 3} find some.
 
 The definitions we have given thus far do not obviously lead to
 an efficient implementation and \citet{corchuelo02repairing} give few useful
-hints. We found that three techniques, two of them unique to our work, were both
+hints. We found that three techniques were both
 effective at improving performance while being simple to implement.
 
 First, rather than use a general queue data-structure (probably based on a
@@ -804,15 +804,19 @@ grammars); and each neighbour generated from a node with cost $c$ has
 a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
 
 \label{duplicatenodes}
-Second, the algorithm often creates duplicate nodes due to
-$\lrarrowstar$ repeatedly using the \textsc{LR Reduce} rule (i.e.~two distinct parsing
-stacks $P$ and $P'$ can, after multiple reductions/gotos, both reduce to $Q$). We
-therefore modify the queue data-structure to a
+Second, the algorithm often creates nodes which, from the search's perspective
+are duplicates. Formally, we say that two nodes are duplicates if their parsing
+stack and remaining input are identical (i.e.~removing one of the duplicates
+simply removes its repair sequence from consideration). We
+therefore modify the queue data-structure to be a
 list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
 and thus allows list-like integer indexing as well as hash-based lookups.}. This has
 near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 weeds out duplicates with near-identical performance to an unordered hashset.
-Although this cannot detect duplicates when the relevant node has already been popped from
+We hash nodes, and compare them for equality, based on their parsing stack and
+remaining input (i.e.~we do not involve the repair sequence in hashing or
+equality). Although this cannot detect duplicates when the
+relevant node has already been popped from
 the todo list, it finds the vast majority, while avoiding the impractical memory overhead of
 remembering all past nodes. Depending on the example, this can lead to 20\% or
 more of nodes being detected as duplicates, with a commensurate effect on
@@ -851,12 +855,15 @@ the complete set of minimum cost repair sequences.
 The basis of a solution is simple: when a repair sequence of cost $c$ is found to
 be successful, we discard all repair sequences with cost $> c$, and continue
 exploring nodes in cost $c$ (including, transitively, all neighbours that are
-also of cost $c$), recording each successful node we encounter.
-
-While this works, it can substantially worsen performance, because there can be
+also of cost $c$), recording each successful node we encounter. However, this
+requires that we do not throw away duplicate nodes, as they may contain distinct
+repair sequences. Unfortunately, turning off duplicate detection is a big
+performance loss, not least because there can be
 many remaining nodes in $c$, which may, transitively, have many neighbours.
-Fortunately, we can substantially improve performance by not only removing
-duplicate nodes but merging together
+
+We therefore need a scheme which gives us most of the performance benefit of
+duplicate detection but which still records all possible repair sequences.
+Our solution is to merge together
 \emph{compatible} nodes, preserving their distinct repair sequences while still
 reducing the search space. Two nodes are compatible if: their
 parsing stacks are identical; they both have an identical amount of input
@@ -882,20 +889,16 @@ from \citet[p.~8]{corchuelo02repairing}: delete repairs are never followed by an
 insert (see Figure~\ref{fig:corchuelo:algorithm}) since [\textit{delete},
 \textit{insert x}] always leads to the same node as [\textit{insert x},
 \textit{delete}]. Although this is largely subsumed
-by compatible node merging, we keep it as a separate optimisation because it helps to slightly
-lessen worse case performance: it is the most common way of creating compatible nodes; our
-use of the todo list means that we would not catch every case; and the
+by compatible node merging, we keep it as a separate optimisation because: it is
+such a frequent case; our
+use of the todo list means that we would not catch every case; the
 duplicate repair sequences are uninteresting from a user perspective, so we
-would have to weed them out later anyway. The latter \lukas{what is this referring to? which is the former case?} case is important because
-though merging of compatible states is a substantial optimisation,
-each merge consumes memory, which is wasted if we later throw it away.
+would have to weed them out later anyway; and each additional merge costs
+memory.
 
 Our implementation of compatible nodes subsumes our detection of duplicate nodes
 (Section~\ref{duplicatenodes}), relying on the fact that our todo data-structure
-is a list-of-ordered-hashsets. Whereas duplicate detection implicitly considered
-a node's entire contents for hashing and equality, we make two changes: we only
-hash a node's parsing stack and remaining input (i.e.~we do not hash a search
-node's repairs): and we loosen node equality to allow compatible
+is a list-of-ordered-hashsets. We need only loosen node equality to allow compatible
 repair sequences to be be considered as equal. This leads to efficient
 detection of compatible nodes.
 
