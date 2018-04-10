@@ -594,10 +594,10 @@ cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\
 The algorithm maintains a todo list of lists (modelled
 on \citet[p.~25]{cerecke03phd} rather than the suggestion
 in \citet{corchuelo02repairing}); the first sub-list contains
-nodes of cost 0, the second sub-list contains nodes of cost 1 and
+configurations of cost 0, the second sub-list contains configurations of cost 1 and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
-lowest cost node $n$ is picked (line 4--8). If $n$ represents an accept state (line
+lowest cost configuration $n$ is picked (line 4--8). If $n$ represents an accept state (line
 9) or if the last $N_\textit{shifts}$ repairs are shifts (line 10), then $n$
 represents a minimum cost repair sequence and the algorithm terminates
 successfully (line 11). If $n$ has already consumed $N_\textit{total}$ tokens,
@@ -724,7 +724,7 @@ minimum cost repair sequences (i.e.~6 in total)
 \end{figure}
 
 First, \textsc{CR Shift 1} requires at least one token to be shifted. However,
-after a non-shift repair, all that may be needed to reach a useful next node
+after a non-shift repair, all that may be needed to reach a useful next configuration
 (or indeed an \textit{accept} state) is one or more reductions/gotos via
 \textsc{LR Reduce}. \textsc{CR Shift 2} in Figure~\ref{fig:corchuelo:kimyi}
 shows the two-phase fix which addresses this problem.
@@ -764,8 +764,8 @@ effective at improving performance while being simple to implement.
 First, rather than use a general queue data-structure (probably based on a
 tree), we use a similar queue data-structure to
 \citet[p.~25]{cerecke03phd}. This consists of one sub-list per cost (i.e.~ the
-first sub-list contains nodes
-of cost 0, the second sub-list contains nodes of cost 1 and so on).
+first sub-list contains configurations
+of cost 0, the second sub-list contains configurations of cost 1 and so on).
 Since we always know what cost we are currently investigating,
 finding the next todo element requires only a single \texttt{pop}
 (line 8 of Figure~\ref{fig:corchuelo:algorithm}). Similarly,
@@ -773,12 +773,12 @@ adding elements requires only an \texttt{append} to the relevant sub-list
 (lines 18, 21, 22). This
 data-structure works well in our situation because costs never get
 big (double digits is unusual for real-world
-grammars); and each neighbour generated from a node with cost $c$ has
+grammars); and each neighbour generated from a configuration with cost $c$ has
 a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
 
-\label{duplicatenodes}
-Second, the algorithm often creates nodes which, from the search's perspective
-are duplicates. Formally, we say that two nodes are duplicates if their parsing
+\label{duplicateconfigurations}
+Second, the algorithm often creates configurations which, from the search's perspective
+are duplicates. Formally, we say that two configurations are duplicates if their parsing
 stack and remaining input are identical (i.e.~removing one of the duplicates
 simply removes its repair sequence from consideration). We
 therefore modify the queue data-structure to be a
@@ -786,16 +786,16 @@ list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
 and thus allows list-like integer indexing as well as hash-based lookups.}. This has
 near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 weeds out duplicates with near-identical performance to an unordered hashset.
-We hash nodes, and compare them for equality, based on their parsing stack and
+We hash configurations, and compare them for equality, based on their parsing stack and
 remaining input (i.e.~we do not involve the repair sequence in hashing or
 equality). Although this cannot detect duplicates when the
-relevant node has already been popped from
+relevant configuration has already been popped from
 the todo list, it finds the vast majority, while avoiding the impractical memory overhead of
-remembering all past nodes. Depending on the example, this can lead to 20\% or
-more of nodes being detected as duplicates, with a commensurate effect on
+remembering all past configurations. Depending on the example, this can lead to 20\% or
+more of configurations being detected as duplicates, with a commensurate effect on
 performance.
 
-\label{cactusnodes}
+\label{cactusconfigurations}
 Third, we do not use lists to represent parsing stacks and repair sequences
 as Figure~\ref{fig:corchuelo:algorithm} may suggest. We found
 that this representation consumes noticeably more memory, and is slightly less
@@ -808,7 +808,7 @@ no children point to it). When the error recovery algorithm starts, it
 converts the main parsing stack (a list) into a parent pointer tree; and
 repair sequences start as empty parent pointer trees. The $\crarrow$ part
 of our implementation thus operates exclusively on parent pointer trees.
-Although this does mean that neighbouring nodes are scattered throughout
+Although this does mean that neighbouring configurations are scattered throughout
 memory, it naturally leads to memory sharing, which recovers some of
 the good cache behaviour; it also seems to be a good
 fit with modern \texttt{malloc} implementations, which are particularly
@@ -827,18 +827,18 @@ the complete set of minimum cost repair sequences.
 
 The basis of a solution is simple: when a repair sequence of cost $c$ is found to
 be successful, we discard all repair sequences with cost $> c$, and continue
-exploring nodes in cost $c$ (including, transitively, all neighbours that are
-also of cost $c$), recording each successful node we encounter. However, this
-requires that we do not throw away duplicate nodes, as they may contain distinct
+exploring configurations in cost $c$ (including, transitively, all neighbours that are
+also of cost $c$), recording each successful configuration we encounter. However, this
+requires that we do not throw away duplicate configurations, as they may contain distinct
 repair sequences. Unfortunately, turning off duplicate detection is a big
 performance loss, not least because there can be
-many remaining nodes in $c$, which may, transitively, have many neighbours.
+many remaining configurations in $c$, which may, transitively, have many neighbours.
 
 We therefore need a scheme which gives us most of the performance benefit of
 duplicate detection but which still records all possible repair sequences.
 Our solution is to remove duplicate detection and instead merge together
-\emph{compatible} nodes, preserving their distinct repair sequences while still
-reducing the search space. Two nodes are compatible if: their
+\emph{compatible} configurations, preserving their distinct repair sequences while still
+reducing the search space. Two configurations are compatible if: their
 parsing stacks are identical; they both have an identical amount of input
 remaining; and their repair sequences are compatible. Two repair sequences
 are compatible:
@@ -850,45 +850,45 @@ ends in a delete.
 \end{enumerate}
 
 The first condition is a result of having to take into account
-that a node can be deemed successful in two ways: if it reaches an accept state (line 9,
+that a configuration can be deemed successful in two ways: if it reaches an accept state (line 9,
 Figure~\ref{fig:corchuelo:algorithm}) or if it ends in $N_\textit{shifts}$ shift
 repairs (line 10). The former case is only affected by the parsing stack (and is
-thus unaffected by compatible nodes which have identical parsing stacks),
+thus unaffected by compatible configurations which have identical parsing stacks),
 but the latter requires care with the number of shift repairs at
 the end of the sequence.
 
 The second condition relates to the weak form of compatible merging inherited
 from \citet[p.~8]{corchuelo02repairing}: delete repairs are never followed by an
 insert (see Figure~\ref{fig:corchuelo:algorithm}) since [\textit{delete},
-\textit{insert x}] always leads to the same node as [\textit{insert x},
+\textit{insert x}] always leads to the same configuration as [\textit{insert x},
 \textit{delete}]. Although this is largely subsumed
-by compatible node merging, we keep it as a separate optimisation because: it is
+by compatible configuration merging, we keep it as a separate optimisation because: it is
 such a frequent case; our
 use of the todo list means that we would not catch every case; the
 duplicate repair sequences are uninteresting from a user perspective, so we
 would have to weed them out later anyway; and each additional merge costs
 memory.
 
-Our implementation of compatible nodes subsumes our detection of duplicate nodes
-(Section~\ref{duplicatenodes}), relying on the fact that our todo data-structure
-is a list-of-ordered-hashsets. We need only loosen node equality to allow compatible
+Our implementation of compatible configurations subsumes our detection of duplicate configurations
+(Section~\ref{duplicateconfigurations}), relying on the fact that our todo data-structure
+is a list-of-ordered-hashsets. We need only loosen configuration equality to allow compatible
 repair sequences to be be considered as equal. This leads to efficient
-detection of compatible nodes.
+detection of compatible configurations.
 
-Conceptually, merging two nodes together is simple: each node simply
+Conceptually, merging two configurations together is simple: each configuration simply
 needs to store a set of repair sequences, each of which is updated as further
 repairs are found. However, this is an extremely inefficient representation as
 the sets involved need to be copied and extended as each new repair is found.
 Instead, we use a representation which relies on parent pointer trees (for the
 same reasons as in Section~\ref{cactusnodes}).
-The basic idea is that nodes no longer reference a parent pointer tree of
+The basic idea is that configurations no longer reference a parent pointer tree of
 repairs directly, but instead a parent pointer tree of \emph{repair merges}. A
 repair merge is a pair (\textit{repair}, \textit{merged}) where
 \textit{repair} is a plain repair and \textit{merged} is a (possibly null) set of
 repair merge sequences. The reason for using a pair apart is twofold: we can quickly
 perform the compatibility checks on \textit{repair} alone; and we avoid allocating
-additional memory for nodes which have not yet been subject to a merge. The small
-downside to this scheme is that expanding nodes into repair sequences requires
+additional memory for configurations which have not yet been subject to a merge. The small
+downside to this scheme is that expanding configurations into repair sequences requires
 recursively expanding both the normal parent pointer tree of \textit{repair}s
 and the merged parent pointer trees of \textit{merged}.
 
@@ -969,7 +969,7 @@ to the input, and continue parsing as normal. Particularly on real-world
 grammars, this can substantially decrease the chances of the chosen repair
 sequence causing cascading errors (see Figure~\ref{fig:ranking} for an example).
 It also does so for very little additional computational cost as the complete set of
-minimum cost repair sequences is much smaller than the number of nodes
+minimum cost repair sequences is much smaller than the number of configurations
 searched.
 
 
@@ -1012,22 +1012,22 @@ approach serve as inspiration for our new \mf error recovery algorithm.
 The \citet{kimyi10astar} algorithm takes \citet{corchuelo02repairing} as a base,
 adding two significant novelties: it uses the A*
 algorithm~\cite{hart68astar} to delay, and thus often to avoid, unpromising
-nodes; and it can insert non-terminals, avoiding many inserts
+configurations; and it can insert non-terminals, avoiding many inserts
 of terminals entirely. This allows examples with
 thousands of unmatched brackets to be repaired in a few seconds.
 
 Since the A* algorithm is not a particularly common one in parsers,
 we first start with a brief recap. The A* algorithm finds minimum cost paths through
 a graph where each edge has an associated cost $c$. The current known lowest
-cost to reach a node $n$ from the start node is represented by $d(n)$. A
-heuristic $h(n)$ returns an estimate of the additional cost needed to reach a success node from
+cost to reach a configuration $n$ from the start configuration is represented by $d(n)$. A
+heuristic $h(n)$ returns an estimate of the additional cost needed to reach a success configuration from
 $n$. The heuristic must be `admissible': it must
-never overestimate the cost to reach a success node; however, it may safely
+never overestimate the cost to reach a success configuration; however, it may safely
 underestimate (i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
-used to order nodes by their $d(n) + h(n)$. On
-each iteration the node in the queue with the lowest $d(n) + h(n)$ is selected,
+used to order configurations by their $d(n) + h(n)$. On
+each iteration the configuration in the queue with the lowest $d(n) + h(n)$ is selected,
 its neighbours explored and each entered into the priority queue. The search
-terminates when the first success node is found.
+terminates when the first success configuration is found.
 
 \begin{figure}
 \small
@@ -1224,10 +1224,10 @@ b}]. The grammar's stategraph is shown in
 (\subref{fig:kimyi:flaw:stategraph}) and the \textit{dist} table in
 (\subref{fig:kimyi:flaw:dist}). The search starts in state 0: \textsc{KY Insert}
 and \textsc{KY Delete} both match (the latter an uninteresting dead-end which we
-ignore). The new \textsc{KY Insert} node is found via the edge
+ignore). The new \textsc{KY Insert} configuration is found via the edge
 from state 0 labelled with terminal $a$: this moves the search to state $3$,
 with a heuristic $\textsf{dist(0, `c')} = 2$, $t = \top$, and a repair [\textit{insert a}]. However, no
-rules match the new node: there are no edges labelled with terminals from
+rules match the new configuration: there are no edges labelled with terminals from
 state 3; \textsc{KY Reduce} is not applicable since $t = \top$; and \textsc{KY
 Shift} is not applicable since the next token in the user's input is `c' which,
 even after reductions/gotos, cannot be reached from state 3.}
@@ -1384,8 +1384,8 @@ def all_mf_star(pstack, toks, rprs):
 \vspace*{-8pt}
 \caption{The main \mf algorithm. Lines 2--13 are identical to those of
 Figure~\ref{fig:corchuelo:algorithm}. The main difference between \corchueloplus
-and \mf is the use of the A* heuristic, which allows nodes to be deferred beyond
-beyond their actual cost. In other words a node $c$ with a heuristic $h$ is
+and \mf is the use of the A* heuristic, which allows configurations to be deferred beyond
+beyond their actual cost. In other words a configuration $c$ with a heuristic $h$ is
 placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
 \label{fig:mf:algorithm}
 \end{figure}
@@ -1393,13 +1393,13 @@ placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
 The main part of the \mf algorithm is deliberately similar to that of \corchueloplus
 (compare Figure~\ref{fig:corchuelo:algorithm} and Figure~\ref{fig:mf:algorithm}). Because
 \textsc{dyn\_dist} is both admissible (i.e.~it never overestimates the distance to a
-success node) and consistent (i.e.~the total estimated cost to reach a success
-node is monotonically non-decreasing) we know that neighbouring nodes will
-always be at the same, or greater, cost as the current node. This allows us to
+success configuration) and consistent (i.e.~the total estimated cost to reach a success
+configuration is monotonically non-decreasing) we know that neighbouring configurations will
+always be at the same, or greater, cost as the current configuration. This allows us to
 use a simple, and efficient, variant of the A* algorithm that is virtually
 identical to the algorithm of \corchueloplus. However, it is important to note that
-\textsf{dyn\_dist} is used to place nodes later in the todo list than \corchueloplus.
-Finally, compatible node merging, repair sequence simplification, and so on are identical
+\textsf{dyn\_dist} is used to place configurations later in the todo list than \corchueloplus.
+Finally, compatible configuration merging, repair sequence simplification, and so on are identical
 to that in \corchueloplus.
 
 
@@ -1601,11 +1601,11 @@ the user.
 The approach of \citet{mckenzie95error} is similar to
 \citet{corchuelo02repairing}, although the former cannot incorporate shift
 repairs. It tries harder than \corchueloplus to prune out pointless search
-nodes~\cite[p.~12]{mckenzie95error}, such as cycles in the parsing stack,
+configurations~\cite[p.~12]{mckenzie95error}, such as cycles in the parsing stack,
 although this leads to some minimum cost repairs being
 skipped~\cite{bertsch99failure}. A number of interlocking, sophisticated pruning
 mechanisms which build on this are described in~\citet{cerecke03phd}. These are
-significantly more complex than our merging of compatible nodes; since this
+significantly more complex than our merging of compatible configurations; since this
 gives us acceptable performance in practise, we have not investigated other
 pruning mechanisms.
 
