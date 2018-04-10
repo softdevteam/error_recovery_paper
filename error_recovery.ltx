@@ -1033,7 +1033,7 @@ terminates when the first success configuration is found.
 \small
 \[
 \infer[\textsc{KY Insert}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n], t) \kyarrow ([s_0 \ldots s_n, s'],
+      {([s_0 \ldots s_n], [t_0 \ldots t_n], w) \kyarrow ([s_0 \ldots s_n, s'],
        [t_0 \ldots t_n], \top, [\textit{insert}~t], d)}
       {s_n \xrightarrow{\text{~~t~~}} s' \wedge t \ne \${} \wedge d = \textsf{dist}(s', t_0) < \infty)}
 \]
@@ -1055,17 +1055,17 @@ terminates when the first success configuration is found.
 \[
 \hspace{-12pt}
 \infer[\textsc{KY Shift}]
-      {(S, [t_0 \ldots t_n], t) \kyarrow (S', [t_1 \ldots t_n], \bot, [\textit{shift}], 0)}
+      {(S, [t_0 \ldots t_n], w) \kyarrow (S', [t_1 \ldots t_n], \bot, [\textit{shift}], 0)}
       {(S, [t_0 \ldots t_n]) \lrarrowstar (S', [t_1 \ldots t_n])}
 \]
 \vspace{-12pt}
 \caption{The repair-creating rules for \citet{kimyi10astar} operate from (\textit{parsing
-stack}, \textit{token list}, \textit{t}) to (\textit{parsing stack},
-\textit{token list}, \textit{t}, \textit{repairs}, \textit{heuristic}) tuples.
+stack}, \textit{token list}, \textit{w}) to (\textit{parsing stack},
+\textit{token list}, \textit{w}, \textit{repairs}, \textit{heuristic}) tuples.
 \textsc{KY Insert} finds terminals in the stategraph
 ($\xrightarrow{\text{~~t~~}}$) which lead to a state with a finite distance to
 the next input token as \textit{insert} repairs. \textsc{KY Reduce} finds items
-in the core (or `kernel') stategraph which would lead to a reduction if the
+in the core (or `kernel') state which would lead to a reduction if the
 sequence of symbols (terminals and non-terminals) $\beta_0 \ldots \beta_n$ were
 to be found; it then optimistically creates insert repairs for each, and
 performs the corresponding reduction. \textsc{KY Delete} is virtually identical
@@ -1078,14 +1078,14 @@ duplicate those found by \textsc{KY Reduce}.}
 The \citet{kimyi10astar} algorithm itself comes in two main parts. First is a
 relation $\kyarrow$ which defines when individual repairs are created
 (Figure~\ref{fig:kimyi:rules}). Unlike the $\crarrow$ relation, these rules are
-from (\textit{parsing stack}, \textit{token list}, \textit{t}) to
-(\textit{parsing stack}, \textit{token list}, \textit{t}, \textit{repairs},
-\textit{heuristic}) tuples. Of these values, $t$ is the least intuitive: in essence,
+from (\textit{parsing stack}, \textit{token list}, \textit{w}) to
+(\textit{parsing stack}, \textit{token list}, \textit{w}, \textit{repairs},
+\textit{heuristic}) tuples. Of these values, $w$ is the least intuitive: in essence,
 it is intended to counteract the fact that the A* heuristic used in the approach doesn't
-take into account reductions/gotos or deletions. Since \textsc{KY Insert} is the only
-rule which uses the heuristic, it sets $t = \top$ to prevent
+take into account reductions/gotos or deletions \lukas{I think this needs expanding}. Since \textsc{KY Insert} is the only
+rule which uses the heuristic, it sets $w = \top$ \lukas{need to say which one we start with} to prevent
 \textsc{KY Reduce} and \textsc{KY Delete} from making the heuristic inadmissible.
-Only \textsc{KY Shift} can turn $t = \top$ into $\bot$.
+Only \textsc{KY Shift} can turn $w = \top$ into $\bot$.
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.52\textwidth}
@@ -1226,9 +1226,9 @@ b}]. The grammar's stategraph is shown in
 and \textsc{KY Delete} both match (the latter an uninteresting dead-end which we
 ignore). The new \textsc{KY Insert} configuration is found via the edge
 from state 0 labelled with terminal $a$: this moves the search to state $3$,
-with a heuristic $\textsf{dist(0, `c')} = 2$, $t = \top$, and a repair [\textit{insert a}]. However, no
+with a heuristic $\textsf{dist(0, `c')} = 2$, $w = \top$, and a repair [\textit{insert a}]. However, no
 rules match the new configuration: there are no edges labelled with terminals from
-state 3; \textsc{KY Reduce} is not applicable since $t = \top$; and \textsc{KY
+state 3; \textsc{KY Reduce} is not applicable since $w = \top$; and \textsc{KY
 Shift} is not applicable since the next token in the user's input is `c' which,
 even after reductions/gotos, cannot be reached from state 3.}
 \label{fig:kimyi:flaw}
@@ -1243,7 +1243,7 @@ results.
 The first flaw is that the \textsf{dist} heuristic does not take into
 account reductions/gotos or deletions: hence the heuristic is only valid for chains of
 inserts via \textsc{KY Insert}. The second flaw results from trying to fix the
-first: the $t$ part of the $\kyarrow$ relation is a hack to ensure that
+first: the $w$ part of the $\kyarrow$ relation is a hack to ensure that
 \textsc{KY Reduce} and \textsc{KY Delete} cannot match when the heuristic $> 0$.
 Unfortunately this hack is too restrictive, sometimes trapping the search in
 parsing states from which it cannot escape, and sometimes stopping it from
