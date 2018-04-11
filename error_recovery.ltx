@@ -1498,7 +1498,7 @@ insertions in a distance, we also take into account all possible reduction
 paths. Note that reductions/gotos and token insertions can be intertwined
 (i.e.~a valid way of
 reaching $s'$ might be a reduction, a token insertion, another reduction and so
-on \lukas{is this what we worked out on Tuesday to be impossible?}). Fortunately, not only is this a natural candidate for a fixed-point
+on \lukas{is this what we worked out on Tuesday to be impossible?}\laurie{i think this sequence is possible: what's impossible, i think, is reduce, delete, reduce}). Fortunately, not only is this a natural candidate for a fixed-point
 algorithm, but we are able to follow a very similar structure to that used to
 calculate the distance table for \textsf{dist}. Figure~\ref{fig:mf:dist:static}
 shows the static part of \textsf{dyn\_dist}.
