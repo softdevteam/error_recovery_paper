@@ -1036,9 +1036,10 @@ Since the A* algorithm is not a particularly common one in parsers,
 we first start with a brief recap. The A* algorithm finds minimum cost paths through
 a graph where each edge has an associated cost $c$. The current known lowest
 cost to reach a configuration $n$ from the start configuration is represented by $d(n)$. A
-heuristic $h(n)$ returns an estimate of the additional cost needed to reach a success configuration from
+heuristic $h(n)$ returns an estimate of the additional cost needed to reach a success node from
 $n$. The heuristic must be `admissible': it must
-never overestimate the cost to reach a success configuration; however, it may safely
+never overestimate the cost to reach a success configuration (or else non-minimal
+cost routes to success nodes may be found first); however, it may safely
 underestimate (i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
 used to order configurations by their $d(n) + h(n)$. On
 each iteration the configuration in the queue with the lowest $d(n) + h(n)$ is selected,
@@ -1151,7 +1152,7 @@ symbol \texttt{sym}; and points to another state with index \texttt{end\_st}. If
 the edge's symbol is a terminal then by definition the cost of reaching that
 terminal from state $i$ is 0 (lines 13-16). We then calculate the cost of the
 edge: if the label's symbol is a nonterminal, we return the cost of the minimal
-sentence matching that nonterminal (line 10); if it's a terminal we return a cost of 1 (line 17).
+sentence matching that nonterminal (line 10); if a terminal we return a cost of 1 (line 17).
 If the cost of $t$ in \texttt{end\_st} plus the distance to \texttt{end\_st} is
 lower than the cost of $t$ in $i$ then we update the latter (lines 19--25).
 A table created by this algorithm can be seen in Figure~\ref{fig:kimyi:flaw:dist}.}
