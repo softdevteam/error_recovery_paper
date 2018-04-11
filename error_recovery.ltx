@@ -1038,7 +1038,7 @@ a graph where each edge has an associated cost $c$. The current known lowest
 cost to reach a configuration $n$ from the start configuration is represented by $d(n)$. A
 heuristic $h(n)$ returns an estimate of the additional cost needed to reach a success configuration from
 $n$. The heuristic must be `admissible': it must
-never overestimate the cost to reach a success configuration; however, it may safely
+never overestimate the cost to reach a success configuration \lukas{as this would create non-minimal repairs}; however, it may safely
 underestimate (i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
 used to order configurations by their $d(n) + h(n)$. On
 each iteration the configuration in the queue with the lowest $d(n) + h(n)$ is selected,
@@ -1247,9 +1247,9 @@ ignore). The new \textsc{KY Insert} configuration is found via the edge
 from state 0 labelled with terminal $a$: this moves the search to state $1$,
 with a heuristic $\textsf{dist(0, `c')} = 2$, $w = \top$, and a repair [\textit{insert a}]. However, no
 rules match the new configuration: there are no edges labelled with terminals from
-state 3; \textsc{KY Reduce} is not applicable since $w = \top$; and \textsc{KY
+state 1; \textsc{KY Reduce} is not applicable since $w = \top$; and \textsc{KY
 Shift} is not applicable since the next token in the user's input is `c' which,
-even after reductions/gotos, cannot be reached from state 3.}
+even after reductions/gotos, cannot be reached from state 1.}
 \label{fig:kimyi:flaw}
 \end{figure}
 
