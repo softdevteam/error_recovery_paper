@@ -1305,7 +1305,7 @@ calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
       {([s_0 \ldots s_n], [t_0 \ldots t_n], [r_0 \ldots r_n])
        \mfarrow ([s_0 \ldots s_n, s'], [t_0 \ldots t_n], [r_0 \ldots r_n, \textit{insert}~t], d)}
       {\textsf{action}(s_n, t) = \textit{shift}~s' \wedge t \ne \${}
-       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{insert}~t], s', t_0) < \infty}
+       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{insert}~t], s', [t_0 \ldots t_n]) < \infty}
 \]
 \vspace{-3pt}
 \[
@@ -1315,7 +1315,7 @@ calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
        [t_0 \ldots t_n], [r_0 \ldots r_n], d)}
       {N: \alpha \in \textsf{core\_reduces}(s_n)
        \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'
-       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n], s', t_0) < \infty}
+       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n], s', [t_0 \ldots t_n]) < \infty}
 \]
 \vspace{-4pt}
 \[
@@ -1324,7 +1324,7 @@ calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
        \mfarrow
        (S, [t_1 \ldots t_n], [r_0 \ldots r_n, \textit{delete}], d)}
       {t_0 \ne \$
-       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{delete}], s_n, t_1) < \infty}
+       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{delete}], s_n, [t_1 \ldots t_n]) < \infty}
 \]
 \vspace{-3pt}
 \[
@@ -1334,7 +1334,7 @@ calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
        \mfarrow
        ([s_0 \ldots s_n, s'], [t_1 \ldots t_n], [r_0 \ldots r_n, \textit{shift}], d)}
       {\textsf{action}(s_n, t_0) = \textit{shift}~s'
-       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{shift}], s', t_1) < \infty}
+       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{shift}], s', [t_1 \ldots t_n]) < \infty}
 \]
 \vspace{-12pt}
 \caption{The repair-creating rules for \mf. \textit{dyn\_dist} is the \mf A*
@@ -1478,7 +1478,7 @@ We then take the resulting set and map each element to the state it will goto
 that of the \texttt{mk\_dist} function (see Figure~\ref{fig:kimyi:dist}) (i.e.~they
 follow insertion sequences). We then take into account the goto states as
 part of the distance calculation (lines 26--34).}
-\label{fig:kimyi:dist}
+\label{fig:mf:dist:static}
 \end{figure}
 
 \begin{figure}[t]
@@ -1500,7 +1500,7 @@ $s$ & \texttt{a} & \texttt{b} & \texttt{c} & \$ \\
 \end{adjustbox}
 \begin{adjustbox}{valign=t,minipage=0.68\textwidth}
 \vspace{-13pt}
-\caption{The \textit{dyn\_dist} table for the grammar from
+\caption{The \textit{dyn\_dist} distance table for the grammar from
 Figure~\ref{fig:kimyi:flaw}. Relative to \textit{dyn}, many fewer entries are
 $\infty$, because reductions/gotos are taken into account. For example, consider state
 1, whose sole parsing item leads to a reduction, and a goto to state 2: state
@@ -1529,6 +1529,62 @@ on). Fortunately, not only is this a natural candidate for a fixed-point
 algorithm, but we are able to follow a very similar structure to that used to
 calculate the distance table for \textsf{dist}. Figure~\ref{fig:mf:dist:static}
 shows the static part of \textsf{dyn\_dist}.
+
+\begin{figure}[t]
+\begin{adjustbox}{valign=t,minipage=.35\textwidth}
+\begin{lstlisting}[numbers=left]
+def dyn_dist(rprs, s, toks):
+  if ends_in_N_shifts(rprs):
+    return 0
+  ld = <!$\infty$!>
+  dc = 0
+  while dc < ld:
+    d = dd_dist(s, toks[0])
+    if d < <!$\infty$!> and dc + d < ld:
+      ld = dc + d
+    dc += 1
+    if len(toks) == 1:
+      break
+    toks = toks[1:]
+  if ld == <!$\infty$!>: return None
+  else: return ld
+\end{lstlisting}
+\end{adjustbox}%
+\begin{adjustbox}{valign=t,minipage=.63\textwidth}
+\vspace{-9.5pt}
+\caption{\textit{dyn\_dist} returns the cost to a success
+configuration, taking into account reductions and deletions. It takes as input a
+sequence of repairs \textit{rprs}, a state \textit{s}, and the remaining tokens
+from the user's input \textit{toks} and returns an integer distance or
+\texttt{None} if no route can be found. The function starts with a special case:
+if the repair sequence ends in $N_\textit{shift}$ shifts then the distance to a
+success confguration is by definition 0 (lines 2--3). Otherwise the current
+least distance to a success configuration is set to $\infty$ (line 4; this value
+monotonically decreases as the main loop executes) and the current cost of
+deleting tokens to 0 (line 5). We then continually iterate over the user's input
+until either there is no input left (lines 11-12) or the cost of deleting tokens
+exceeds the current least distance (line 6). On each iteration of the loop, we
+calculate the static distance to the next token in the user's input (line 7). If
+the distance is less than $\infty$ and the cumulative deletion cost plus the static
+distance is less than the current least distance, then we update the latter
+(lines 8--9). Otherwise, we increment the deletion cost (line 10) and `delete'
+the next token (line 13).}
+\label{fig:dyndist:dyndist}
+\end{adjustbox}
+\end{figure}
+
+The dynamic part of \textsf{dyn\_dist} is shown in
+Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
+\texttt{mk\_dyn\_dist} and also takes into account the cost of deleting user
+input. The basic idea is to discover if, when a token in the user's input is
+deleted, a quicker route to a success configuration can be found. The only
+subtlety comes from the fact that we have to remember that a repair sequence
+that ends with $N_\textit{shift}$ shifts is already a success configuration.
+Because of this \textsf{dyn\_dist} has to take a repair sequence as an input. As
+the rules in Figure~\ref{fig:mf:rules} show, this is the repair sequence for the
+new configuration. If this repair sequence ends with $N_\textit{shift}$ shifts,
+then \textsf{dyn\_dist} returns a distance of 0 to ensure that the new
+configuration is not put later in the todo list.
 
 
 \section{Experiment}
