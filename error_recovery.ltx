@@ -1396,12 +1396,12 @@ placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
 
 The main part of the \mf algorithm is deliberately similar to that of \corchueloplus
 (compare Figure~\ref{fig:corchuelo:algorithm} and Figure~\ref{fig:mf:algorithm}). Because
-\textsc{dyn\_dist} is both admissible (i.e.~it never overestimates the distance to a
+\textsf{dyn\_dist} is both admissible (i.e.~it never overestimates the distance to a
 success configuration) and consistent (i.e.~the total estimated cost to reach a success
 configuration is monotonically non-decreasing) we know that neighbouring configurations will
 always be at the same, or greater, cost as the current configuration. This allows us to
-use a simple, and efficient, variant of the A* algorithm that is virtually
-identical to the algorithm of \corchueloplus. However, it is important to note that
+use a simple, and efficient, variant of the A* algorithm that is similar
+to the algorithm of \corchueloplus with the notable difference that
 \textsf{dyn\_dist} is used to place configurations later in the todo list than \corchueloplus.
 Finally, compatible configuration merging, repair sequence simplification, and so on are identical
 to that in \corchueloplus.
@@ -1411,9 +1411,10 @@ to that in \corchueloplus.
 \label{mf:dyn_dist}
 
 \textsf{dyn\_dist} comes in static and dynamic parts: the former handles insertion
-sequences and reductions/gotos; and the latter handles deletions. The static part
-extends the distance table algorithm used in \textsf{dist} while the dynamic part
-is new. In this subsection we explain both parts.
+sequences and reductions/gotos; and the latter handles deletions (which
+require examining the user's input). The static part
+extends the distance table algorithm used in \citet{kimyi10astar} while the dynamic part
+is entirely new. In this subsection we explain both parts.
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.55\textwidth}
@@ -1511,18 +1512,8 @@ accept state.}
 \end{adjustbox}
 \end{figure}
 
-
-The most significant difference between \mf and \corchueloplus is the use of the
-\textsf{dyn\_dist} A* heuristic. Part of \textsf{dyn\_dist} is based on the
-\textsf{dist} heuristic of \citet{kimyi10astar}, with the important
-difference that \textsf{dyn\_dist} takes into account reductions/gotos and deletions.
-reductions/gotos are taken into account statically by using a more sophisticated
-algorithm to calculate a distance table. However, deletions can only be dealt
-with by considering the user's input, and are thus handled dynamically. In this
-subsection we explain both aspects.
-
-The \textsf{dist} heuristic of \citet{kimyi10astar} builds a distance table of
-states and tokens, such that \textsf{dist(s, t)} returns the cumulative cost of
+The A* heuristic of \citet{kimyi10astar} builds a distance table of
+states and tokens: \textsf{dist(s, t)} then returns the cumulative cost of
 the sequence of token insertions from state $s$ such that a state $s'$ can be
 found which has an outgoing edge labelled with $t$. This is a useful base,
 but we also need to take into account reductions/gotos to stop any search which
@@ -1531,7 +1522,7 @@ it is relatively easy to statically
 underapproximate the effect of reductions/gotos into account. The basic
 idea is simple: as well as taking into account the cost of a sequence of token
 insertions in a distance, we also take into account all possible reduction
-paths. Note that reductions/gotos and token insertions can be intertwined, thus
+paths. Note that reductions/gotos and token insertions can be intertwined
 (i.e.~a valid way of
 reaching $s'$ might be a reduction, a token insertion, another reduction and so
 on). Fortunately, not only is this a natural candidate for a fixed-point
@@ -1542,6 +1533,8 @@ shows the static part of \textsf{dyn\_dist}.
 
 \section{Experiment}
 \label{experiment}
+
+\cite{brown14blackbox}
 
 \subsection{Methodolgy}
 
