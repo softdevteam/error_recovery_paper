@@ -1244,7 +1244,7 @@ b}]. The grammar's stategraph is shown in
 (\subref{fig:kimyi:flaw:dist}). The search starts in state 0: \textsc{KY Insert}
 and \textsc{KY Delete} both match (the latter an uninteresting dead-end which we
 ignore). The new \textsc{KY Insert} configuration is found via the edge
-from state 0 labelled with terminal $a$: this moves the search to state $3$ \lukas{Shouldn't inserting a move it to state 1. Or was it supposed to insert S?},
+from state 0 labelled with terminal $a$: this moves the search to state $1$,
 with a heuristic $\textsf{dist(0, `c')} = 2$, $w = \top$, and a repair [\textit{insert a}]. However, no
 rules match the new configuration: there are no edges labelled with terminals from
 state 3; \textsc{KY Reduce} is not applicable since $w = \top$; and \textsc{KY
