@@ -69,7 +69,7 @@
 % Paper history
 %\received{February 2007}
 
-\newcommand{\corchueloplus}{\textit{CPCT}$^+$\xspace}
+\newcommand{\cpctplus}{\textit{CPCT}$^+$\xspace}
 \newcommand{\crarrow}{\rightarrow_{\textrm{\tiny CR}}}
 \newcommand{\crarrowstar}{\rightarrow_{\textrm{\tiny CR}}^*}
 \newcommand{\kyarrow}{\rightarrow_{\textrm{\tiny KY}}}
@@ -216,7 +216,7 @@ when it encounters `\texttt{y}'. Its error recovery heuristic then
 repairs the input by inserting a semicolon before `\texttt{y}' (i.e.~making
 the input equivalent to `\texttt{int x; y;}'). This immediately leads to a spurious second parse error,
 since `\texttt{y}' on its own is not a valid statement. The two new error
-recovery algorithms (\corchueloplus and \mf) we introduce in this paper both
+recovery algorithms (\cpctplus and \mf) we introduce in this paper both
 produce the output shown in (\subref{lst:javaerror:mf}): after spotting an error
 when parsing encounters `\texttt{y}', they then use the Java grammar to find the
 complete set of minimum cost repair sequences (unlike previous approaches which
@@ -288,21 +288,21 @@ makes a difference}
 
 We first use one of the more recent algorithms in this family -- that of
 \citet{corchuelo02repairing} -- as a base, correcting and substantially extending it
-to form a new algorithm \corchueloplus (Section~\ref{corchueloplus}). We
+to form a new algorithm \cpctplus (Section~\ref{corchueloplus}). We
 then show that an even newer algorithm which promises better performance -- that
 of \citet{kimyi10astar} -- has problems which cause it to miss many
 minimum cost repair sequences (Section~\ref{kimyi}). However, we are able to use
 it as partial inspiration for an entirely new error recovery algorithm \mf
-(Section~\ref{mf}), which is approximately \mfratioovercorchuelo faster than
-\corchueloplus. We aim for both algorithms to be as simple as possible, so that
-they are realistic targets for tool builders: \corchueloplus is somewhat
+(Section~\ref{mf}), which is approximately \mfratioovercpctplus faster than
+\cpctplus. We aim for both algorithms to be as simple as possible, so that
+they are realistic targets for tool builders: \cpctplus is somewhat
 simpler than \mf, though the latter is still less than 1,000 lines of Rust code.
 
-We then validate \corchueloplus and \mf on a corpus of \corpussize real,
+We then validate \cpctplus and \mf on a corpus of \corpussize real,
 syntactically incorrect, Java programs (Section~\ref{experiment}) -- approximately
 15x bigger than the biggest previous experiment \cite[p.~84]{cerecke03phd}. Within the
-time budget of 0.5s: \corchueloplus is able to find repairs for \corchuelosuccessrate
-of files within this time, with a mean recovery time of \corchuelomeantime; and
+time budget of 0.5s: \cpctplus is able to find repairs for \cpctplussuccessrate
+of files within this time, with a mean recovery time of \cpctplusmeantime; and
 \mf is able to find repairs for \mfsuccessrate of files within this time, with
 a mean recovery time of \mfmeantime. We believe that this shows that such
 approaches are ready for wider usage, either on their own, or as part of a multi-phase
@@ -478,7 +478,7 @@ complete before moving to a new (`goto') state.}
 \end{figure}
 
 
-\section{\corchueloplus}
+\section{\cpctplus}
 \label{corchueloplus}
 
 The \citet{fischer79locally} family of error recovery algorithms has many
@@ -497,7 +497,7 @@ be extended to efficiently find the complete set of minimum cost repair sequence
 (Section~\ref{corchuelo:allminimumcost}). This allows
 us to make an algorithm less susceptible to the cascading error problem
 (Section~\ref{cpctplus}): we refer to this final algorithm
-as \corchueloplus.
+as \cpctplus.
 
 
 \subsection{The original algorithm}
@@ -908,14 +908,14 @@ recursively expanding both the normal parent pointer tree of \textit{repair}s
 and the merged parent pointer trees of \textit{merged}.
 
 
-\subsection{Putting together the \corchueloplus algorithm}
+\subsection{Putting together the \cpctplus algorithm}
 \label{cpctplus}
 \label{rankingrepairs}
 
 The \textsc{CR Shift 3} rule and our ability to find the complete
 set of minimum cost repair sequences are two of the three key ingredients
 in our our new error recovery algorithm. In this subsection
-we make one further addition to the algorithm, calling the result \corchueloplus (in
+we make one further addition to the algorithm, calling the result \cpctplus (in
 homage to its roots in \citet{corchuelo02repairing}).
 
 \begin{figure}[t]
@@ -990,7 +990,7 @@ searched.
 
 \subsection{A complete example}
 
-\laurie{need a complete example with all intermediate steps for \corchueloplus}
+\laurie{need a complete example with all intermediate steps for \cpctplus}
 
 
 \section{The Kim and Yi algorithm}
@@ -1000,7 +1000,7 @@ Algorithms in the \citet{fischer79locally} family have unbounded worse case
 performance, which is easily seen on inputs with unbalanced brackets
 (e.g.~in expressions such as `\texttt{x = f(();}'): each additional unmatched
 bracket exponentially increases the search space. For example, on a modern machine
-with a Java grammar, the \corchueloplus algorithm takes about 0.3s to find
+with a Java grammar, the \cpctplus algorithm takes about 0.3s to find
 the complete set of minimum cost repair sequences for 3 unmatched brackets, 3s
 for 4 unmatched brackets, and 6 unmatched brackets caused our 32GiB test machine
 to run out of RAM.
@@ -1218,11 +1218,11 @@ However, the hack has unfortunate effects, sometimes trapping the search in
 parsing states from which it cannot escape, and sometimes stopping it from
 searching states which would produce a lower cost repair sequence.
 For example, given the grammar \texttt{S: T 'b' 'c'; T: 'a';} and the input `c',
-\citet{kimyi10astar} can find no repairs (whereas \corchueloplus finds [\textit{insert a}, \textit{insert b}]).
+\citet{kimyi10astar} can find no repairs (whereas \cpctplus finds [\textit{insert a}, \textit{insert b}]).
 Given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
 'a' 'a' 'd';} and the input `a c d', the algorithm incorrectly returns the repair sequence
 [\textit{insert b}, \textit{shift}, \textit{insert a}, \textit{insert a}]
-(whereas \corchueloplus returns the minimum cost repair sequence
+(whereas \cpctplus returns the minimum cost repair sequence
 [\textit{insert b}, \textit{delete}].
 
 Both flaws can be fixed by revisiting an old friend: if we apply the same change to
@@ -1246,12 +1246,12 @@ properties.
 \section{\mf}
 \label{mf}
 
-In this section we present a new recovery algorithm \mf. As with \corchueloplus,
+In this section we present a new recovery algorithm \mf. As with \cpctplus,
 \mf finds the complete set of minimum cost repair sequences, although it does so
 using the A* algorithm. While
-\corchueloplus and \mf find precisely the same repair sequences, \mf does so
+\cpctplus and \mf find precisely the same repair sequences, \mf does so
 in less time. However, \mf requires more up-front calculations that require slightly
-more implementation effort: \mf is approximately 950LoC whereas \corchueloplus
+more implementation effort: \mf is approximately 950LoC whereas \cpctplus
 is approximately 700LoC.
 
 We first provide an overview of the algorithm
@@ -1309,8 +1309,8 @@ reduced by state $s_n$.}
 \end{figure}
 
 At a high level -- and much of the low level -- our description of \mf is
-deliberately similar to \corchueloplus, hopefully allowing the reader
-to both easily digest \mf and pick out the differences from \corchueloplus.
+deliberately similar to \cpctplus, hopefully allowing the reader
+to both easily digest \mf and pick out the differences from \cpctplus.
 
 We introduce a new reduction relation $\mfarrow$, whose rules are shown in
 Figure~\ref{fig:mf:rules}. Their most obvious features are that the relation is
@@ -1351,24 +1351,24 @@ def all_mf_star(pstack, toks, rprs):
 \end{adjustbox}
 \vspace*{-8pt}
 \caption{The main \mf algorithm. Lines 2--13 are identical to those of
-Figure~\ref{fig:corchuelo:algorithm}. The main difference between \corchueloplus
+Figure~\ref{fig:corchuelo:algorithm}. The main difference between \cpctplus
 and \mf is the use of the A* heuristic, which allows configurations to be deferred
 beyond their actual cost. In other words a configuration $c$ with a heuristic $h$ is
 placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
 \label{fig:mf:algorithm}
 \end{figure}
 
-The main part of the \mf algorithm is deliberately similar to that of \corchueloplus
+The main part of the \mf algorithm is deliberately similar to that of \cpctplus
 (compare Figure~\ref{fig:corchuelo:algorithm} and Figure~\ref{fig:mf:algorithm}). Because
 \textsf{dyn\_dist} is both admissible (i.e.~it never overestimates the distance to a
 success configuration) and consistent (i.e.~the total estimated cost to reach a success
 configuration is monotonically non-decreasing) we know that neighbouring configurations will
 always be at the same, or greater, cost as the current configuration. This allows us to
 use a simple, and efficient, variant of the A* algorithm that is similar
-to the algorithm of \corchueloplus with the notable difference that
-\textsf{dyn\_dist} is used to place configurations later in the todo list than \corchueloplus.
+to the algorithm of \cpctplus with the notable difference that
+\textsf{dyn\_dist} is used to place configurations later in the todo list than \cpctplus.
 Finally, compatible configuration merging, repair sequence simplification, and so on are identical
-to that in \corchueloplus.
+to that in \cpctplus.
 
 
 \subsection{The \texttt{dyn\_dist} heuristic}
@@ -1626,7 +1626,7 @@ the user.
 
 The approach of \citet{mckenzie95error} is similar to
 \citet{corchuelo02repairing}, although the former cannot incorporate shift
-repairs. It tries harder than \corchueloplus to prune out pointless search
+repairs. It tries harder than \cpctplus to prune out pointless search
 configurations~\cite[p.~12]{mckenzie95error}, such as cycles in the parsing stack,
 although this leads to some minimum cost repairs being
 skipped~\cite{bertsch99failure}. A number of interlocking, sophisticated pruning
