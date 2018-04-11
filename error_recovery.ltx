@@ -993,14 +993,15 @@ to run out of RAM.
 While such cases are fairly rare, it would be better if they did not occur at
 all. \citet{kimyi10astar} propose a new error recovery -- which is in the
 \citet{fischer79locally} family, but by far its most radical member --  which
-claims to almost entirely remove such performance problems. This work has not,
+claims to hugely reduce such performance problems. This work has not,
 to the best of our knowledge, received prior attention in the community, despite
 this promise. In this section we provide a brief overview of this work: we
-give enough information to understand the details relevant to this paper but
-we elide several details which a real
+give enough information to understand relevant details but
+we elide several details which an
 implementation would need to consider. We also adjust the algorithm's style to
-match this paper's and correct several minor mistakes. We then show that the
-algorithm contains two serious flaws
+match this paper's and correct several minor mistakes.
+
+We then show that the algorithm contains two serious flaws
 which mean that it misses minimum cost repair sequences
 (Section~\ref{kimyi:flaws}). These flaws are not easily fixed, but parts of the
 approach serve as inspiration for our new \mf error recovery algorithm.
@@ -1080,12 +1081,13 @@ relation $\kyarrow$ which defines when individual repairs are created
 (Figure~\ref{fig:kimyi:rules}). Unlike the $\crarrow$ relation, these rules are
 from (\textit{parsing stack}, \textit{token list}, \textit{w}) to
 (\textit{parsing stack}, \textit{token list}, \textit{w}, \textit{repairs},
-\textit{heuristic}) tuples. Of these values, $w$ is the least intuitive: in essence,
-it is intended to counteract the fact that the A* heuristic used in the approach doesn't
-take into account reductions/gotos or deletions \lukas{I think this needs expanding}. Since \textsc{KY Insert} is the only
-rule which uses the heuristic, it sets $w = \top$ \lukas{need to say which one we start with} to prevent
-\textsc{KY Reduce} and \textsc{KY Delete} from making the heuristic inadmissible.
-Only \textsc{KY Shift} can turn $w = \top$ into $\bot$.
+\textit{heuristic}) tuples. Of these values, $w$ is the least intuitive:
+since the A* heuristic used doesn't take into account reductions/gotos or deletions,
+$w$ prevents \textsc{KY Reduce} and \textsc{KY Delete} from being used when
+the heuristic is $> 0$ (i.e.~$w$ is intended to make the heuristic admissible).
+The initial configuration sets $w = \bot$. Since \textsc{KY Insert} is the only
+rule which uses the heuristic, it sets $w = \top$. Only \textsc{KY Shift} can
+turn $w = \top$ into $\bot$.
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.52\textwidth}
@@ -1145,7 +1147,9 @@ A table created by this algorithm can be seen in Figure~\ref{fig:kimyi:flaw:dist
 The A* heuristic used is \textsf{dist(s, t)} which is best
 summarised as follows: if we are in parsing state $s$, what is the cost of the
 minimum route through the stategraph to a state $s'$ (where $s$ and $s'$ may be
-the same state), where $s'$ has the terminal $t$ as an outgoing edge? If no such route
+the same state), where $s'$ has the terminal $t$ as an outgoing edge? In other
+words, this gives us the cost of inserting symbols to reach a state $s'$
+where $t$ is a valid next token. If no such route
 exists, \textsf{dist} returns $\infty$. While \citet{kimyi10astar} provide a
 specification of \textsf{dist}, we provide a fixed-point algorithm
 (Figure~\ref{fig:kimyi:dist}). The result is cached in a table at the point
@@ -1244,7 +1248,7 @@ The first flaw is that the \textsf{dist} heuristic does not take into
 account reductions/gotos or deletions: hence the heuristic is only valid for chains of
 inserts via \textsc{KY Insert}. The second flaw results from trying to fix the
 first: the $w$ part of the $\kyarrow$ relation is a hack to ensure that
-\textsc{KY Reduce} and \textsc{KY Delete} cannot match when the heuristic $> 0$.
+\textsc{KY Reduce} and \textsc{KY Delete} cannot match when the heuristic is $> 0$.
 Unfortunately this hack is too restrictive, sometimes trapping the search in
 parsing states from which it cannot escape, and sometimes stopping it from
 searching states which would produce a lower cost repair sequence.
@@ -1270,7 +1274,7 @@ with the mostly minor difference that \textsc{CR Insert} operates on the
 statetable and \textsc{KY Insert} on the stategraph.\footnote{Though note that
 for parsers which allow conflict resolution, such as Yacc, this means that
 \textsc{KY Insert} can produce results which can't be parsed by the
-statetable~\cite[p.~53, 54]{cerecke03phd}.}. We have been
+statetable~\cite[p.~53, 54]{cerecke03phd}.} We have been
 unable to find fixes to the algorithm that maintain its claimed performance
 properties.
 
