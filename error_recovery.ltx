@@ -1106,7 +1106,7 @@ rule which uses the heuristic, it sets $w = \top$. Only \textsc{KY Shift} can
 turn $w = \top$ into $\bot$.
 
 \begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=.52\textwidth}
+\begin{adjustbox}{valign=t,minipage=.63\textwidth}
 \begin{lstlisting}[numbers=left]
 def mk_dist(sgraph, terms, eof_idx):
   table = [<!$\infty$!>] * sgraph.len_states * len(terms)
@@ -1137,27 +1137,47 @@ def mk_dist(sgraph, terms, eof_idx):
       break
 \end{lstlisting}
 \end{adjustbox}%
-\begin{adjustbox}{valign=t,minipage=.48\textwidth}
-\vspace{-9.5pt}
-\caption{A fixed-point algorithm for the \textit{dist(s, t)} function.
-The algorithm takes in the stategraph, an (arbitrarily but fixed) ordered list of
+\begin{adjustbox}{valign=t,minipage=.35\textwidth}
+\begin{tabular}{rcccccc}
+\toprule
+      & \multicolumn{6}{c}{$t$} \\
+        \cmidrule(lr){2-7}
+$s$ & INT & \texttt{+} & \texttt{*} & \texttt{(} & \texttt{)} & \$ \\
+\midrule
+0 & 0 & 1 & 1 & 0 & 2 & 1 \\
+1 & 0 & 1 & 1 & 0 & 1 & $\infty$ \\
+2 & 1 & 0 & 2 & 1 & 3 & $\infty$ \\
+3 & 1 & 3 & 0 & 1 & 3 & $\infty$ \\
+4 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+5 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & 0 \\
+6 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & 0 & $\infty$ \\
+7 & 0 & 1 & 1 & 0 & 2 & $\infty$ \\
+8 & 0 & 2 & 1 & 0 & 2 & $\infty$ \\
+9 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+10 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+11 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\vspace{-5pt}
+\caption{A fixed-point algorithm for the \textit{dist} distance table (left)
+and a distance table for the grammar from Figure~\ref{fig:exprgrammar} (right).
+The algorithm takes in the stategraph, an ordered list of
 terminals, and the index of the \$ terminal (line 1), and returns a table with
-one column per terminal and one row per state. Every entry starts
+one column per terminal and one row per state. Each entry starts
 at $\infty$ (line 2) except for the accept state's (i.e.~the only state with
 an \textit{accept} action) `\$' terminal which is set
 to 0 (lines 3, 4): entries monotonically reduce to a minimum of 0. For each
 state $i$ in the stategraph (line 7), the algorithm explores its outgoing edges
-(via the \texttt{edges} function (line 8)), each of which: is labelled with a
-symbol \texttt{sym}; and points to another state with index \texttt{end\_st}. If
+(via the \texttt{edges} function (line 8)), each of which is labelled with a
+symbol \texttt{sym} and points to another state with index \texttt{end\_st}. If
 the edge's symbol is a terminal then by definition the cost of reaching that
 terminal from state $i$ is 0 (lines 13-16). We then calculate the cost of the
 edge: if the label's symbol is a nonterminal, we return the cost of the minimal
 sentence matching that nonterminal (line 10); if a terminal we return a cost of 1 (line 17).
 If the cost of $t$ in \texttt{end\_st} plus the distance to \texttt{end\_st} is
-lower than the cost of $t$ in $i$ then we update the latter (lines 19--25).
-A table created by this algorithm can be seen in Figure~\ref{fig:kimyi:flaw:dist}.}
+lower than the cost of $t$ in $i$ then we update the latter (lines 19--25).}
 \label{fig:kimyi:dist}
-\end{adjustbox}
 \end{figure}
 
 The A* heuristic used is \textsf{dist(s, t)} which is best
@@ -1179,81 +1199,6 @@ computation \lukas{I have never heard of this}.
 \subsection{Problems with the algorithm}
 \label{kimyi:flaws}
 
-\begin{figure}
-\begin{adjustbox}{valign=t,minipage=.04\textwidth}
-\begin{subfigure}{0.04\textwidth}
-\caption{}
-\label{fig:kimyi:flaw:grammar}
-\end{subfigure}
-\end{adjustbox}%
-\begin{adjustbox}{valign=t,minipage=.18\textwidth}
-\begin{lstlisting}
-S: T 'b' 'c';
-T: 'a';
-\end{lstlisting}
-\end{adjustbox}%
-\begin{adjustbox}{valign=t,minipage=.04\textwidth}
-\begin{subfigure}{0.04\textwidth}
-\caption{}
-\label{fig:kimyi:flaw:stategraph}
-\end{subfigure}
-\end{adjustbox}%
-\begin{adjustbox}{valign=t,minipage=.35\textwidth}
-\begin{lstlisting}
-0: [^ -> . S, {'$'}]
-   'a' -> 1
-   T -> 2
-   S -> 3
-1: [T -> 'a' ., {'b'}]
-2: [S -> T . 'b' 'c', {'$'}]
-   'b' -> 4
-3: [^ -> S ., {'$'}]
-4: [S -> T 'b' . 'c', {'$'}]
-   'c' -> 5
-5: [S -> T 'b' 'c' ., {'$'}]
-\end{lstlisting}
-\end{adjustbox}%
-\begin{adjustbox}{valign=t,minipage=.04\textwidth}
-\begin{subfigure}{0.04\textwidth}
-\caption{}
-\label{fig:kimyi:flaw:dist}
-\end{subfigure}
-\end{adjustbox}%
-\begin{adjustbox}{valign=t,minipage=.3\textwidth}
-\small
-\begin{tabular}{rcccc}
-\toprule
-      & \multicolumn{4}{c}{$t$} \\
-        \cmidrule(lr){2-5}
-$s$ & \texttt{a} & \texttt{b} & \texttt{c} & \$ \\
-\midrule
-0 & 0 & 1 & 2 & 3 \\
-1 & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
-2 & $\infty$ & 0 & 1 & $\infty$ \\
-3 & $\infty$ & $\infty$ & $\infty$ & 0 \\
-4 & $\infty$ & $\infty$ & 0 & $\infty$ \\
-5 & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
-\bottomrule
-\end{tabular}
-\end{adjustbox}
-\caption{\laurie{stategraph needs to be drawn} Given the grammar in
-(\subref{fig:kimyi:flaw:grammar}) and the input
-`c' \citet{kimyi10astar} is unable to find any repair sequences while \corchueloplus
-is able to find a repair seqence [\textit{insert a}, \textit{insert
-b}]. The grammar's stategraph is shown in
-(\subref{fig:kimyi:flaw:stategraph}) and the \textit{dist} table in
-(\subref{fig:kimyi:flaw:dist}). The search starts in state 0: \textsc{KY Insert}
-and \textsc{KY Delete} both match (the latter an uninteresting dead-end which we
-ignore). The new \textsc{KY Insert} configuration is found via the edge
-from state 0 labelled with terminal $a$: this moves the search to state $1$,
-with a heuristic $\textsf{dist(0, `c')} = 2$, $w = \top$, and a repair [\textit{insert a}]. However, no
-rules match the new configuration: there are no edges labelled with terminals from
-state 1; \textsc{KY Reduce} is not applicable since $w = \top$; and \textsc{KY
-Shift} is not applicable since the next token in the user's input is `c' which,
-even after reductions/gotos, cannot be reached from state 1.}
-\label{fig:kimyi:flaw}
-\end{figure}
-
 The combination of the $\kyarrow$ rules (in particular \textsc{KY Reduce}'s
 ability to insert nonterminals) and the \textsf{dist} function lead to dramatic
 performance improvements as reported by \citet{kimyi10astar}. Unfortunately the
@@ -1261,21 +1206,24 @@ algorithm contains two flaws which lead it to produce incorrect
 results.
 
 The first flaw is that the \textsf{dist} heuristic does not take into
-account reductions/gotos or deletions: hence the heuristic is only valid for chains of
-inserts via \textsc{KY Insert}. The second flaw results from trying to fix the
+account reductions/gotos or deletions: hence the heuristic is only valid for sequences of
+inserts via \textsc{KY Insert}. A simple example of this is \textsf{dist(3, `+')} which
+returns 3 (which can be achieved by inserting `\texttt{*}', `\texttt{(}', and `\texttt{INT}'): however, from
+state 3, we could reduce to state 0 and goto state 2, which has an outgoing edge labelled
+`\texttt{+}'. As this shows, the heuristic is inadmissible if reductions (or indeed
+deletions) are allowed. The second flaw results from trying to fix the
 first: the $w$ part of the $\kyarrow$ relation is a hack to ensure that
-\textsc{KY Reduce} and \textsc{KY Delete} cannot match when the heuristic is $> 0$.
-Unfortunately this hack is too restrictive, sometimes trapping the search in
+\textsc{KY Reduce} and \textsc{KY Delete} do not interfere when the heuristic is $> 0$.
+However, the hack has unfortunate effects, sometimes trapping the search in
 parsing states from which it cannot escape, and sometimes stopping it from
 searching states which would produce a lower cost repair sequence.
-Figure~\ref{fig:kimyi:flaw} shows an example where the search gets trapped and
-the algorithm is unable to find a repair sequence.
-These flaws also cause the algorithm to return non-minimum cost repair
-sequences. For example, given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
+For example, given the grammar \texttt{S: T 'b' 'c'; T: 'a';} and the input `c',
+\citet{kimyi10astar} can find no repairs (whereas \corchueloplus finds [\textit{insert a}, \textit{insert b}]).
+Given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
 'a' 'a' 'd';} and the input `a c d', the algorithm incorrectly returns the repair sequence
 [\textit{insert b}, \textit{shift}, \textit{insert a}, \textit{insert a}]
-instead of the minimum cost repair sequence [\textit{insert b}, \textit{delete}].
-In both cases, \corchueloplus correctly finds minimum cost repair sequences.
+(whereas \corchueloplus returns the minimum cost repair sequence
+[\textit{insert b}, \textit{delete}].
 
 Both flaws can be fixed by revisiting an old friend: if we apply the same change to
 \textsc{KY Shift} as we did to \textsc{CR Shift} (see
@@ -1498,32 +1446,41 @@ part of the distance calculation (lines 26--34).}
 \end{figure}
 
 \begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=0.3\textwidth}
-\begin{tabular}{rcccc}
+\begin{adjustbox}{valign=t,minipage=0.4\textwidth}
+\begin{tabular}{rcccccc}
 \toprule
-      & \multicolumn{4}{c}{$t$} \\
-        \cmidrule(lr){2-5}
-$s$ & \texttt{a} & \texttt{b} & \texttt{c} & \$ \\
+      & \multicolumn{6}{c}{$t$} \\
+        \cmidrule(lr){2-7}
+$s$ & INT & \texttt{+} & \texttt{*} & \texttt{(} & \texttt{)} & \$ \\
 \midrule
-0 & 0 & 1 & 2 & 3 \\
-1 & $\infty$ & 0 & 1 & 2 \\
-2 & $\infty$ & 0 & 1 & 2 \\
-3 & $\infty$ & $\infty$ & $\infty$ & 0 \\
-4 & $\infty$ & $\infty$ & 0 & 1 \\
-5 & $\infty$ & $\infty$ & $\infty$ & 0 \\
+0 & 0 & 1 & 1 & 0 & 1 & 1 \\
+1 & 0 & 1 & 1 & 0 & 1 & 1 \\
+2 & 1 & 0 & 1 & 1 & 0 & 0 \\
+3 & 1 & 0 & 0 & 1 & 0 & 0 \\
+4 & 1 & 0 & 0 & 1 & 0 & 0 \\
+5 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & 0 \\
+6 & 2 & 1 & 1 & 2 & 0 & 1 \\
+7 & 0 & 1 & 1 & 0 & 1 & 1 \\
+8 & 0 & 1 & 1 & 0 & 1 & 1 \\
+9 & 1 & 0 & 0 & 1 & 0 & 0 \\
+10 & 2 & 1 & 1 & 2 & 0 & 0 \\
+11 & 1 & 0 & 1 & 1 & 0 & 0 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
-\begin{adjustbox}{valign=t,minipage=0.68\textwidth}
+\begin{adjustbox}{valign=t,minipage=0.58\textwidth}
 \vspace{-13pt}
 \caption{The \textit{dyn\_dist} distance table for the grammar from
-Figure~\ref{fig:kimyi:flaw}. Relative to \textit{dyn}, many fewer entries are
+Figure~\ref{fig:exprgrammar}. Relative to \textit{dyn}'s distance table, many fewer entries are
 $\infty$, because reductions/gotos are taken into account. For example, consider state
-1, whose sole parsing item leads to a reduction, and a goto to state 2: state
-1's distances will then be $\le$ those of state 1. Notice also
-that every state now has a distance to the \$ terminal, since every (reachable)
-state must via reductions/gotos and insertions be able to reach the
-accept state.}
+3, terminal `\texttt{+}': in \textit{dyn}'s distance table this has a cost of 3;
+in \textit{dyn\_dist}'s distance table the cost is 0. The reason for this can be
+clearly seen from the stategraph in Figure~\ref{fig:stategraphtable}: in state
+3, the terminal `\texttt{+}' causes a reduction to state 0, and then a goto to
+state 2. State 2 has an outgoing edge labelled with \texttt{+} and hence a
+distance of 0 to it. Notice also that every state now has a distance to the \$
+terminal, since every (reachable) state must via reductions/gotos and insertions
+be able to reach the accept state.}
 \label{fig:mf:dist:example}
 \end{adjustbox}
 \end{figure}
