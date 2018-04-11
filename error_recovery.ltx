@@ -1404,7 +1404,7 @@ def all_mf_star(pstack, toks, rprs):
 \vspace*{-8pt}
 \caption{The main \mf algorithm. Lines 2--13 are identical to those of
 Figure~\ref{fig:corchuelo:algorithm}. The main difference between \corchueloplus
-and \mf is the use of the A* heuristic, which allows configurations to be deferred beyond
+and \mf is the use of the A* heuristic, which allows configurations to be deferred
 beyond their actual cost. In other words a configuration $c$ with a heuristic $h$ is
 placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
 \label{fig:mf:algorithm}
@@ -1541,7 +1541,7 @@ insertions in a distance, we also take into account all possible reduction
 paths. Note that reductions/gotos and token insertions can be intertwined
 (i.e.~a valid way of
 reaching $s'$ might be a reduction, a token insertion, another reduction and so
-on). Fortunately, not only is this a natural candidate for a fixed-point
+on \lukas{is this what we worked out on Tuesday to be impossible?}). Fortunately, not only is this a natural candidate for a fixed-point
 algorithm, but we are able to follow a very similar structure to that used to
 calculate the distance table for \textsf{dist}. Figure~\ref{fig:mf:dist:static}
 shows the static part of \textsf{dyn\_dist}.
