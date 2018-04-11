@@ -1151,7 +1151,7 @@ symbol \texttt{sym}; and points to another state with index \texttt{end\_st}. If
 the edge's symbol is a terminal then by definition the cost of reaching that
 terminal from state $i$ is 0 (lines 13-16). We then calculate the cost of the
 edge: if the label's symbol is a nonterminal, we return the cost of the minimal
-sentence matching that nonterminal (line 10); if a terminal we return a cost of 1 (line 17).
+sentence matching that nonterminal (line 10); if it's a terminal we return a cost of 1 (line 17).
 If the cost of $t$ in \texttt{end\_st} plus the distance to \texttt{end\_st} is
 lower than the cost of $t$ in $i$ then we update the latter (lines 19--25).
 A table created by this algorithm can be seen in Figure~\ref{fig:kimyi:flaw:dist}.}
@@ -1172,7 +1172,7 @@ of grammar generation with entries looked up during the search. Note that we
 assume the existence of a function \textsf{min\_sentence\_cost(N)} which returns
 the length of the minimum sentence(s) which match the non-terminal $N$: this
 function is a relatively simple variation of the traditional parsing nullable
-computation.
+computation \lukas{I have never heard of this}.
 
 
 \subsection{Problems with the algorithm}
@@ -1244,7 +1244,7 @@ b}]. The grammar's stategraph is shown in
 (\subref{fig:kimyi:flaw:dist}). The search starts in state 0: \textsc{KY Insert}
 and \textsc{KY Delete} both match (the latter an uninteresting dead-end which we
 ignore). The new \textsc{KY Insert} configuration is found via the edge
-from state 0 labelled with terminal $a$: this moves the search to state $3$,
+from state 0 labelled with terminal $a$: this moves the search to state $3$ \lukas{Shouldn't inserting a move it to state 1. Or was it supposed to insert S?},
 with a heuristic $\textsf{dist(0, `c')} = 2$, $w = \top$, and a repair [\textit{insert a}]. However, no
 rules match the new configuration: there are no edges labelled with terminals from
 state 3; \textsc{KY Reduce} is not applicable since $w = \top$; and \textsc{KY
