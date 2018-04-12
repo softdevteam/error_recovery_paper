@@ -974,15 +974,19 @@ because each additional token searched exponentially increases the
 search space. Thus the repair sequences we find can be less than ideal when further
 user input is considered. Fortunately, we can use the
 complete set of minimum cost repair sequences to lessen this weakness.
-After this set has been generated, we then simplify it: we remove the shift
-repairs from the ends of sequences; and remove any duplicate repair
-sequences. We then rank members by how far they allow
-parsing to successfully continue, up to a limit of $N_\textit{try}$ tokens
-(which we somewhat arbitrarily set at 250). We then (non-deterministically)
-select one of the top ranked repair sequences, apply its repairs
-to the input, and continue parsing as normal. Particularly on real-world
-grammars, this can substantially decrease the chances of the chosen repair
-sequence causing cascading errors (see Figure~\ref{fig:ranking} for an example).
+After we have generated the set of configuration which represents the
+complete set of minimal cost repair sequences, we then rank the
+configuration by how far they allow parsing to continue, up to a limit of
+$N_\textit{try}$ tokens (which we somewhat arbitrarily set at 250). The reason
+why we rank the configurations, and not the repair sequences, is that we only
+need rank one repair sequence for each merged configuration, a useful
+optimisation. We then expand the top ranked configurations into repair
+sequences, remove shifts from the end of repair sequences, and
+remove duplicates.
+
+Particularly on real-world grammars, selecting the top-ranked sequences
+substantially decreases cascading errors sequence causing cascading errors (see
+Figure~\ref{fig:ranking} for an example).
 It also does so for very little additional computational cost as the complete set of
 minimum cost repair sequences is much smaller than the number of configurations
 searched.
