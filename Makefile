@@ -9,7 +9,7 @@
 
 LATEX_FILES = error_recovery.ltx
 
-DIAGRAMS = graph.pdf
+DIAGRAMS = graph.pdf cpctplus.pdf
 
 EXTRA_DISTRIB_FILES = error_recovery.pdf Makefile
 
