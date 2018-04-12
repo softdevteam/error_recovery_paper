@@ -646,8 +646,6 @@ token costs if desired, and our implementation supports this. However, it is
 unclear whether non-uniform token costs are useful in practise
 \cite[p.96]{cerecke03phd}.}
 
-\laurie{do we need an example here? probably...}
-
 
 \subsection{Ensuring that minimum cost repair sequences aren't missed}
 \label{corchuelo:kimyi}
@@ -991,14 +989,21 @@ It also does so for very little additional computational cost as the complete se
 minimum cost repair sequences is much smaller than the number of configurations
 searched.
 
-
-\subsection{A complete example}
-
-\laurie{need a complete example with all intermediate steps for \cpctplus}
-
 \begin{figure}[t]
 \includegraphics[width=1.0\textwidth]{cpctplus}
+\caption{An elided visualisation of the search tree for \cpctplus with the input
+`2 3 +' and the grammar from Figure~\ref{fig:exprgrammar}. The left hand side of
+the tree shows the `normal' parser at work, which hits an error as soon as it
+has shifted the token `\texttt{2}': at this point, \cpctplus starts operating.
+As this shows, the search encounters various dead ends, as well as successful
+routes. As shown in Figure~\ref{fig:crshift2:example}, this input has 6 minimal
+cost repair sequences, but the search only has 5 success configurations, because
+two routes are merged together.}
+\label{fig:cpctplus:full}
 \end{figure}
+
+Figure~\ref{fig:cpctplus:full} shows an elided visualisation of the \cpctplus
+search for the input `2 3 +` and the grammar from Figure~\ref{fig:exprgrammar}.
 
 
 \section{The Kim and Yi algorithm}
