@@ -974,12 +974,12 @@ because each additional token searched exponentially increases the
 search space. Thus the repair sequences we find can be less than ideal when further
 user input is considered. Fortunately, we can use the
 complete set of minimum cost repair sequences to lessen this weakness.
-After we have generated the set of configuration which represents the
+After we have generated the set of configurations which represents the
 complete set of minimal cost repair sequences, we then rank the
-configuration by how far they allow parsing to continue, up to a limit of
+configurations by how far they allow parsing to continue, up to a limit of
 $N_\textit{try}$ tokens (which we somewhat arbitrarily set at 250). The reason
 why we rank the configurations, and not the repair sequences, is that we only
-need rank one repair sequence for each merged configuration, a useful
+need to rank one repair sequence for each merged configuration, a useful
 optimisation. We then expand the top ranked configurations into repair
 sequences, remove shifts from the end of repair sequences, and
 remove duplicates.
