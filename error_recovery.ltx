@@ -1211,8 +1211,10 @@ results.
 
 The first flaw is that the \textsf{dist} heuristic does not take into
 account reductions/gotos or deletions: hence the heuristic is only valid for sequences of
-inserts via \textsc{KY Insert}. A simple example \lukas{does this relate to any Figure (Edit: I think it might be Fig2)?} of this is \textsf{dist(3, `+')} which
-returns 3 (which can be achieved by inserting `\texttt{*}', `\texttt{(}', and `\texttt{INT}'): however, from
+inserts via \textsc{KY Insert}. A simple example of this can be seen for the grammar
+from Figure~\ref{fig:exprgrammar} and its distance table in Figure~\ref{fig:kimyi:dist}:
+\textsf{dist(3, `+')} returns 3 (which can be achieved by inserting
+`\texttt{*}', `\texttt{(}', and `\texttt{INT}'): however, from
 state 3, we could reduce to state 0 and goto state 2, which has an outgoing edge labelled
 `\texttt{+}'. As this shows, the heuristic is inadmissible if reductions (or indeed
 deletions) are allowed. The second flaw results from trying to fix the
