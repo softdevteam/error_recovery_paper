@@ -433,7 +433,7 @@ nonterminals. Since even on a modern machine, a canonical
 build, and a surprising amount of memory to store, we use the state merging
 algorithm of \citet{pager77practical} to merge together compatible states. The
 effect of this is significant, reducing the Java grammar we use later from
-\laurie{8000ish} to \laurie{900ish} states. The stategraph is then transformed into a
+8908 to 1148 states. The stategraph is then transformed into a
 \emph{statetable} with one row per state. Each row has a possibly empty \emph{action} (shift, reduce,
 or accept) for each terminal and a possibly empty \emph{goto state} for each
 nonterminal. Figure~\ref{fig:stategraphtable} shows an example grammar, its
