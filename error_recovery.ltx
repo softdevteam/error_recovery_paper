@@ -1100,7 +1100,11 @@ from (\textit{parsing stack}, \textit{token list}, \textit{w}) to
 \textit{heuristic}) tuples. Of these values, $w$ is the least intuitive:
 since the A* heuristic used doesn't take into account reductions/gotos or deletions,
 $w$ prevents \textsc{KY Reduce} and \textsc{KY Delete} from being used when
-the heuristic is $> 0$ (i.e.~$w$ is intended to make the heuristic admissible).
+the heuristic is $> 0$ (i.e.~$w$ is intended to make the heuristic admissible);
+in other words: since the heuristic only follows shift-edges within the stategraph,
+using a \textsc{KY Insert}-repair requires the following repair to be either \textsc{KY Insert}
+or \textsc{KY Shift}; using \textsc{KY Reduce} or \textsc{KY Delete} would invalidate
+the condition set by the heuristic.
 The initial configuration sets $w = \bot$. Since \textsc{KY Insert} is the only
 rule which uses the heuristic, it sets $w = \top$. Only \textsc{KY Shift} can
 turn $w = \top$ into $\bot$.
@@ -1192,8 +1196,8 @@ specification of \textsf{dist}, we provide a fixed-point algorithm
 of grammar generation with entries looked up during the search. Note that we
 assume the existence of a function \textsf{min\_sentence\_cost(N)} which returns
 the length of the minimum sentence(s) which match the non-terminal $N$: this
-function is a relatively simple variation of the traditional parsing nullable
-computation \lukas{I have never heard of this}.
+function is a relatively simple variation of the traditional nullable
+computation used in parsing.
 
 
 \subsection{Problems with the algorithm}
@@ -1207,7 +1211,7 @@ results.
 
 The first flaw is that the \textsf{dist} heuristic does not take into
 account reductions/gotos or deletions: hence the heuristic is only valid for sequences of
-inserts via \textsc{KY Insert}. A simple example of this is \textsf{dist(3, `+')} which
+inserts via \textsc{KY Insert}. A simple example \lukas{does this relate to any Figure (Edit: I think it might be Fig2)?} of this is \textsf{dist(3, `+')} which
 returns 3 (which can be achieved by inserting `\texttt{*}', `\texttt{(}', and `\texttt{INT}'): however, from
 state 3, we could reduce to state 0 and goto state 2, which has an outgoing edge labelled
 `\texttt{+}'. As this shows, the heuristic is inadmissible if reductions (or indeed
