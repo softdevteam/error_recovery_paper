@@ -784,7 +784,7 @@ finding the next todo element requires only a single \texttt{pop}
 (line 8 of Figure~\ref{fig:corchuelo:algorithm}). Similarly,
 adding elements requires only an \texttt{append} to the relevant sub-list
 (lines 18, 21, 22). This
-data-structure works well in our situation because costs never get
+data-structure is a good fit because costs never get
 big (double digits is unusual for real-world
 grammars); and each neighbour generated from a configuration with cost $c$ has
 a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
@@ -792,7 +792,7 @@ a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
 \label{duplicateconfigurations}
 Second, the algorithm often creates configurations which, from the search's perspective
 are duplicates. Formally, we say that two configurations are duplicates if their parsing
-stack and remaining input are identical (i.e.~removing one of the duplicates
+stack and remaining input are identical (i.e.~filtering out aduplicate
 simply removes its repair sequence from consideration). We
 therefore modify the queue data-structure to be a
 list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
@@ -800,12 +800,12 @@ and thus allows list-like integer indexing as well as hash-based lookups.}. This
 near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 weeds out duplicates with near-identical performance to an unordered hashset.
 We hash configurations, and compare them for equality, based on their parsing stack and
-remaining input (i.e.~we do not involve the repair sequence in hashing or
+remaining input (i.e.~the repair sequence is not used for hashing or
 equality). Although this cannot detect duplicates when the
 relevant configuration has already been popped from
 the todo list, it finds the vast majority, while avoiding the impractical memory overhead of
 remembering all past configurations. Depending on the example, this can lead to 20\% or
-more of configurations being detected as duplicates, with a commensurate effect on
+more of configurations being filtered out, with a commensurate effect on
 performance.
 
 \label{cactusconfigurations}
@@ -815,15 +815,15 @@ that this representation consumes noticeably more memory, and is slightly less
 efficient, than using parent pointer trees (often called `cactuses').
 Every node in such a tree has a reference to a single parent (or \texttt{null} for the
 root node) but no references to child nodes. Since our implementation is written
-in Rust -- a language without garbage collection -- we use reference
-counting (a parent is only freed when it is not in a todo list and
+in Rust -- a language without garbage collection -- we reference
+count nodes (a parent is only freed when it is not in a todo list and
 no children point to it). When the error recovery algorithm starts, it
 converts the main parsing stack (a list) into a parent pointer tree; and
 repair sequences start as empty parent pointer trees. The $\crarrow$ part
 of our implementation thus operates exclusively on parent pointer trees.
 Although this does mean that neighbouring configurations are scattered throughout
-memory, it naturally leads to memory sharing, which recovers some of
-the good cache behaviour; it also seems to be a good
+memory, the memory sharing involved seems to offset the expected
+poor cache behaviour; it also seems to be a good
 fit with modern \texttt{malloc} implementations, which are particularly
 efficient when allocating and freeing objects of the same size.
 However, it is quite possible that a different representation would be
@@ -1002,8 +1002,8 @@ two routes are merged together.}
 \label{fig:cpctplus:full}
 \end{figure}
 
-Figure~\ref{fig:cpctplus:full} shows an elided visualisation of the \cpctplus
-search for the input `2 3 +` and the grammar from Figure~\ref{fig:exprgrammar}.
+Figure~\ref{fig:cpctplus:full} shows a visualisation of \cpctplus
+operating on the input `2 3 +' and the grammar from Figure~\ref{fig:exprgrammar}.
 
 
 \section{The Kim and Yi algorithm}
@@ -1011,8 +1011,8 @@ search for the input `2 3 +` and the grammar from Figure~\ref{fig:exprgrammar}.
 
 Algorithms in the \citet{fischer79locally} family have unbounded worse case
 performance, which is easily seen on inputs with unbalanced brackets
-(e.g.~in expressions such as `\texttt{x = f(();}'): each additional unmatched
-bracket exponentially increases the search space. For example, on a modern machine
+(e.g.~expressions such as `\texttt{x = f(();}'): each additional unmatched
+bracket exponentially increases the search space. On a modern machine
 with a Java grammar, the \cpctplus algorithm takes about 0.3s to find
 the complete set of minimum cost repair sequences for 3 unmatched brackets, 3s
 for 4 unmatched brackets, and 6 unmatched brackets caused our 32GiB test machine
@@ -1030,7 +1030,7 @@ implementation would need to consider. We also adjust the algorithm's style to
 match this paper's and correct several minor mistakes.
 
 We then show that the algorithm contains two serious flaws
-which mean that it misses minimum cost repair sequences
+which cause it to miss minimum cost repair sequences
 (Section~\ref{kimyi:flaws}). These flaws are not easily fixed, but parts of the
 approach serve as inspiration for our new \mf error recovery algorithm.
 
@@ -1047,17 +1047,17 @@ thousands of unmatched brackets to be repaired in a few seconds.
 
 Since the A* algorithm is not a particularly common one in parsers,
 we first start with a brief recap. The A* algorithm finds minimum cost paths through
-a graph where each edge has an associated cost $c$. The current known lowest
-cost to reach a configuration $n$ from the start configuration is represented by $d(n)$. A
+a graph where each edge has an associated cost $c$. The current lowest
+cost to reach a node $n$ from the start node is represented by $d(n)$. A
 heuristic $h(n)$ returns an estimate of the additional cost needed to reach a success node from
 $n$. The heuristic must be `admissible': it must
-never overestimate the cost to reach a success configuration (or else non-minimal
+never overestimate the cost to reach a success node (or else non-minimal
 cost routes to success nodes may be found first); however, it may safely
 underestimate (i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
-used to order configurations by their $d(n) + h(n)$. On
-each iteration the configuration in the queue with the lowest $d(n) + h(n)$ is selected,
+used to order nodes by their $d(n) + h(n)$. On
+each iteration the node in the queue with the lowest $d(n) + h(n)$ is selected,
 its neighbours explored and each entered into the priority queue. The search
-terminates when the first success configuration is found.
+terminates when the first success node is found.
 
 \begin{figure}
 \small
@@ -1215,7 +1215,7 @@ computation used in parsing.
 The combination of the $\kyarrow$ rules (in particular \textsc{KY Reduce}'s
 ability to insert nonterminals) and the \textsf{dist} function lead to dramatic
 performance improvements as reported by \citet{kimyi10astar}. Unfortunately the
-algorithm contains two flaws which lead it to produce incorrect
+algorithm contains three flaws which lead it to produce incorrect
 results.
 
 The first flaw is that the \textsf{dist} heuristic does not take into
@@ -1225,8 +1225,9 @@ from Figure~\ref{fig:exprgrammar} and its distance table in Figure~\ref{fig:kimy
 \textsf{dist(3, `+')} returns 3 (which can be achieved by inserting
 `\texttt{*}', `\texttt{(}', and `\texttt{INT}'): however, from
 state 3, we could reduce to state 0 and goto state 2, which has an outgoing edge labelled
-`\texttt{+}'. As this shows, the heuristic is inadmissible if reductions (or indeed
-deletions) are allowed. The second flaw results from trying to fix the
+`\texttt{+}' (i.e.~without inserting any terminals). As this shows,
+the heuristic would be inadmissible in the face of reductions.
+The second flaw results from trying to fix the
 first: the $w$ part of the $\kyarrow$ relation is a hack to ensure that
 \textsc{KY Reduce} and \textsc{KY Delete} do not interfere when the heuristic is $> 0$.
 However, the hack has unfortunate effects, sometimes trapping the search in
@@ -1239,8 +1240,15 @@ Given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
 [\textit{insert b}, \textit{shift}, \textit{insert a}, \textit{insert a}]
 (whereas \cpctplus returns the minimum cost repair sequence
 [\textit{insert b}, \textit{delete}].
+The third and final flaw is that optimistically inserting the remainder of a
+production prevents the terminals involved from being shifted if the user's
+input happens to overlap with them: since it is more expensive to insert $a$
+than to shift $a$, this can cause the search to produce non-minimal cost repair
+sequences.
 
-Both flaws can be fixed by revisiting an old friend: if we apply the same change to
+The third flaw is easily fixed by disallowing the search from optimistically
+inserting the remainder of a production. The first two flaws can then be fixed
+by revisiting an old friend: if we apply the same change to
 \textsc{KY Shift} as we did to \textsc{CR Shift} (see
 Figure~\ref{fig:corchuelo:kimyi}), the problem disappears, because
 the altered \textsc{KY Shift} can perform reductions/gotos without having to
@@ -1369,7 +1377,8 @@ def all_mf_star(pstack, toks, rprs):
 \end{adjustbox}
 \vspace*{-8pt}
 \caption{The main \mf algorithm. Lines 2--13 are identical to those of
-Figure~\ref{fig:corchuelo:algorithm}. The main difference between \cpctplus
+Figure~\ref{fig:corchuelo:algorithm} (with the exception that \mf stores
+success nodes rather than return when the first is found). The main difference between \cpctplus
 and \mf is the use of the A* heuristic, which allows configurations to be deferred
 beyond their actual cost. In other words a configuration $c$ with a heuristic $h$ is
 placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
@@ -1381,7 +1390,7 @@ The main part of the \mf algorithm is deliberately similar to that of \cpctplus
 \textsf{dyn\_dist} is both admissible (i.e.~it never overestimates the distance to a
 success configuration) and consistent (i.e.~the total estimated cost to reach a success
 configuration is monotonically non-decreasing) we know that neighbouring configurations will
-always be at the same, or greater, cost as the current configuration. This allows us to
+always be the same, or greater, cost as the current configuration. This allows us to
 use a simple, and efficient, variant of the A* algorithm that is similar
 to the algorithm of \cpctplus with the notable difference that
 \textsf{dyn\_dist} is used to place configurations later in the todo list than \cpctplus.
@@ -1520,7 +1529,8 @@ reaching $s'$ might be a reduction, a token insertion, another reduction and so
 on). Fortunately, not only is this a natural candidate for a fixed-point
 algorithm, but we are able to follow a very similar structure to that used to
 calculate the distance table for \textsf{dist}. Figure~\ref{fig:mf:dist:static}
-shows the static part of \textsf{dyn\_dist}.
+shows the static part of \textsf{dyn\_dist} and Figure~\ref{fig:mf:dist:example}
+shows an example distance table.
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.35\textwidth}
@@ -1568,13 +1578,13 @@ the next token (line 13).}
 The dynamic part of \textsf{dyn\_dist} is shown in
 Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
 \texttt{mk\_dyn\_dist} and also takes into account the cost of deleting user
-input. The basic idea is to discover if, when a token in the user's input is
-deleted, a quicker route to a success configuration can be found. The only
+input. The basic idea is to discover if, were a token in the user's input to
+be deleted, the cost to a success configuration would be reduced. The only
 subtlety comes from the fact that we have to remember that a repair sequence
 that ends with $N_\textit{shift}$ shifts is already a success configuration.
 Because of this \textsf{dyn\_dist} has to take a repair sequence as an input. As
 the rules in Figure~\ref{fig:mf:rules} show, this is the repair sequence for the
-new configuration. If this repair sequence ends with $N_\textit{shift}$ shifts,
+`new' configuration. If this repair sequence ends with $N_\textit{shift}$ shifts,
 then \textsf{dyn\_dist} returns a distance of 0 to ensure that the new
 configuration is not put later in the todo list.
 
