@@ -1093,19 +1093,15 @@ duplicate those found by \textsc{KY Reduce}.}
 \end{figure}
 
 The \citet{kimyi10astar} algorithm itself comes in two main parts. First is a
-relation $\kyarrow$ which defines when individual repairs are created
+relation $\kyarrow$ which defines when repairs are created
 (Figure~\ref{fig:kimyi:rules}). Unlike the $\crarrow$ relation, these rules are
 from (\textit{parsing stack}, \textit{token list}, \textit{w}) to
 (\textit{parsing stack}, \textit{token list}, \textit{w}, \textit{repairs},
 \textit{heuristic}) tuples. Of these values, $w$ is the least intuitive:
 since the A* heuristic used doesn't take into account reductions/gotos or deletions,
-$w$ prevents \textsc{KY Reduce} and \textsc{KY Delete} from being used when
-the heuristic is $> 0$ (i.e.~$w$ is intended to make the heuristic admissible);
-in other words: since the heuristic only follows shift-edges within the stategraph,
-using a \textsc{KY Insert}-repair requires the following repair to be either \textsc{KY Insert}
-or \textsc{KY Shift}; using \textsc{KY Reduce} or \textsc{KY Delete} would invalidate
-the condition set by the heuristic.
-The initial configuration sets $w = \bot$. Since \textsc{KY Insert} is the only
+it is only valid for sequences of \textsc{KY Insert} and \textsc{KY Shift};
+were \textsc{KY Reduce} or \textsc{KY Delete} to be used, the heuristic
+would be inadmissible. The initial configuration sets $w = \bot$. Since \textsc{KY Insert} is the only
 rule which uses the heuristic, it sets $w = \top$. Only \textsc{KY Shift} can
 turn $w = \top$ into $\bot$.
 
@@ -1305,10 +1301,13 @@ calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
        \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{shift}], s', [t_1 \ldots t_n]) < \infty}
 \]
 \vspace{-12pt}
-\caption{The repair-creating rules for \mf. \textit{dyn\_dist} is the \mf A*
+\caption{The repair-creating rules for \mf from (\textit{parsing stack},
+\textit{token list}, \textit{repair sequence}) to (\textit{parsing stack},
+\textit{token list}, \textit{repair sequence}, \textit{heuristic}) tuples.
+\textit{dyn\_dist} is the \mf A*
 heuristic: unlike \citet{kimyi10astar}, every rule makes use of the \textit{dyn\_dist} heuristic.
 \textit{core\_reduces}($s_n$) returns the set of non-terminals which can be
-reduced in state $s_n$.\lukas{What does r0...rn mean?Edit: Ah it's explained later that it's a repair sequence. Maybe we can mention this briefly here.}}
+reduced in state $s_n$.}
 \label{fig:mf:rules}
 \end{figure}
 
@@ -1475,7 +1474,8 @@ $s$ & INT & \texttt{+} & \texttt{*} & \texttt{(} & \texttt{)} & \$ \\
 \begin{adjustbox}{valign=t,minipage=0.58\textwidth}
 \vspace{-13pt}
 \caption{The \textit{dyn\_dist} distance table for the grammar from
-Figure~\ref{fig:exprgrammar}. Relative to \textit{dist}'s distance table, many fewer entries are
+Figure~\ref{fig:exprgrammar}. Relative to the \textit{dist} distance
+table (Figure~\ref{fig:kimyi:dist}), many fewer entries are
 $\infty$, because reductions/gotos are taken into account. For example, consider state
 3, terminal `\texttt{+}': in \textit{dist}'s distance table this has a cost of 3;
 in \textit{dyn\_dist}'s distance table the cost is 0. The reason for this can be
@@ -1496,13 +1496,13 @@ found which has an outgoing edge labelled with $t$. This is a useful base,
 but we also need to take into account reductions/gotos to stop any search which
 uses the heuristic from getting trapped (Section~\ref{kimyi:flaws}). Fortunately,
 it is relatively easy to statically
-underapproximate the effect of taking reductions/gotos into account. The basic
+underapproximate the effect of reductions/gotos. The basic
 idea is simple: as well as taking into account the cost of a sequence of token
 insertions in a distance, we also take into account all possible reduction
 paths. Note that reductions/gotos and token insertions can be intertwined
 (i.e.~a valid way of
 reaching $s'$ might be a reduction, a token insertion, another reduction and so
-on \lukas{is this what we worked out on Tuesday to be impossible?}\laurie{i think this sequence is possible: what's impossible, i think, is reduce, delete, reduce}\lukas{I still feel like we can't say this ia a valid way of reaching some state, since a reduction followed by an insertion is wrong. So it should be reduce, insert, shift, reduce}). Fortunately, not only is this a natural candidate for a fixed-point
+on). Fortunately, not only is this a natural candidate for a fixed-point
 algorithm, but we are able to follow a very similar structure to that used to
 calculate the distance table for \textsf{dist}. Figure~\ref{fig:mf:dist:static}
 shows the static part of \textsf{dyn\_dist}.
