@@ -76,6 +76,7 @@
 \newcommand{\lrarrowstar}{\rightarrow_{\textrm{\tiny LR}}^*}
 \newcommand{\lrarrow}{\rightarrow_{\textrm{\tiny LR}}}
 \newcommand{\mf}{\textit{MF}\xspace}
+\newcommand{\mfrev}{\textit{MF$_\textrm{rev}$}\xspace}
 \newcommand{\mfarrow}{\rightarrow_{\textrm{\tiny MF}}}
 \newcommand{\mfarrowstar}{\rightarrow_{\textrm{\tiny MF}}^*}
 
@@ -299,8 +300,7 @@ they are realistic targets for tool builders: \cpctplus is somewhat
 simpler than \mf, though the latter is still less than 1,000 lines of Rust code.
 
 We then validate \cpctplus and \mf on a corpus of \corpussize real,
-syntactically incorrect, Java programs (Section~\ref{experiment}) -- approximately
-15x bigger than the biggest previous experiment \cite[p.~84]{cerecke03phd}. Within the
+syntactically incorrect, Java programs (Section~\ref{experiment}). Within the
 time budget of 0.5s: \cpctplus is able to find repairs for \cpctplussuccessrate
 of files within this time, with a mean recovery time of \cpctplusmeantime; and
 \mf is able to find repairs for \mfsuccessrate of files within this time, with
@@ -1592,11 +1592,68 @@ configuration is not put later in the todo list.
 \section{Experiment}
 \label{experiment}
 
-\cite{brown14blackbox}
+In order to understand the performance of \cpctplus and \mf we conducted a large
+experiment on real-world Java code. In this section we outline our methodology
+(Section~\ref{methodology}) and results (Section~\ref{results}). Our experiment
+is fully repeatable and downloadable from \laurie{XXX}.
+
 
 \subsection{Methodolgy}
+\label{methodology}
+
+One of the traditional problems with evaluating error recovery algorithms has
+been obtaining sufficient example programs to test them on. Most papers we are
+aware of use around 200 programs (e.g.~\cite{corchuelo02repairing}) or even a
+single example with minor variants (\citet{kimyi10astar}). \citet{cerecke03phd}
+was the first to use a large-scale test suite of approximately 60,000 Java
+source files. Fortunately, the situation has been made rather easier for us
+through the existence of the Blackbox collection facility of the BlueJ
+editor~\cite{brown14blackbox}. In essence, users who opt-in to data collection
+have major events in the editor (e.g.~compiling a file) logged, including the
+source code associated with that event. What makes Blackbox most appealing as a
+data source is its scale: it has hundreds of thousands of users, and a
+correspondingly huge collection of source code. In our mind these more than
+offset its two inherent limitations: it only gives access to Java source code;
+and the vast majority of users are students -- and hence more likely than
+average to be somewhat novice programmers.
+
+We first obtained a Java 1.5 Yacc grammar and modified it to support Java
+1.7.\footnote{Unfortunately, changes to the method calling syntax in Java 1.8
+mean that it is an awkward, though not impossible, fit for an LR(1) formalism
+such as Yacc, requiring substantial changes to the current Java Yacc grammar. We
+consider the work involved outside that relevant to this paper.} We then
+randomly selected source files from Blackbox's database (following the lead of
+\citet{santos18syntax}, we selected data from Blackbox's beginning until the end
+of Dec 31st 2017) which resulted from explicit compilation events. In other
+words, we selected inputs which a user had thought worthwhile enough to try
+compiling. We then ran such inputs through our Java 1.7 lexer. We immediately
+rejected files which didn't lex since we can't parse, successfully or not,
+something we can't lex.\footnote{Happily, this also excludes outputs which can't
+possibly be Java source code. Some odd things are pasted into text
+editors.} We then parsed candidate files with our Java grammar and rejected any
+which didn't parse successfully (since there is little point running an error
+recovery algorithm on correct input). We collected \corpussize source files
+(collectively a total of \corpussizemb).
+
+In order to test hypotheses H1 and H2 we ran \cpctplus and \mf against our
+corpus, collecting: the time spent in recovery (in seconds); whether it
+succeeded in repairing all errors (true or false); and the number of errors
+found. In order to test hypothesis H3, we created a variant of \mf called \mfrev
+which reverses the ranking order and collected the same data as for \cpctplus
+and \mf. Instead of selecting from the minimal cost repair sequences which allow
+parsing to continue furthest, \mfrev selects from those which allow parsing to
+continue the least far. This models the worse case for other members of the
+\citet{fischer79locally} which non-deterministically select a single minimal
+cost repair sequence.
+
+All experiments were run on an otherwise unloaded Intel \laurie{check} running
+Debian 9. We used Rust nightly-2018-03-25 to compile lrpar (the full
+\texttt{Cargo.lock} file necessary to reproduce the build is included in our
+experimental repository).
+
 
 \subsection{Results}
+\label{results}
 
 
 \section{Related work}
