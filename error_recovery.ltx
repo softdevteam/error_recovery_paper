@@ -8,6 +8,7 @@
 \usepackage{booktabs}
 \usepackage{listings}
 \usepackage{multicol}
+\usepackage[autolanguage]{numprint}
 \usepackage{proof}
 \usepackage{softdev}
 \usepackage{subcaption}
@@ -113,12 +114,13 @@ suffer much less from this problem but have seen little practical use because
 their typical performance was seen as poor and their worse case unbounded.
 In this paper we show that not only can an advanced approach run in acceptable time
 -- which we define as spending a maximum of 0.5s in error recovery per file -- but
-that we can increase the complexity of the problem to finding \emph{all} minimum
-cost recovery options, and still do so within acceptable time. We first extend
+that we can increase the complexity of the problem to finding the complete set of minimum
+cost repair sequences, and still do so within acceptable time. We first extend
 Corchuelo et al.'s algorithm, before introducing a new, faster, alternative \mf. We
 validate our algorithms with a corpus of \corpussize real-world
-syntactically invalid Java programs: \mf is able to find recovery options for
-\mfsuccessrate of these in acceptable time.
+syntactically invalid Java programs: \mf is able to repair \mfsuccessrate of files
+within acceptable time. We show that making use of the complete set of repair
+sequences reduces cascading errors by \mfreverrorlocsratioovermf.
 \end{abstract}
 
 \keywords{Parsing, error recovery, programming languages}
@@ -246,46 +248,42 @@ easily adapted to give human-friendly feedback. However, they
 have seen little practical use because their typical
 performance was seen as poor and their worse case unbounded \cite[p.~14]{mckenzie95error}.
 
-In this paper we first test the following hypothesis:
+In this paper we test the following hypothesis:
 
 \begin{description}
-  \item[H1] Error recovery algorithms from the \citet{fischer79locally} family
-    can repair nearly all errors in acceptable time.
-\end{description}
-
-We (somewhat arbitrarily) define `acceptable time' as 0.5s for error recovery
-per file (i.e.~all errors in a file must be
-recovered from within 0.5s) since we think that even the most demanding user
-will tolerate such a delay. We
-strongly validate this hypothesis \laurie{quantify}. To a
-reasonable extent our access to faster hardware made it more likely that we
-can validate this hypothesis than past researchers. However, while existing
-algorithms in the \citet{fischer79locally} family can find at most a single
-minimum cost repair sequence, we also test a second, stronger, hypothesis:
-
-\begin{description}
-  \item[H2] The complete set of minimum cost repair sequences can nearly
+  \item[H1] The complete set of minimum cost repair sequences can nearly
     always be found in acceptable time.
 \end{description}
 
-We also strongly validate this hypothesis \laurie{quantify}. In other words, we are able to tackle a
-harder version of the problem than any previous algorithm, and still do so in
-acceptable time. This leads to higher quality, and more programmer
+We define `acceptable time' as 0.5s for error recovery per file (i.e.~all errors
+in a file must be recovered from within 0.5s) since we think that even the most
+demanding user will tolerate such a delay. We strongly validate this hypothesis,
+repairing \mfsuccessrate of files within this time limit. While, relative to
+previous approaches in the \citet{fischer79locally} family we have quite clearly
+benefited from faster modern hardware, it is important to note that we have
+stated a stronger, and thus harder hypothesis than previous approaches: where
+they have aimed to find only a single minimal cost repair sequence, we are able
+to find the complete set.
+
+The complete set of minimal cost repair sequences allows us to display
+higher quality, and more programmer
 friendly, error messages (see Figure~\ref{fig:javaerror} for an example).
 Once we have one or more repair sequences, we then have to choose one
 to repair the input, and allow parsing to continue as normal. Rather
 than pick an arbitrary candidate, we rank repair sequences by how
 far they allow parsing to continue successfully, and choose from the
-subset that gets furthest. We thus test a third hypothesis:
+subset that gets furthest. We thus also test a second hypothesis:
 
 \begin{description}
-  \item[H3] Choosing a minimum cost repair sequence $s$ which allows local
+  \item[H2] Choosing a minimum cost repair sequence $s$ which allows local
 parsing to continue further than a different minimum cost repair sequence $s'$
 reduces the cascading error problem.
 \end{description}
 
-\laurie{i know this makes some difference, but don't know yet to what extent it
-makes a difference}
+We also strongly validate this hypothesis. We do this by comparing `normal' \mf
+with a simple variant \mfrev which always selects the worst minimal cost repair
+sequence: \mfrev leads to \mfreverrorlocsratioovermf more errors being raised
+(i.e.~it substantially worsens the cascading error problem).
 
 We first use one of the more recent algorithms in this family -- that of
 \citet{corchuelo02repairing} -- as a base, correcting and substantially extending it
@@ -294,19 +292,19 @@ then show that an even newer algorithm which promises better performance -- that
 of \citet{kimyi10astar} -- has problems which cause it to miss many
 minimum cost repair sequences (Section~\ref{kimyi}). However, we are able to use
 it as partial inspiration for an entirely new error recovery algorithm \mf
-(Section~\ref{mf}), which is approximately \mfratioovercpctplus faster than
-\cpctplus. We aim for both algorithms to be as simple as possible, so that
+(Section~\ref{mf}). We aim for both algorithms to be as simple as possible, so that
 they are realistic targets for tool builders: \cpctplus is somewhat
 simpler than \mf, though the latter is still less than 1,000 lines of Rust code.
 
 We then validate \cpctplus and \mf on a corpus of \corpussize real,
 syntactically incorrect, Java programs (Section~\ref{experiment}). Within the
-time budget of 0.5s: \cpctplus is able to find repairs for \cpctplussuccessrate
+timeout of 0.5s: \cpctplus is able to find repairs for \cpctplussuccessrate
 of files within this time, with a mean recovery time of \cpctplusmeantime; and
 \mf is able to find repairs for \mfsuccessrate of files within this time, with
-a mean recovery time of \mfmeantime. We believe that this shows that such
+a mean recovery time of \mfmeantime. As this shows, both algorithms perform well,
+though \mf gets slightly closer to the ideal. We believe that this shows that such
 approaches are ready for wider usage, either on their own, or as part of a multi-phase
-recovery system such as \citet{deJonge12natural}.
+recovery system.
 
 
 \section{Background}
@@ -1666,7 +1664,7 @@ access to the source files to register with them), we do distribute the
 identifiers necessary to extract the source files from Blackbox in our
 repeatable experiment.
 
-In order to test hypotheses H1 and H2 we ran \cpctplus and \mf against our
+In order to test hypothesis H1 we ran \cpctplus and \mf against our
 corpus, collecting for each file: the time spent in recovery (in seconds); whether it
 succeeded in repairing all errors (true or false); and the number of errors
 found. Note that there are two ways of failing to repair all errors in a file:
@@ -1676,7 +1674,7 @@ The latter is rare, but does occur on occasion. Unlike
 as a backup recovery mechanism: in our experience, if \cpctplus or \mf cannot
 repair an error, then using panic mode simply causes cascading errors.
 
-In order to test hypothesis H3, we created a variant of \mf called \mfrev
+In order to test hypothesis H2, we created a variant of \mf called \mfrev
 which reverses the ranking order and collected the same data as for \cpctplus
 and \mf. Instead of selecting from the minimal cost repair sequences which allow
 parsing to continue furthest, \mfrev selects from those which allow parsing to
@@ -1684,7 +1682,7 @@ continue the least far. This models the worse case for other members of the
 \citet{fischer79locally} family which non-deterministically select a single minimal
 cost repair sequence.
 
-All experiments were run on an otherwise unloaded Intel \laurie{check} running
+All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with 32GiB RAM running
 Debian 9. We used Rust nightly-2018-03-25 to compile lrpar (the full
 \texttt{Cargo.lock} file necessary to reproduce the build is included in our
 experimental repository).
@@ -1692,6 +1690,48 @@ experimental repository).
 
 \subsection{Results}
 \label{results}
+
+\begin{figure}[t]
+\begin{tabular}{lcccc}
+\toprule
+  & Mean time (s) & Median time (s) & Failure rate (\%) & Error locations (\#) \\
+\midrule
+\input{table.tex}
+\bottomrule
+\end{tabular}
+\caption{Summary statistics from running our error recovery algorithms over
+a corpus of \corpussize Java files. Mean and median times
+report how long was spent in error recovery per file: both figures
+include files which exceeded the recovery timeout, so they represent the `real'
+times that users would experience, whether or not all errors are repaired or
+not. The failure rate is the percentage of files which could not be fully
+repaired. The number of error locations shows how many separate points in files
+are reported as errors. Since both \cpctplus and \mf are non-deterministic, we
+expect some variation in this figure. However \mfrev (which always selects
+from the minimal cost repair sequences that allow parsing to continue the least far)
+suffers significantly from the cascading error problem, reporting
+\mfreverrorlocsratioovermf more error locations than \mf to users.}
+\label{fig:results:summary}
+\end{figure}
+
+Figure~\ref{fig:results:summary} shows a summary of the results of our
+experiment. The overall conclusions are fairly clear: both \cpctplus and \mf are
+able to repair nearly all input files within the 0.5s timeout. Indeed, the fact
+that the median recovery time is two orders of magnitude lower than the mean
+recovery time shows that only a small number of outliers cause error recovery to
+take long enough to be perceptible to humans. \mf's failure rate is only
+\mfcpctplusfailurerateratio that of \cpctplus's, though in absolute terms
+both are already extremely low. \mf also has noticeably better median and (more
+importantly) mean repair times, though again in absolute terms both are
+already fairly low. These results strongly validate Hypothesis H1.
+
+\cpctplus and \mf rank the complete set of minimum cost repair sequences by how
+far each allows to parsing continue and choose from those which allow parsing to
+continue furthest. \mfrev, in contrast, selects from those which allow parsing
+to continue the least far. \mfrev shows that the ranking technique substantially
+reduces the potential for cascading errors: \mfrev leads to
+\mfreverrorlocsratioovermf more error locations being reported to users than
+with \mf. This strongly validates Hypothesis H2.
 
 
 \section{Threats to validity}
@@ -1812,7 +1852,10 @@ problems.
 \section{Conclusions}
 
 \begin{acks}
-We thank Edd Barrett for helping to set up our benchmarking machine.
+We are particularly grateful to the Blackbox developers for allowing us access
+to their data, and particularly to Neil Brown for help in extracting a relevant
+corpus. We also thank Edd Barrett for helping to set up our benchmarking
+machine.
 \end{acks}
 
 \bibliography{bib}

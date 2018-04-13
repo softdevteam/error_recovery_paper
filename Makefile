@@ -7,7 +7,7 @@
 .svg.pdf:
 	inkscape --export-pdf=$@ $<
 
-LATEX_FILES = error_recovery.ltx
+LATEX_FILES = error_recovery.ltx experimentstats.tex table.tex
 
 DIAGRAMS = graph.pdf cpctplus.pdf
 
