@@ -1414,7 +1414,7 @@ is entirely new. In this subsection we explain both parts.
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.55\textwidth}
 \begin{lstlisting}[numbers=left]
-def mk_dyn_dist(sgraph, stable, terms, eof_idx):
+def mk_mf_dist_table(sgraph, stable, terms, eof_idx):
   table = [<!$\infty$!>] * len(sgraph) * len(terms)
   table[sgraph.accept_state * len(terms) \
         + eof_idx] = 0
@@ -1537,7 +1537,7 @@ shows the static part of \textsf{mf\_dist} and Figure~\ref{fig:mf:dist:example}
 shows an example distance table.
 
 \begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=.35\textwidth}
+\begin{adjustbox}{valign=t,minipage=.38\textwidth}
 \begin{lstlisting}[numbers=left]
 def dyn_dist(rprs, s, toks):
   if ends_in_N_shifts(rprs):
@@ -1545,7 +1545,7 @@ def dyn_dist(rprs, s, toks):
   ld = <!$\infty$!>
   dc = 0
   while dc < ld:
-    d = dd_dist(s, toks[0])
+    d = mf_dist_table(s, toks[0])
     if d < <!$\infty$!> and dc + d < ld:
       ld = dc + d
     dc += 1
@@ -1556,7 +1556,7 @@ def dyn_dist(rprs, s, toks):
   else: return ld
 \end{lstlisting}
 \end{adjustbox}%
-\begin{adjustbox}{valign=t,minipage=.63\textwidth}
+\begin{adjustbox}{valign=t,minipage=.60\textwidth}
 \vspace{-9.5pt}
 \caption{\textit{mf\_dist} returns the cost to a success
 configuration, taking into account reductions and deletions. It takes as input a
@@ -1570,7 +1570,7 @@ monotonically decreases as the main loop executes) and the current cost of
 deleting tokens to 0 (line 5). We then continually iterate over the user's input
 until either there is no input left (lines 11-12) or the cost of deleting tokens
 exceeds the current least distance (line 6). On each iteration of the loop, we
-calculate the static distance to the next token in the user's input (line 7). If
+lookup the static distance to the next token in the user's input (line 7). If
 the distance is less than $\infty$ and the cumulative deletion cost plus the static
 distance is less than the current least distance, then we update the latter
 (lines 8--9). Otherwise, we increment the deletion cost (line 10) and `delete'
