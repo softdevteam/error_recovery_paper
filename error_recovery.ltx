@@ -1658,7 +1658,7 @@ rejected files which didn't lex, since such files cannot be considered
 for parsing.\footnote{Happily, this also excludes outputs which can't
 possibly be Java source code. Some odd things are pasted into text
 editors.} We then parsed candidate files with our Java grammar and rejected any
-which didn't parse successfully, since there is little point running an error
+which did parse successfully, since there is little point running an error
 recovery algorithm on correct input. We collected \corpussize source files
 (collectively a total of \corpussizemb). Although we cannot distribute the
 source files directly (Blackbox, quite reasonably, requires each person with
@@ -1681,7 +1681,7 @@ which reverses the ranking order and collected the same data as for \cpctplus
 and \mf. Instead of selecting from the minimal cost repair sequences which allow
 parsing to continue furthest, \mfrev selects from those which allow parsing to
 continue the least far. This models the worse case for other members of the
-\citet{fischer79locally} which non-deterministically select a single minimal
+\citet{fischer79locally} family which non-deterministically select a single minimal
 cost repair sequence.
 
 All experiments were run on an otherwise unloaded Intel \laurie{check} running
