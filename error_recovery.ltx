@@ -1581,8 +1581,16 @@ The dynamic part of \textsf{dyn\_dist} is shown in
 Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
 \texttt{mk\_dyn\_dist} and also takes into account the cost of deleting user
 input. The basic idea is to discover if, were a token in the user's input to
-be deleted, the cost to a success configuration would be reduced. The only
-subtlety comes from the fact that we have to ensure that we don't accidentally
+be deleted, the cost to a success configuration would be reduced. For example,
+let's say we have the input `\texttt{(1()}'. Using the grammar from Figure
+\ref{fig:stategraphtable} to parse the input we get an error in state 4;
+applying all reductions leads us to state 6. The next symbol from the input is
+`\texttt{(}'. Calculating \texttt{dyn\_dist(6, '(')} results in distance 2.
+However, the following symbol in the input is `\texttt{)}', with
+\texttt{dyn\_dist(6, ')')} being distance 0. This means that the cost for a
+success configuration can be reduced by deleting `\texttt{(}', which only incurs
+a cost of 1. The only subtlety of \textsf{dyn\_dist}
+comes from the fact that we have to ensure that we don't accidentally
 defer success configurations. While configurations that reach an accept state
 have a distance of 0 in the statetable, we have to deal with the other success
 route, which is when a repair sequence ends with $N_\textit{shift}$ shifts.
