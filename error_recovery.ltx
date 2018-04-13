@@ -1394,7 +1394,7 @@ always be the same, or greater, cost as the current configuration. This allows u
 use a simple, and efficient, variant of the A* algorithm that is similar
 to the algorithm of \cpctplus with the notable difference that
 \textsf{dyn\_dist} is used to defer configurations later in the todo list than
-\cpctplus (thus, in many cases, never needing to explore them).
+\cpctplus (thus, in many cases, never needing to explore them if less costly repair sequences have been found earlier).
 Finally, compatible configuration merging, repair sequence simplification, and so on are identical
 to that in \cpctplus.
 
