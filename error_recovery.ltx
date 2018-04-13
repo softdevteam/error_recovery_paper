@@ -1412,7 +1412,7 @@ extends the distance table algorithm used in \citet{kimyi10astar} while the dyna
 is entirely new. In this subsection we explain both parts.
 
 \begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=.55\textwidth}
+\begin{adjustbox}{valign=t,minipage=.60\textwidth}
 \begin{lstlisting}[numbers=left]
 def mk_mf_dist_table(sgraph, stable, terms, eof_idx):
   table = [<!$\infty$!>] * len(sgraph) * len(terms)
@@ -1436,7 +1436,7 @@ def mk_mf_dist_table(sgraph, stable, terms, eof_idx):
       break
 \end{lstlisting}
 \end{adjustbox}
-\begin{adjustbox}{valign=t,minipage=.44\textwidth}
+\begin{adjustbox}{valign=t,minipage=.39\textwidth}
 \begin{lstlisting}[numbers=left,firstnumber=37]
 def goto_states(sgraph, stable, st_idx):
   gs = set()
@@ -1584,14 +1584,17 @@ Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
 \texttt{mk\_dyn\_dist} and also takes into account the cost of deleting user
 input. The basic idea is to discover if, were a token in the user's input to
 be deleted, the cost to a success configuration would be reduced. For example,
-let's say we have the input `\texttt{(1()}'. Using the grammar from Figure
-\ref{fig:stategraphtable} to parse the input we get an error in state 4;
-applying all reductions leads us to state 6. The next symbol from the input is
-`\texttt{(}'. Calculating \texttt{dyn\_dist(6, '(')} results in distance 2.
-However, the following symbol in the input is `\texttt{)}', with
-\texttt{dyn\_dist(6, ')')} being distance 0. This means that the cost for a
-success configuration can be reduced by deleting `\texttt{(}', which only incurs
-a cost of 1. The only subtlety of \textsf{mf\_dist}
+consider the input `\texttt{(1()}'. Parsing this against the grammar from Figure
+\ref{fig:stategraphtable} causes an error in state 4 when before the
+`\texttt{(}' token; after applying \textsc{MF Reduce} we end up in state 6.
+Looking up the next token `\texttt{(}' in the distance table returns a cost of
+2. However, if we were to delete that symbol (at a cost of 1), the distance to
+the subsequent token `\texttt{)}' is 0. Thus the combination of the deletion
+cost (1) and the cost to reach the second token from the current state (0) is
+less than the cost to reach the first token (2). \textsf{mf\_dist} must thus
+return a cost of 1 in this case in order that the heuristic remains admissible.
+
+The remaining subtlety of \textsf{mf\_dist}
 comes from the fact that we have to ensure that we don't accidentally
 defer success configurations. While configurations that reach an accept state
 have a distance of 0 in the statetable, we have to deal with the other success
