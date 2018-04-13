@@ -1065,7 +1065,7 @@ terminates when the first success node is found.
 \infer[\textsc{KY Insert}]
       {([s_0 \ldots s_n], [t_0 \ldots t_n], w) \kyarrow ([s_0 \ldots s_n, s'],
        [t_0 \ldots t_n], \top, [\textit{insert}~t], d)}
-      {s_n \xrightarrow{\text{~~t~~}} s' \wedge t \ne \${} \wedge d = \textsf{dist}(s', t_0) < \infty)}
+      {s_n \xrightarrow{\text{~~t~~}} s' \wedge t \ne \${} \wedge d = \textsf{ky\_dist}(s', t_0) < \infty)}
 \]
 \vspace{-3pt}
 \[
@@ -1173,7 +1173,7 @@ $s$ & INT & \texttt{+} & \texttt{*} & \texttt{(} & \texttt{)} & \$ \\
 \end{tabular}
 \end{adjustbox}
 \vspace{-5pt}
-\caption{A fixed-point algorithm for the \textit{dist} distance table (left)
+\caption{A fixed-point algorithm for the \textit{ky\_dist} distance table (left)
 and a distance table for the grammar from Figure~\ref{fig:exprgrammar} (right).
 The algorithm takes in the stategraph, an ordered list of
 terminals, and the index of the \$ terminal (line 1), and returns a table with
@@ -1199,8 +1199,8 @@ minimum route through the stategraph to a state $s'$ (where $s$ and $s'$ may be
 the same state), where $s'$ has the terminal $t$ as an outgoing edge? In other
 words, this gives us the cost of inserting symbols to reach a state $s'$
 where $t$ is a valid next token. If no such route
-exists, \textsf{dist} returns $\infty$. While \citet{kimyi10astar} provide a
-specification of \textsf{dist}, we provide a fixed-point algorithm
+exists, \textsf{ky\_dist} returns $\infty$. While \citet{kimyi10astar} provide a
+specification of \textsf{ky\_dist}, we provide a fixed-point algorithm
 (Figure~\ref{fig:kimyi:dist}). The result is cached in a table at the point
 of grammar generation with entries looked up during the search. Note that we
 assume the existence of a function \textsf{min\_sentence\_cost(N)} which returns
@@ -1213,12 +1213,12 @@ computation used in parsing.
 \label{kimyi:flaws}
 
 The combination of the $\kyarrow$ rules (in particular \textsc{KY Reduce}'s
-ability to insert nonterminals) and the \textsf{dist} function lead to dramatic
+ability to insert nonterminals) and the \textsf{ky\_dist} function lead to dramatic
 performance improvements as reported by \citet{kimyi10astar}. Unfortunately the
 algorithm contains three flaws which lead it to produce incorrect
 results.
 
-The first flaw is that the \textsf{dist} heuristic does not take into
+The first flaw is that the \textsf{ky\_dist} heuristic does not take into
 account reductions/gotos or deletions: hence the heuristic is only valid for sequences of
 inserts via \textsc{KY Insert}. A simple example of this can be seen for the grammar
 from Figure~\ref{fig:exprgrammar} and its distance table in Figure~\ref{fig:kimyi:dist}:
@@ -1502,10 +1502,10 @@ $s$ & INT & \texttt{+} & \texttt{*} & \texttt{(} & \texttt{)} & \$ \\
 \begin{adjustbox}{valign=t,minipage=0.58\textwidth}
 \vspace{-13pt}
 \caption{The \textit{dyn\_dist} distance table for the grammar from
-Figure~\ref{fig:exprgrammar}. Relative to the \textit{dist} distance
+Figure~\ref{fig:exprgrammar}. Relative to the \textit{ky\_dist} distance
 table (Figure~\ref{fig:kimyi:dist}), many fewer entries are
 $\infty$, because reductions/gotos are taken into account. For example, consider state
-3, terminal `\texttt{+}': in \textit{dist}'s distance table this has a cost of 3;
+3, terminal `\texttt{+}': in \textit{ky\_dist}'s distance table this has a cost of 3;
 in \textit{dyn\_dist}'s distance table the cost is 0. The reason for this can be
 clearly seen from the stategraph in Figure~\ref{fig:stategraphtable}: in state
 3, the terminal `\texttt{+}' causes a reduction to state 0, and then a goto to
@@ -1532,7 +1532,7 @@ paths. Note that reductions/gotos and token insertions can be intertwined
 reaching $s'$ might be a reduction, a token insertion, another reduction and so
 on). Fortunately, not only is this a natural candidate for a fixed-point
 algorithm, but we are able to follow the same structure as that used to
-calculate the distance table for \textsf{dist}. Figure~\ref{fig:mf:dist:static}
+calculate the distance table for \textsf{ky\_dist}. Figure~\ref{fig:mf:dist:static}
 shows the static part of \textsf{dyn\_dist} and Figure~\ref{fig:mf:dist:example}
 shows an example distance table.
 
