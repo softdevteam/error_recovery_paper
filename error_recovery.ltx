@@ -707,9 +707,9 @@ positions.}
 &
 \begin{lstlisting}
 Delete "3", Delete "+"
-Delete "3", Keep "+", Insert "INT"
-Insert "PLUS", Keep "3", Keep "+", Insert "INT"
-Insert "MULT", Keep "3", Keep "+", Insert "INT"
+Delete "3", Shift "+", Insert "INT"
+Insert "PLUS", Shift "3", Shift "+", Insert "INT"
+Insert "MULT", Shift "3", Shift "+", Insert "INT"
 \end{lstlisting}
 &
 \begin{subfigure}{0.02\textwidth}
@@ -720,8 +720,8 @@ Insert "MULT", Keep "3", Keep "+", Insert "INT"
 &
 \begin{lstlisting}
 <! \vspace{-27pt} !>
-Insert "MULT", Keep "3", Delete "+"
-Insert "PLUS", Keep "3", Delete "+"
+Insert "MULT", Shift "3", Delete "+"
+Insert "PLUS", Shift "3", Delete "+"
 \end{lstlisting}
 \end{tabular}
 \vspace{-10pt}
