@@ -1429,8 +1429,8 @@ def mk_mf_dist_table(sgraph, stable, terms, eof_idx):
             this_off = i * len(terms) + j
             end_off = st_idx * len(terms) + j
             if table[end_off] != <!$\infty$!> \
-               and other_cost < table[this_off]:
-              table[this_off] = other_cost
+               and table[end_off] < table[this_off]:
+              table[this_off] = table[end_off]
               chgd = True
     if not chgd:
       break
