@@ -1412,7 +1412,7 @@ extends the distance table algorithm used in \citet{kimyi10astar} while the dyna
 is entirely new. In this subsection we explain both parts.
 
 \begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=.57\textwidth}
+\begin{adjustbox}{valign=t,minipage=.55\textwidth}
 \begin{lstlisting}[numbers=left]
 def mk_mf_table(sgraph, stable, terms, eof_idx):
   table = [<!$\infty$!>] * len(sgraph) * len(terms)
@@ -1436,7 +1436,7 @@ def mk_mf_table(sgraph, stable, terms, eof_idx):
       break
 \end{lstlisting}
 \end{adjustbox}
-\begin{adjustbox}{valign=t,minipage=.42\textwidth}
+\begin{adjustbox}{valign=t,minipage=.44\textwidth}
 \begin{lstlisting}[numbers=left,firstnumber=37]
 def goto_states(sgraph, stable, st_idx):
   gs = set()
@@ -1762,12 +1762,18 @@ with multiple error recovery sub-approaches (in similar fashion to \citet{deJong
 
 Although one of our paper's aims is to find the complete set of minimum cost repair sequences,
 it is unclear how best to present them to users, leading to questions such as:
-should they be simplified? should a subset be presented? and so on. There is a
+should they be simplified? should a subset be presented? and so on. Although
+rare, there are some surprising edge cases. For example,
+the (incorrect) Java expression `\texttt{x = f(""a""b);}' leads to 23,067 minimum
+cost repair sequences being found, due to the large number of Java keywords that are
+valid in several parts of this expression leading to a combinatorial explosion: even the most
+diligent user is unlikely to find such a volume of information valuable. There is a
 body of work which has tried to understand how best to structure compiler error
 messages (normally in the context of those learning to program). However, the
 results are hard to interpret: some studies find that more complex error
 messages are not useful \cite{nienaltowski08error}, while others suggest they
-are \cite{prather17novices}. It is unclear to us what the right approach might be.
+are \cite{prather17novices}. It is unclear to us what the right approach might be,
+or how it could be applied in our context.
 
 While the programming language world has largely forgotten the approach of
 \citet{aho72minimum}, there are a number of successor works, most recently that
