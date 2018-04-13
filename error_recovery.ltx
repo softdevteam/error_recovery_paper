@@ -1393,7 +1393,7 @@ configuration is monotonically non-decreasing) we know that neighbouring configu
 always be the same, or greater, cost as the current configuration. This allows us to
 use a simple, and efficient, variant of the A* algorithm that is similar
 to the algorithm of \cpctplus with the notable difference that
-\textsf{dyn\_dist} is used to place configurations later in the todo list than \cpctplus.
+\textsf{dyn\_dist} is used to place configurations later in the todo list than \cpctplus \lukas{What does this achieve?}.
 Finally, compatible configuration merging, repair sequence simplification, and so on are identical
 to that in \cpctplus.
 
@@ -1458,7 +1458,7 @@ reductions/gotos. \texttt{goto\_states} returns the set of state indexes which a
 \textit{st\_idx} may end up in after all possible reductions/gotos have
 occurred. To calculate this, all core items of a state with a dot at the end are
 considered (lines 39--42). We then recursively iterate backwards over the graph
-(using \texttt{rev\_edges(i)} which returns all the states which which have an
+(using \texttt{rev\_edges(i)} which returns all the states which have an
 edge pointing to state \texttt{i}), exploring all possible reduction routes that
 could be encountered dynamically (lines 43--48). The underlying idea is that an
 item $[N: \alpha \bullet]$ will cause $|\alpha|$ items to be popped from the
@@ -1527,7 +1527,7 @@ paths. Note that reductions/gotos and token insertions can be intertwined
 (i.e.~a valid way of
 reaching $s'$ might be a reduction, a token insertion, another reduction and so
 on). Fortunately, not only is this a natural candidate for a fixed-point
-algorithm, but we are able to follow a very similar structure to that used to
+algorithm, but we are able to follow a very similar structure to the one used to
 calculate the distance table for \textsf{dist}. Figure~\ref{fig:mf:dist:static}
 shows the static part of \textsf{dyn\_dist} and Figure~\ref{fig:mf:dist:example}
 shows an example distance table.
@@ -1582,7 +1582,7 @@ input. The basic idea is to discover if, were a token in the user's input to
 be deleted, the cost to a success configuration would be reduced. The only
 subtlety comes from the fact that we have to remember that a repair sequence
 that ends with $N_\textit{shift}$ shifts is already a success configuration.
-Because of this \textsf{dyn\_dist} has to take a repair sequence as an input. As
+Because of this \textsf{dyn\_dist} has to take a repair sequence as an input\lukas{Where does this repair sequence come from? Is it a previous one?}. As
 the rules in Figure~\ref{fig:mf:rules} show, this is the repair sequence for the
 `new' configuration. If this repair sequence ends with $N_\textit{shift}$ shifts,
 then \textsf{dyn\_dist} returns a distance of 0 to ensure that the new
