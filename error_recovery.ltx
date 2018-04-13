@@ -1277,7 +1277,7 @@ is approximately 700LoC.
 
 We first provide an overview of the algorithm
 (Section~\ref{mf:overview}) before describing in detail the steps needed to
-calculate the new \texttt{mf\_dist} heuristic (Section~\ref{mf:dyn_dist}).
+calculate the new \texttt{mf\_dist} heuristic (Section~\ref{mf:mf_dist}).
 
 
 \subsection{An overview of \mf}
@@ -1341,7 +1341,7 @@ Figure~\ref{fig:mf:rules}. Their most obvious features are that the relation is
 from \textit{(parsing stack, token list, repair sequence)} to \textit{(parsing
 stack, token list, repair sequence, heuristic)} tuples and that each rule
 uses a new A* heuristic \textsf{mf\_dist} (which takes into account reductions/gotos
-and deletions; see Section~\ref{mf:dyn_dist}). Less obviously, the rules do not
+and deletions; see Section~\ref{mf:mf_dist}). Less obviously, the rules do not
 use the $\lrarrow$ relation: \textsc{MF Shift} and \textsc{MF Reduce} subsume
 the functionality of \textsc{LR Shift} and \textsc{LR Reduce} (making this aspect of \mf
 closer in spirit to \citet{mckenzie95error} than either \citet{corchuelo02repairing}
@@ -1401,7 +1401,7 @@ to that in \cpctplus.
 
 
 \subsection{The \texttt{mf\_dist} heuristic}
-\label{mf:dyn_dist}
+\label{mf:mf_dist}
 
 \textsf{mf\_dist} comes in static and dynamic parts: the former handles insertion
 sequences and reductions/gotos; and the latter handles deletions (which
@@ -1537,7 +1537,7 @@ shows an example distance table.
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.38\textwidth}
 \begin{lstlisting}[numbers=left]
-def dyn_dist(rprs, s, toks):
+def mf_dist(rprs, s, toks):
   if ends_in_N_shifts(rprs):
     return 0
   ld = <!$\infty$!>
