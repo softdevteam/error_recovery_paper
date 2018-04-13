@@ -1412,9 +1412,9 @@ extends the distance table algorithm used in \citet{kimyi10astar} while the dyna
 is entirely new. In this subsection we explain both parts.
 
 \begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=.60\textwidth}
+\begin{adjustbox}{valign=t,minipage=.57\textwidth}
 \begin{lstlisting}[numbers=left]
-def mk_mf_dist_table(sgraph, stable, terms, eof_idx):
+def mk_mf_table(sgraph, stable, terms, eof_idx):
   table = [<!$\infty$!>] * len(sgraph) * len(terms)
   table[sgraph.accept_state * len(terms) \
         + eof_idx] = 0
@@ -1428,15 +1428,15 @@ def mk_mf_dist_table(sgraph, stable, terms, eof_idx):
           for j in range(len(terms)):
             this_off = i * len(terms) + j
             end_off = st_idx * len(terms) + j
-            if table[end_off] != <!$\infty$!> \
-               and table[end_off] < table[this_off]:
+            if table[end_off] != <!$\infty$!> and \
+               table[end_off] < table[this_off]:
               table[this_off] = table[end_off]
               chgd = True
     if not chgd:
       break
 \end{lstlisting}
 \end{adjustbox}
-\begin{adjustbox}{valign=t,minipage=.39\textwidth}
+\begin{adjustbox}{valign=t,minipage=.42\textwidth}
 \begin{lstlisting}[numbers=left,firstnumber=37]
 def goto_states(sgraph, stable, st_idx):
   gs = set()
