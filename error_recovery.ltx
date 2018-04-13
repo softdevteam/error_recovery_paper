@@ -1377,8 +1377,10 @@ def all_mf_star(pstack, toks, rprs):
 \end{adjustbox}
 \vspace*{-8pt}
 \caption{The main \mf algorithm. Lines 2--13 are identical to those of
-Figure~\ref{fig:corchuelo:algorithm} (with the exception that \mf stores
-success nodes rather than return when the first is found). The main difference between \cpctplus
+Figure~\ref{fig:corchuelo:algorithm} (with the exception that \mf does
+not return when the first success configuration is found, but stores it until
+the current cost $c$ is fully evaluated; at that point it returns all
+the success configurations found). The main difference between \cpctplus
 and \mf is the use of the A* heuristic, which allows configurations to be deferred
 beyond their actual cost. In other words a configuration $c$ with a heuristic $h$ is
 placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
