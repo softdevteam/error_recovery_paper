@@ -1279,7 +1279,7 @@ is approximately 700LoC.
 
 We first provide an overview of the algorithm
 (Section~\ref{mf:overview}) before describing in detail the steps needed to
-calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
+calculate the new \texttt{mf\_dist} heuristic (Section~\ref{mf:dyn_dist}).
 
 
 \subsection{An overview of \mf}
@@ -1292,7 +1292,7 @@ calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
       {([s_0 \ldots s_n], [t_0 \ldots t_n], [r_0 \ldots r_n])
        \mfarrow ([s_0 \ldots s_n, s'], [t_0 \ldots t_n], [r_0 \ldots r_n, \textit{insert}~t], d)}
       {\textsf{action}(s_n, t) = \textit{shift}~s' \wedge t \ne \${}
-       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{insert}~t], s', [t_0 \ldots t_n]) < \infty}
+       \wedge d = \textsf{mf\_dist}([r_0 \ldots r_n, \textit{insert}~t], s', [t_0 \ldots t_n]) < \infty}
 \]
 \vspace{-3pt}
 \[
@@ -1302,7 +1302,7 @@ calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
        [t_0 \ldots t_n], [r_0 \ldots r_n], d)}
       {N: \alpha \in \textsf{core\_reduces}(s_n)
        \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'
-       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n], s', [t_0 \ldots t_n]) < \infty}
+       \wedge d = \textsf{mf\_dist}([r_0 \ldots r_n], s', [t_0 \ldots t_n]) < \infty}
 \]
 \vspace{-4pt}
 \[
@@ -1311,7 +1311,7 @@ calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
        \mfarrow
        (S, [t_1 \ldots t_n], [r_0 \ldots r_n, \textit{delete}], d)}
       {t_0 \ne \$
-       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{delete}], s_n, [t_1 \ldots t_n]) < \infty}
+       \wedge d = \textsf{mf\_dist}([r_0 \ldots r_n, \textit{delete}], s_n, [t_1 \ldots t_n]) < \infty}
 \]
 \vspace{-3pt}
 \[
@@ -1321,14 +1321,14 @@ calculate the new \texttt{dyn\_dist} heuristic (Section~\ref{mf:dyn_dist}).
        \mfarrow
        ([s_0 \ldots s_n, s'], [t_1 \ldots t_n], [r_0 \ldots r_n, \textit{shift}], d)}
       {\textsf{action}(s_n, t_0) = \textit{shift}~s'
-       \wedge d = \textsf{dyn\_dist}([r_0 \ldots r_n, \textit{shift}], s', [t_1 \ldots t_n]) < \infty}
+       \wedge d = \textsf{mf\_dist}([r_0 \ldots r_n, \textit{shift}], s', [t_1 \ldots t_n]) < \infty}
 \]
 \vspace{-12pt}
 \caption{The repair-creating rules for \mf from (\textit{parsing stack},
 \textit{token list}, \textit{repair sequence}) to (\textit{parsing stack},
 \textit{token list}, \textit{repair sequence}, \textit{heuristic}) tuples.
-\textit{dyn\_dist} is the \mf A*
-heuristic: unlike \citet{kimyi10astar}, every rule makes use of the \textit{dyn\_dist} heuristic.
+\textit{mf\_dist} is the \mf A*
+heuristic: unlike \citet{kimyi10astar}, every rule makes use of the \textit{mf\_dist} heuristic.
 \textit{core\_reduces}($s_n$) returns the set of non-terminals which can be
 reduced in state $s_n$.}
 \label{fig:mf:rules}
@@ -1342,7 +1342,7 @@ We introduce a new reduction relation $\mfarrow$, whose rules are shown in
 Figure~\ref{fig:mf:rules}. Their most obvious features are that the relation is
 from \textit{(parsing stack, token list, repair sequence)} to \textit{(parsing
 stack, token list, repair sequence, heuristic)} tuples and that each rule
-uses a new A* heuristic \textsf{dyn\_dist} (which takes into account reductions/gotos
+uses a new A* heuristic \textsf{mf\_dist} (which takes into account reductions/gotos
 and deletions; see Section~\ref{mf:dyn_dist}). Less obviously, the rules do not
 use the $\lrarrow$ relation: \textsc{MF Shift} and \textsc{MF Reduce} subsume
 the functionality of \textsc{LR Shift} and \textsc{LR Reduce} (making this aspect of \mf
@@ -1389,23 +1389,23 @@ placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
 
 The main part of the \mf algorithm is deliberately similar to that of \cpctplus
 (compare Figure~\ref{fig:corchuelo:algorithm} and Figure~\ref{fig:mf:algorithm}). Because
-\textsf{dyn\_dist} is both admissible (i.e.~it never overestimates the distance to a
+\textsf{mf\_dist} is both admissible (i.e.~it never overestimates the distance to a
 success configuration) and consistent (i.e.~the total estimated cost to reach a success
 configuration is monotonically non-decreasing) we know that neighbouring configurations will
 always be the same, or greater, cost as the current configuration. This allows us to
 use a simple, and efficient, variant of the A* algorithm that is similar
 to the algorithm of \cpctplus with the notable difference that
-\textsf{dyn\_dist} is used to defer configurations later in the todo list than
+\textsf{mf\_dist} is used to defer configurations later in the todo list than
 \cpctplus (often not needing to explore them if less costly successful
 configurations are found).
 Finally, compatible configuration merging, repair sequence simplification, and so on are identical
 to that in \cpctplus.
 
 
-\subsection{The \texttt{dyn\_dist} heuristic}
+\subsection{The \texttt{mf\_dist} heuristic}
 \label{mf:dyn_dist}
 
-\textsf{dyn\_dist} comes in static and dynamic parts: the former handles insertion
+\textsf{mf\_dist} comes in static and dynamic parts: the former handles insertion
 sequences and reductions/gotos; and the latter handles deletions (which
 require examining the user's input). The static part
 extends the distance table algorithm used in \citet{kimyi10astar} while the dynamic part
@@ -1444,7 +1444,7 @@ def goto_states(sgraph, stable, st_idx):
       sgraph.core_state(st_idx):
     if dot < len(prod.syms):
       continue
-    prev = set([i])
+    prev = set([st_idx])
     for _ in len(prod.syms):
       next = set()
       for i in prev:
@@ -1457,7 +1457,7 @@ def goto_states(sgraph, stable, st_idx):
 \end{lstlisting}
 \end{adjustbox}
 \caption{A fixed-point algorithm for the static component of the
-\textit{dyn\_dist} function, returning a distance table which takes into account
+\textit{mf\_dist} function, returning a distance table which takes into account
 reductions/gotos. \texttt{goto\_states} returns the set of state indexes which a state
 \textit{st\_idx} may end up in after all possible reductions/gotos have
 occurred. To calculate this, all core items of a state with a dot at the end are
@@ -1501,12 +1501,12 @@ $s$ & INT & \texttt{+} & \texttt{*} & \texttt{(} & \texttt{)} & \$ \\
 \end{adjustbox}
 \begin{adjustbox}{valign=t,minipage=0.58\textwidth}
 \vspace{-13pt}
-\caption{The \textit{dyn\_dist} distance table for the grammar from
+\caption{The \textit{mf\_dist} distance table for the grammar from
 Figure~\ref{fig:exprgrammar}. Relative to the \textit{ky\_dist} distance
 table (Figure~\ref{fig:kimyi:dist}), many fewer entries are
 $\infty$, because reductions/gotos are taken into account. For example, consider state
 3, terminal `\texttt{+}': in \textit{ky\_dist}'s distance table this has a cost of 3;
-in \textit{dyn\_dist}'s distance table the cost is 0. The reason for this can be
+in \textit{mf\_dist}'s distance table the cost is 0. The reason for this can be
 clearly seen from the stategraph in Figure~\ref{fig:stategraphtable}: in state
 3, the terminal `\texttt{+}' causes a reduction to state 0, and then a goto to
 state 2. State 2 has an outgoing edge labelled with \texttt{+} and hence a
@@ -1533,7 +1533,7 @@ reaching $s'$ might be a reduction, a token insertion, another reduction and so
 on). Fortunately, not only is this a natural candidate for a fixed-point
 algorithm, but we are able to follow the same structure as that used to
 calculate the distance table for \textsf{ky\_dist}. Figure~\ref{fig:mf:dist:static}
-shows the static part of \textsf{dyn\_dist} and Figure~\ref{fig:mf:dist:example}
+shows the static part of \textsf{mf\_dist} and Figure~\ref{fig:mf:dist:example}
 shows an example distance table.
 
 \begin{figure}[t]
@@ -1558,7 +1558,7 @@ def dyn_dist(rprs, s, toks):
 \end{adjustbox}%
 \begin{adjustbox}{valign=t,minipage=.63\textwidth}
 \vspace{-9.5pt}
-\caption{\textit{dyn\_dist} returns the cost to a success
+\caption{\textit{mf\_dist} returns the cost to a success
 configuration, taking into account reductions and deletions. It takes as input a
 sequence of repairs \textit{rprs}, a state \textit{s}, and the remaining tokens
 from the user's input \textit{toks} and returns an integer distance or
@@ -1579,7 +1579,7 @@ the next token (line 13).}
 \end{adjustbox}
 \end{figure}
 
-The dynamic part of \textsf{dyn\_dist} is shown in
+The dynamic part of \textsf{mf\_dist} is shown in
 Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
 \texttt{mk\_dyn\_dist} and also takes into account the cost of deleting user
 input. The basic idea is to discover if, were a token in the user's input to
@@ -1591,14 +1591,14 @@ applying all reductions leads us to state 6. The next symbol from the input is
 However, the following symbol in the input is `\texttt{)}', with
 \texttt{dyn\_dist(6, ')')} being distance 0. This means that the cost for a
 success configuration can be reduced by deleting `\texttt{(}', which only incurs
-a cost of 1. The only subtlety of \textsf{dyn\_dist}
+a cost of 1. The only subtlety of \textsf{mf\_dist}
 comes from the fact that we have to ensure that we don't accidentally
 defer success configurations. While configurations that reach an accept state
 have a distance of 0 in the statetable, we have to deal with the other success
 route, which is when a repair sequence ends with $N_\textit{shift}$ shifts.
-Because of this \textsf{dyn\_dist} has to take the repair sequence of
+Because of this \textsf{mf\_dist} has to take the repair sequence of
 the new configuration being created: if it ends with $N_\textit{shift}$ shifts,
-then \textsf{dyn\_dist} returns a distance of 0. This ensures that the new
+then \textsf{mf\_dist} returns a distance of 0. This ensures that the new
 configuration will be checked for success at the current cost, and is not
 accidentally deferred until later in the todo list.
 
