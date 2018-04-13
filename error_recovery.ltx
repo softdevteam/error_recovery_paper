@@ -1394,7 +1394,8 @@ always be the same, or greater, cost as the current configuration. This allows u
 use a simple, and efficient, variant of the A* algorithm that is similar
 to the algorithm of \cpctplus with the notable difference that
 \textsf{dyn\_dist} is used to defer configurations later in the todo list than
-\cpctplus (thus, in many cases, never needing to explore them if less costly repair sequences have been found earlier).
+\cpctplus (often not needing to explore them if less costly successful
+configurations are found).
 Finally, compatible configuration merging, repair sequence simplification, and so on are identical
 to that in \cpctplus.
 
@@ -1581,14 +1582,14 @@ Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
 \texttt{mk\_dyn\_dist} and also takes into account the cost of deleting user
 input. The basic idea is to discover if, were a token in the user's input to
 be deleted, the cost to a success configuration would be reduced. The only
-subtlety comes from the fact that we have to remember that a repair sequence
-that ends with $N_\textit{shift}$ shifts is already a success configuration.
+subtlety comes from the fact that we have to ensure that we don't accidentally
+defer success configurations. While configurations that reach an accept state
+have a distance of 0 in the statetable, we have to deal with the other success
+route, which is when a repair sequence ends with $N_\textit{shift}$ shifts.
 Because of this \textsf{dyn\_dist} has to take the repair sequence of
-the new configuration being created \lukas{I was confused as I didn't realise this
-was it's one and only purpose. Maybe we can make this more clear. Although now that I read
-it it doesn't really say otherwise. So not sure if it wasn't just me.}. If this repair sequence ends with $N_\textit{shift}$ shifts,
-then \textsf{dyn\_dist} returns a distance of 0 to ensure that the new
-configuration is checked for success at the current cost, and is not
+the new configuration being created: if it ends with $N_\textit{shift}$ shifts,
+then \textsf{dyn\_dist} returns a distance of 0. This ensures that the new
+configuration will be checked for success at the current cost, and is not
 accidentally deferred until later in the todo list.
 
 
