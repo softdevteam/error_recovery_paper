@@ -1604,19 +1604,29 @@ is fully repeatable and downloadable from \laurie{XXX}.
 \subsection{Methodolgy}
 \label{methodology}
 
-One of the traditional problems with evaluating error recovery algorithms has
+In order to evaluate \cpctplus and \mf, we need a concrete implementation. We
+implemented a new Yacc-compatible parsing library \emph{lrpar} (including
+associated libraries for LR table generation and so on, consisting of just under
+10KLoC) in Rust. Although intended as a production library, it has accidentally
+played a part as a flexible test bed for experimenting with, and understanding,
+error recovery algorithms. We added a simple front-end which produces the output
+seen in e.g.~Figure~\ref{fig:javaerror}. We use lrpar for all experiments in
+this paper.
+
+A standard problem when evaluating error recovery algorithms has
 been obtaining sufficient example programs to test them on. Most papers we are
-aware of use around 200 programs (e.g.~\cite{corchuelo02repairing}) or even a
-single example with minor variants (\citet{kimyi10astar}). \citet{cerecke03phd}
-was the first to use a large-scale test suite of approximately 60,000 Java
-source files. Fortunately, the situation has been made rather easier for us
-through the existence of the Blackbox collection facility of the BlueJ
-editor~\cite{brown14blackbox}. In essence, users who opt-in to data collection
-have major events in the editor (e.g.~compiling a file) logged, including the
-source code associated with that event. What makes Blackbox most appealing as a
-data source is its scale: it has hundreds of thousands of users, and a
+aware of use around 200 inputs (e.g.~\cite{corchuelo02repairing}) or even a
+single input with minor variants (\citet{kimyi10astar}). \citet{cerecke03phd}
+was the first to use a large-scale test suite (approximately 60,000 Java
+source files). Fortunately, the situation has been made rather easier for us
+through the existence of the Blackbox project~\cite{brown14blackbox}. This
+is an opt-in data collection facility for the BlueJ editor, which records
+major editing events (e.g.~compiling a file) and sends them to a central
+repository. Crucially, one can see the source code associated with each event.
+What makes Blackbox most appealing as a
+data source is its scale and diversity: it has hundreds of thousands of users, and a
 correspondingly huge collection of source code. In our mind these more than
-offset its two inherent limitations: it only gives access to Java source code;
+offset its two inherent limitations: it only contains Java source code;
 and the vast majority of users are students -- and hence more likely than
 average to be somewhat novice programmers.
 
@@ -1624,24 +1634,35 @@ We first obtained a Java 1.5 Yacc grammar and modified it to support Java
 1.7.\footnote{Unfortunately, changes to the method calling syntax in Java 1.8
 mean that it is an awkward, though not impossible, fit for an LR(1) formalism
 such as Yacc, requiring substantial changes to the current Java Yacc grammar. We
-consider the work involved outside that relevant to this paper.} We then
+consider the work involved beyond that useful for this paper.} We then
 randomly selected source files from Blackbox's database (following the lead of
 \citet{santos18syntax}, we selected data from Blackbox's beginning until the end
-of Dec 31st 2017) which resulted from explicit compilation events. In other
+of 2017-12-31) which resulted from explicit compilation events. In other
 words, we selected inputs which a user had thought worthwhile enough to try
 compiling. We then ran such inputs through our Java 1.7 lexer. We immediately
-rejected files which didn't lex since we can't parse, successfully or not,
-something we can't lex.\footnote{Happily, this also excludes outputs which can't
+rejected files which didn't lex, since such files cannot be considered
+for parsing.\footnote{Happily, this also excludes outputs which can't
 possibly be Java source code. Some odd things are pasted into text
 editors.} We then parsed candidate files with our Java grammar and rejected any
-which didn't parse successfully (since there is little point running an error
-recovery algorithm on correct input). We collected \corpussize source files
-(collectively a total of \corpussizemb).
+which didn't parse successfully, since there is little point running an error
+recovery algorithm on correct input. We collected \corpussize source files
+(collectively a total of \corpussizemb). Although we cannot distribute the
+source files directly (Blackbox, quite reasonably, requires each person with
+access to the source files to register with them), we do distribute the
+identifiers necessary to extract the source files from Blackbox in our
+repeatable experiment.
 
 In order to test hypotheses H1 and H2 we ran \cpctplus and \mf against our
-corpus, collecting: the time spent in recovery (in seconds); whether it
+corpus, collecting for each file: the time spent in recovery (in seconds); whether it
 succeeded in repairing all errors (true or false); and the number of errors
-found. In order to test hypothesis H3, we created a variant of \mf called \mfrev
+found. Note that there are two ways of failing to repair all errors in a file:
+exceeding the timeout; or running out of plausible candidate repair sequences.
+The latter is rare, but does occur on occasion. Unlike
+\citet{corchuelo02repairing} lrpar does not implement traditional `panic mode'
+as a backup recovery mechanism: in our experience, if \cpctplus or \mf cannot
+repair an error, then using panic mode simply causes cascading errors.
+
+In order to test hypothesis H3, we created a variant of \mf called \mfrev
 which reverses the ranking order and collected the same data as for \cpctplus
 and \mf. Instead of selecting from the minimal cost repair sequences which allow
 parsing to continue furthest, \mfrev selects from those which allow parsing to
