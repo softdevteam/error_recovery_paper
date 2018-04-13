@@ -1121,7 +1121,7 @@ turn $w = \top$ into $\bot$.
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.63\textwidth}
 \begin{lstlisting}[numbers=left]
-def mk_dist(sgraph, terms, eof_idx):
+def mk_ky_table(sgraph, terms, eof_idx):
   table = [<!$\infty$!>] * sgraph.len_states * len(terms)
   table[sgraph.accept_state * len(terms) \
         + eof_idx] = 0
@@ -1469,8 +1469,8 @@ item $[N: \alpha \bullet]$ will cause $|\alpha|$ items to be popped from the
 parsing stack; we thus iterate backwards $|\alpha|$ times over the stategraph
 (line 44), recording at each point the states we can reach (lines 46--47).
 We then take the resulting set and map each element to the state it will goto
-(lines 49--52). Lines 9--25 of \texttt{mk\_dyn\_dist} are identical to
-that of the \texttt{mk\_dist} function (see Figure~\ref{fig:kimyi:dist}) (i.e.~they
+(lines 49--52). Lines 9--25 of \texttt{mk\_mf\_table} are identical to
+that of the \texttt{mk\_ky\_table} function (see Figure~\ref{fig:kimyi:dist}) (i.e.~they
 follow insertion sequences). We then take into account the goto states as
 part of the distance calculation (lines 26--34).}
 \label{fig:mf:dist:static}
@@ -1581,7 +1581,7 @@ the next token (line 13).}
 
 The dynamic part of \textsf{mf\_dist} is shown in
 Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
-\texttt{mk\_dyn\_dist} and also takes into account the cost of deleting user
+\texttt{mk\_mf\_table} and also takes into account the cost of deleting user
 input. The basic idea is to discover if, were a token in the user's input to
 be deleted, the cost to a success configuration would be reduced. For example,
 consider the input `\texttt{(1()}'. Parsing this against the grammar from Figure
