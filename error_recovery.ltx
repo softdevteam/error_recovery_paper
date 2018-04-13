@@ -1691,6 +1691,33 @@ experimental repository).
 \label{results}
 
 
+\section{Threats to validity}
+
+The most obvious threat to validity is our results comparing \cpctplus and \mf.
+They are specific to our implementation context and it is possible that their
+relative positions could change if implemented in a different fashion.
+Nevertheless, the absolute performance numbers for both are already good, and
+alternative implementations are only likely to further improve our view of both
+algorithms.
+
+A less obvious problem is that, even after repair sequence ranking, \cpctplus
+and \mf are still non-deterministic. This is because, in general, multiple
+repair sequences may have identical effects up to $N_\textit{try}$ tokens, but
+cause different effects after that value. Thus our results inevitably vary a
+little from run to run. Ideally we would have presented confidence intervals to
+make this clear, but obtaining sufficient data is time-consuming: we lacked the
+\laurie{30ish} days running time required to do so for this version of the
+paper, but will have such results for the next version.
+
+Our corpus was parsed using a Java 1.7 grammar, but some members of the corpus
+would have been written for Java 1.8. Many -- though not all -- Java 1.8
+features require a new keyword: most candidate source files would thus have
+failed our initial lexing test and not been included in our corpus. However,
+some Java 1.8 files will have made it through. Arguably these are still a valid
+test of our error recovery algorithms and, indeed, they may even be a little
+more challenging on average.
+
+
 \section{Related work}
 
 Error recovery techniques are so numerous that there is no
