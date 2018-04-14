@@ -1702,8 +1702,8 @@ report how long was spent in error recovery per file: both figures
 include files which exceeded the recovery timeout, so they represent the `real'
 times that users would experience, whether or not all errors are repaired or
 not. The failure rate is the percentage of files which could not be fully
-repaired. The number of error locations shows how many separate points in files
-are reported as errors. Since both \cpctplus and \mf are non-deterministic, we
+repaired \lukas{is there a difference between failure due to timeout and failure due to no error being found even if we had inifinite time? i.e. can we sometimes tell we won't find an error without timing out?}. The number of error locations shows how many separate points in files
+are reported as errors\lukas{Should we maybe also provide this as a median per file? Because this could mean that one file has 100k errors, and all the others have 1 or 2 errors}. Since both \cpctplus and \mf are non-deterministic, we
 expect some variation in this figure. However \mfrev (which always selects
 from the minimal cost repair sequences that allow parsing to continue the least far)
 suffers significantly from the cascading error problem, reporting
@@ -1723,9 +1723,9 @@ importantly) mean repair times, though again in absolute terms both are
 already fairly low. These results strongly validate Hypothesis H1.
 
 \cpctplus and \mf rank the complete set of minimum cost repair sequences by how
-far each allows to parsing continue and choose from those which allow parsing to
+far each allows parsing to continue and choose from those which allow parsing to
 continue furthest. \mfrev, in contrast, selects from those which allow parsing
-to continue the least far. \mfrev shows that the ranking technique substantially
+to continue the least far. \mfrev shows that the ranking technique used in \mf substantially
 reduces the potential for cascading errors: \mfrev leads to
 \mfreverrorlocsratioovermf more error locations being reported to users than
 with \mf. This strongly validates Hypothesis H2.
