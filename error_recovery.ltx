@@ -503,10 +503,10 @@ as \cpctplus.
 
 As with all error recovery algorithms, \citet{corchuelo02repairing} is invoked
 when an error is found in main parsing i.e.~when \textsf{action}$(s_n, i) =
-\textit{error}$. Intuitively, the algorithm starts at the error state and tries
+\textit{error}$ \lukas{earlier we used action(sn, t0). Maybe we should make it consistent?}. Intuitively, the algorithm starts at the error state and tries
 to find a minimum cost repair sequence consisting of: \textit{insert T}
 (`insert a token of type T'), \textit{delete} (`delete the token at the current offset'),
-or \textit{shift} (`skip over the token at the current offset without changing it'). The
+or \textit{shift} (`skip over \lukas{better?: parse} the token at the current offset without changing it'). The
 algorithm completes successfully if it reaches an accept state or shifts
 `enough' tokens ($N_\textit{shift}$; set at 3 in \citet{corchuelo02repairing}),
 or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
@@ -550,7 +550,7 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 creates insert repairs for them (other than the EOF token `$\$$').
 \textsc{CR Delete} creates deletion repairs if user defined input remains.
 \textsc{CR Shift 1} parses at most $N_\textit{shift}$ tokens; if it reaches an accept or error
-state, or parses exactly $N_\textit{shift}$ tokens, then a shift repair per
+state, or parses exactly $N_\textit{shifts}$ tokens, then a shift repair per
 token shifted is created.}
 \label{fig:corchuelo:reductions}
 \vspace*{-10pt}
@@ -607,7 +607,7 @@ cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\
 The algorithm maintains a todo list of lists (modelled
 on \citet[p.~25]{cerecke03phd} rather than the suggestion
 in \citet{corchuelo02repairing}); the first sub-list contains
-configurations of cost 0, the second sub-list contains configurations of cost 1 and
+configurations \lukas{first mention of this term. maybe add (i.e. repair sequence)?} of cost 0, the second sub-list contains configurations of cost 1 and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
 lowest cost configuration $n$ is picked (line 4--8). If $n$ represents an accept state (line
@@ -750,7 +750,7 @@ Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
 at a time. This causes them to skip intermediate
 positions from which minimum cost repair sequences may be found
 (this problem, and the basis of a fix, derive from \cite[p.~12]{kimyi10astar},
-though their suggestion suffers from the problem fixed by \textsc{CR Shift 1}).
+though their suggestion suffers from the problem fixed by \textsc{CR Shift 1}\lukas{not 2 or 3?}).
 The solution is simple: at most one shift can be generated at any one
 time, so that intermediate positions are not missed. \textsc{CR Shift 3} in
 Figure \ref{fig:corchuelo:kimyi} (as well as incorporating the fix from
@@ -785,12 +785,12 @@ adding elements requires only an \texttt{append} to the relevant sub-list
 data-structure is a good fit because costs never get
 big (double digits is unusual for real-world
 grammars); and each neighbour generated from a configuration with cost $c$ has
-a cost $\geq c$ (i.e.~we never have to search previous cost sub-lists).
+a cost $\geq c$ (i.e.~we never have to search \lukas{search how? I'm not sure what this is saying} previous cost sub-lists \lukas{if the previous sublists have a smaller cost why don't we have to search them? aren't they better?}).
 
 \label{duplicateconfigurations}
 Second, the algorithm often creates configurations which, from the search's perspective
 are duplicates. Formally, we say that two configurations are duplicates if their parsing
-stack and remaining input are identical (i.e.~filtering out aduplicate
+stack and remaining input are identical (i.e.~filtering out a duplicate
 simply removes its repair sequence from consideration). We
 therefore modify the queue data-structure to be a
 list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
@@ -801,7 +801,7 @@ We hash configurations, and compare them for equality, based on their parsing st
 remaining input (i.e.~the repair sequence is not used for hashing or
 equality). Although this cannot detect duplicates when the
 relevant configuration has already been popped from
-the todo list, it finds the vast majority, while avoiding the impractical memory overhead of
+the todo list \lukas{just double-checking: this means that there may be configurations that we don't really have to look at since they are duplicates of other configurations. But since that other configuration has already been removed, we can't remove this one as well and have to unnecessarily process it.}, it finds the vast majority, while avoiding the impractical memory overhead of
 remembering all past configurations. Depending on the example, this can lead to 20\% or
 more of configurations being filtered out, with a commensurate effect on
 performance.
@@ -863,10 +863,10 @@ ends in a delete.
 The first condition is a result of having to take into account
 that a configuration can be deemed successful in two ways: if it reaches an accept state (line 9,
 Figure~\ref{fig:corchuelo:algorithm}) or if it ends in $N_\textit{shifts}$ shift
-repairs (line 10). The former case is only affected by the parsing stack (and is
-thus unaffected by compatible configurations which have identical parsing stacks),
+repairs (line 10). The former case is only affected by the parsing stack (and
+thus doesn't affect compatible configurations which have identical parsing stacks),
 but the latter requires care with the number of shift repairs at
-the end of the sequence.
+the end of the sequence.\lukas{I feel like this can be expanded a bit. It doesn't really explain WHY these conditions mean we can merge the configurations. Also this seems to suggest that in Fig9 there should be more merges as there are other configurations that fulfill those conditions, e.g. all success configs except the one ending with a delete! Maybe we need an additional example here for two or more configurations that can be merged or we need to forward reference Fig9}
 
 The second condition relates to the weak form of compatible merging inherited
 from \citet[p.~8]{corchuelo02repairing}: delete repairs are never followed by an
@@ -883,24 +883,24 @@ memory.
 Our implementation of compatible configurations subsumes our detection of duplicate configurations
 (Section~\ref{duplicateconfigurations}), relying on the fact that our todo data-structure
 is a list-of-ordered-hashsets. We need only loosen configuration equality to allow compatible
-repair sequences to be be considered as equal. This leads to efficient
+repair sequences to be considered as equal. This leads to efficient
 detection of compatible configurations.
 
 Conceptually, merging two configurations together is simple: each configuration simply
-needs to store a set ofSuo8dafu repair sequences, each of which is updated as further
+needs to store a set of repair sequences, each of which is updated as further
 repairs are found. However, this is an extremely inefficient representation as
 the sets involved need to be copied and extended as each new repair is found.
 Instead, we use a representation which relies on parent pointer trees (for the
-same reasons as in Section~\ref{cactusnodes}).
+same reasons as in Section~\ref{cactusconfigurations}).
 The basic idea is that configurations no longer reference a parent pointer tree of
 repairs directly, but instead a parent pointer tree of \emph{repair merges}. A
 repair merge is a pair (\textit{repair}, \textit{merged}) where
 \textit{repair} is a plain repair and \textit{merged} is a (possibly null) set of
-repair merge sequences. The reason for using a pair apart is twofold: we can quickly
+repair merge sequences \lukas{This sentence has so many `pairs' that it made me hungry for fruit. Maybe we can rewrite this so it's easier to read?}. The reason for using a pair apart is twofold \lukas{what is this saying? what pair is apart? I thought we are separating configurations}: we can quickly
 perform the compatibility checks on \textit{repair} alone; and we avoid allocating
 additional memory for configurations which have not yet been subject to a merge. The small
 downside to this scheme is that expanding configurations into repair sequences requires
-recursively expanding both the normal parent pointer tree of \textit{repair}s
+recursively expanding both the normal parent pointer tree of \textit{repair}s \lukas{why is this plural and merged is not?}
 and the merged parent pointer trees of \textit{merged}.
 
 
@@ -946,7 +946,7 @@ Error at line 3 col 7. Repairs found:
 \end{tabular}
 \vspace{-10pt}
 \caption{An example showing how the ranking of repair sequences can lessen the
-the cascading error problem. The Java example (\subref{lst:ranking:java}) leads
+cascading error problem. The Java example (\subref{lst:ranking:java}) leads
 to a parsing error on line 3 at `\texttt{y}', with three minimum cost repair
 sequences found: [\textit{insert} \texttt{,}], [\textit{insert} \texttt{?}], and
 [\textit{insert} \texttt{(}]. These repair sequences are then ranked by how far
