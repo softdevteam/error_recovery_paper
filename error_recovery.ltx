@@ -1777,12 +1777,16 @@ the significant time (approximately 15 days) necessary to run them.
 Blackbox contains an astonishingly large amount of source code but has two
 inherent limitations. First, it only contains Java source code. This means that
 our main experiment is limited to one grammar: it is possible that our
-techniques do not generalise beyond the Java grammar. However, we are not aware
-of an equivalent repository for other language's source code. One solution might
-seem to be to mutate correct source files (e.g.~randomly deleting tokens), thus
-obtaining incorrect inputs which we can later test: however, it seems unlikely
-that one can effectively emulate the numerous, sometimes surprising, ways that
-humans make syntax errors. Second, Blackbox's data comes largely from students,
+techniques do not generalise beyond the Java grammar (though previous
+work in the \citet{fischer79locally} family suggests that different grammars
+make relatively little difference~\cite[p.~109]{cerecke03phd}). However, we are not aware
+of an equivalent repository for other language's source code. One solution is
+to mutate correct source files (e.g.~randomly deleting tokens), thus
+obtaining incorrect inputs which we can later test: however, it is difficult
+to uncover and then emulate the numerous, sometimes surprising, ways that
+humans make syntax errors, particularly as some are language specific
+(though there is some early work in this area~\cite{dejonge12automated}).
+Second, Blackbox's data comes largely from students,
 who are more likely than average to be somewhat novice programmers. It is likely
 that novice programmers make some different syntax errors -- or, at least, make
 the same syntax errors more often -- relative to advanced programmers. It is
@@ -1820,7 +1824,7 @@ addresses). Perhaps the most common -- and without doubt the most frustrating
 Java-like languages. \citet{santos18syntax} use
 machine learning to train a system on syntactically correct programs: when a
 syntax error is encountered, they use their model to suggest appropriate global
-fixes. Although they also use \laurie{the same blackbox data we do} their
+fixes. Although they also use data from Blackbox, their
 experimental methodology is very different: they are stricter, in that they aim
 to find exactly the same type of repair as the human user actually
 applied themselves; but also looser, in that they only
@@ -1829,10 +1833,10 @@ the data \cite[p.~8]{santos18syntax}) whereas we attempt to fix errors which
 span multiple tokens. It is thus difficult to directly compare their results to
 ours. However, by the high bar they have set themselves, they are able to repair
 52\% of single-token errors (i.e.~about 30\% of all possible errors; for
-reference, we repair \laurie{XXX\%}). It seems likely that future machine
+reference, we repair \mfsuccessrate). It seems likely that future machine
 learning approaches will improve upon this figure, although the size of the
-problem space suggests it will be hard to get close to 100\%{}. It seems plausible
-that an ideal system will mix both deterministic approaches (such as ours, which
+problem space suggests that it will be hard to get close to 100\%{}. It seems plausible
+that a `perfect' system will mix both deterministic approaches (such as ours, which
 has a high chance of finding a good-enough recovery) with
 probabilistic approaches (which have a moderate chance of finding a perfect
 recovery). There may be several shades of grey, leading to a system
@@ -1853,12 +1857,6 @@ messages are not useful \cite{nienaltowski08error}, while others suggest they
 are \cite{prather17novices}. It is unclear to us what the right approach might be,
 or how it could be applied in our context.
 
-While the programming language world has largely forgotten the approach of
-\citet{aho72minimum}, there are a number of successor works, most recently that
-of~\citet{rajasekaran16error}. These improve on the time complexity, though none
-that we are aware of address the issue of how to present what has been done to
-the user.
-
 The approach of \citet{mckenzie95error} is similar to
 \citet{corchuelo02repairing}, although the former cannot incorporate shift
 repairs. It tries harder than \cpctplus to prune out pointless search
@@ -1870,11 +1868,43 @@ significantly more complex than our merging of compatible configurations; since 
 gives us acceptable performance in practise, we have not investigated other
 pruning mechanisms.
 
-\cite{deJonge12natural}
+\cpctplus and \mf take only the grammar and user's input into account. However,
+it is possible to take further information, such as nesting (e.g.~taking into
+account curly brackets) and indentation, when undertaking error recovery. The
+advantage of such information is that it can reduce the search space by making
+educated guesses about the user's true intentions. The most sophisticated
+approach in this vein we are aware of is that of \citet{deJonge12natural} which
+uses factors such as regionality and indentation to improve the quality of error
+recovery. Although judging performance across time is difficult, it appears to
+be somewhat slower than \mf, failing to recover around 20\% of files within 1s.
+It would be interesting to combine these with \mf.
 
-\cite{pottier16reachability}
+A very different approach is that taken by \cite{pottier16reachability}: rather
+than try and recover from errors directly, it reports precisely and accurately
+how the user's input caused the parser got into an error state (e.g.~`I was
+parsing an expression but I would have expected a close bracket here'), and
+possible routes out of the error (e.g.~`A function or variable declaration is
+valid here'). This involves significant manual work, though the approach has
+various techniques to lessen the problem of maintaining messages as a grammar
+involves. This approach seems complementary to ours: in an ideal world it would
+be possible to give precise, human-orientated, messages whilst also showing
+repair sequences that allowed parsing to continue. One challenge may be to make
+the top ranked repair sequences match the manually written messages.
 
-\cite{gomezrodriguez10error}
+While the programming language world has largely forgotten the approach of
+\citet{aho72minimum}, there are a number of successor works, most recently that
+of~\citet{rajasekaran16error}. These improve on the time complexity, though none
+that we are aware of address the issue of how to present what has been done to
+the user.
+
+Finally, all error recovery algorithms we are aware of (including \cpctplus and
+\mf) come without correctness guarantees. Indeed, as shown in this paper,
+several have serious flaws. We are only aware of two works which have begun to
+consider what correctness for such algorithms might mean:
+\citet{zaytsev14formal} provides a brief philosophical justification of the need
+and \citet{gomezrodriguez10error} provides an outlines of an approach. Until
+such time as someone verifies a full error recovery algorithm, it is difficult
+to guess the effort involved.
 
 
 \section{Future work}
