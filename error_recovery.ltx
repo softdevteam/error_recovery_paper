@@ -1704,8 +1704,8 @@ report how long was spent in error recovery per file: both figures
 include files which exceeded the recovery timeout, so they represent the `real'
 times that users would experience, whether or not all errors are repaired or
 not. The failure rate is the percentage of files which could not be fully
-repaired \lukas{is there a difference between failure due to timeout and failure due to no error being found even if we had inifinite time? i.e. can we sometimes tell we won't find an error without timing out?}. The number of error locations shows how many separate points in files
-are reported as errors\lukas{Should we maybe also provide this as a median per file? Because this could mean that one file has 100k errors, and all the others have 1 or 2 errors}. Since both \cpctplus and \mf are non-deterministic, we
+repaired within the timeout. The number of error locations shows how many separate points in files
+are reported as errors. Since both \cpctplus and \mf are non-deterministic, we
 expect some variation in this figure. However \mfrev (which always selects
 from the minimal cost repair sequences that allow parsing to continue the least far)
 suffers significantly from the cascading error problem, reporting
@@ -1718,21 +1718,32 @@ suffers significantly from the cascading error problem, reporting
 \caption{A histogram of the time spent in error recovery by \mf for files in our
 corpus. The $x$ axis shows time (up to the timeout of 0.5s) and the $y$ axis is
 a logarithmic scale for the number of files. As this clearly shows, most files
-are repaired extremely quickly. There is then a roughly exponential decrease
+are repaired extremely quickly. There is then a continual decrease
 until the timeout.}
 \label{fig:results:mf_histogram}
 \end{figure}
 
 Figure~\ref{fig:results:summary} shows a summary of the results of our
 experiment. The overall conclusions are fairly clear: both \cpctplus and \mf are
-able to repair nearly all input files within the 0.5s timeout. Indeed, the fact
+able to repair nearly all input files within the 0.5s timeout. The fact
 that the median recovery time is two orders of magnitude lower than the mean
-recovery time shows that only a small number of outliers cause error recovery to
-take long enough to be perceptible to humans. \mf's failure rate is only
+recovery time suggests that only a small number of outliers cause error recovery to
+take long enough to be perceptible to humans; this is confirmed by the
+histogram in Figure~\ref{fig:results:mf_histogram}. \mf's failure rate is only
 \mfcpctplusfailurerateratio that of \cpctplus's, though in absolute terms
 both are already extremely low. \mf also has noticeably better median and (more
-importantly) mean repair times, though again in absolute terms both are
+importantly) mean repair times, though, again, in absolute terms both are
 already fairly low. These results strongly validate Hypothesis H1.
+
+\begin{figure}[t]
+\includegraphics[scale=.7]{mf_mfrev_error_locs_histogram.pdf}
+\caption{A histogram of the number of error locations for \mf and \mfrev. The
+$x$ axis shows the number of error locations and the $y$ axis is a logarithmic
+scale for the number of files. In essence, the entire distribution is skewed
+slightly rightwards by \mfrev: many files have one or two more errors found in
+them. Perhaps surprisingly, there are only a handful of outliers.}
+\label{fig:results:mf_mfrev_histogram}
+\end{figure}
 
 \cpctplus and \mf rank the complete set of minimum cost repair sequences by how
 far each allows parsing to continue and choose from those which allow parsing to
@@ -1740,7 +1751,11 @@ continue furthest. \mfrev, in contrast, selects from those which allow parsing
 to continue the least far. \mfrev shows that the ranking technique used in \mf substantially
 reduces the potential for cascading errors: \mfrev leads to
 \mfreverrorlocsratioovermf more error locations being reported to users than
-with \mf. This strongly validates Hypothesis H2.
+with \mf. As Figure~\ref{fig:results:mf_mfrev_histogram} shows, most files
+have one or two more error locations with \mfrev: in other words, \mfrev
+makes error recovery in a lot of files slightly worse (rather than making error
+recovery in a small number of files a lot worse). This strongly validates
+Hypothesis H2.
 
 
 \section{Threats to validity}
