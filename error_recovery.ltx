@@ -418,8 +418,8 @@ determining whether a stream of tokens is correct with respect to the underlying
 grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
 to specify `semantic actions' which are executed when a production in the grammar is
 successfully matched. In this paper, we assume that the semantic actions build
-a \emph{parse tree}, ordering the tokens into a tree of nonterminals (nodes
-which can have children) and terminals (nodes which cannot have children)
+a \emph{parse tree}, ordering the tokens into a tree of nonterminal nodes (
+which can have children) and terminal nodes (which cannot have children)
 relative to the underlying grammar.
 
 The beauty of LR parsing stems from the way a parser is constructed. The CFG is
@@ -448,7 +448,7 @@ A full LR parse $\lrarrowstar$ repeatedly applies the two $\lrarrow$ rules
 until neither applies, which means that \textsf{action}$(s_n, t_0)$ is either:
 $\textit{accept}$ (i.e.~the input has been fully parsed); or
 $\textit{error}$ (i.e.~an error has been detected at the terminal $t_0$). A
-full parse of an empty file takes a starting pair of $([0], [t_0 \ldots t_n, \$])$,
+full parse of an empty file \lukas{if the file is empty how can there be t0...tn tokens?} takes a starting pair of $([0], [t_0 \ldots t_n, \$])$,
 where state $0$ is expected to represent the entry point into the stategraph, $t_0 \ldots t_n$
 is the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token.
 
