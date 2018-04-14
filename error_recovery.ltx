@@ -1711,6 +1711,16 @@ suffers significantly from the cascading error problem, reporting
 \label{fig:results:summary}
 \end{figure}
 
+\begin{figure}[t]
+\includegraphics[scale=.7]{mf_histogram.pdf}
+\caption{A histogram of the time spent in error recovery by \mf for files in our
+corpus. The $x$ axis shows time (up to the timeout of 0.5s) and the $y$ axis is
+a logarithmic scale for the number of files. As this clearly shows, most files
+are repaired extremely quickly. There is then a roughly exponential decrease
+until the timeout.}
+\label{fig:results:mf_histogram}
+\end{figure}
+
 Figure~\ref{fig:results:summary} shows a summary of the results of our
 experiment. The overall conclusions are fairly clear: both \cpctplus and \mf are
 able to repair nearly all input files within the 0.5s timeout. Indeed, the fact
