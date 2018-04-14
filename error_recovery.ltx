@@ -508,7 +508,7 @@ to find a minimum cost repair sequence consisting of: \textit{insert T}
 (`insert a token of type T'), \textit{delete} (`delete the token at the current offset'),
 or \textit{shift} (`skip over \lukas{better?: parse} the token at the current offset without changing it'). The
 algorithm completes successfully if it reaches an accept state or shifts
-`enough' tokens ($N_\textit{shift}$; set at 3 in \citet{corchuelo02repairing}),
+`enough' tokens ($N_\textit{shifts}$; set at 3 in \citet{corchuelo02repairing}),
 or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 10 in \citet{corchuelo02repairing}).
 
@@ -549,7 +549,7 @@ or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
 \textsc{CR Insert} finds all terminals reachable from the current state and
 creates insert repairs for them (other than the EOF token `$\$$').
 \textsc{CR Delete} creates deletion repairs if user defined input remains.
-\textsc{CR Shift 1} parses at most $N_\textit{shift}$ tokens; if it reaches an accept or error
+\textsc{CR Shift 1} parses at most $N_\textit{shifts}$ tokens; if it reaches an accept or error
 state, or parses exactly $N_\textit{shifts}$ tokens, then a shift repair per
 token shifted is created.}
 \label{fig:corchuelo:reductions}
@@ -1563,7 +1563,7 @@ configuration, taking into account reductions and deletions. It takes as input a
 sequence of repairs \textit{rprs}, a state \textit{s}, and the remaining tokens
 from the user's input \textit{toks} and returns an integer distance or
 \texttt{None} if no route can be found. The function starts with a special case:
-if the repair sequence ends in $N_\textit{shift}$ shifts then the distance to a
+if the repair sequence ends in $N_\textit{shifts}$ shifts then the distance to a
 success confguration is by definition 0 (lines 2--3). Otherwise the current
 least distance to a success configuration is set to $\infty$ (line 4; this value
 monotonically decreases as the main loop executes) and the current cost of
@@ -1598,9 +1598,9 @@ The remaining subtlety of \textsf{mf\_dist}
 comes from the fact that we have to ensure that we don't accidentally
 defer success configurations. While configurations that reach an accept state
 have a distance of 0 in the statetable, we have to deal with the other success
-route, which is when a repair sequence ends with $N_\textit{shift}$ shifts.
+route, which is when a repair sequence ends with $N_\textit{shifts}$ shifts.
 Because of this \textsf{mf\_dist} has to take the repair sequence of
-the new configuration being created: if it ends with $N_\textit{shift}$ shifts,
+the new configuration being created: if it ends with $N_\textit{shifts}$ shifts,
 then \textsf{mf\_dist} returns a distance of 0. This ensures that the new
 configuration will be checked for success at the current cost, and is not
 accidentally deferred until later in the todo list.
