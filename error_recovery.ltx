@@ -277,7 +277,7 @@ subset that gets furthest. We thus also test a second hypothesis:
 \begin{description}
   \item[H2] Choosing a minimum cost repair sequence $s$ which allows local
 parsing to continue further than a different minimum cost repair sequence $s'$
-reduces the cascading error problem.
+reduces the cascading error problem.\lukas{This hypothesis is not very punchy. Maybe we can shorten it to: Choosing minimum cost repair sequences which allow local parsing to continue further reduce the cascading error problem.}
 \end{description}
 
 We also strongly validate this hypothesis. We do this by comparing `normal' \mf
@@ -299,8 +299,8 @@ simpler than \mf, though the latter is still less than 1,000 lines of Rust code.
 We then validate \cpctplus and \mf on a corpus of \corpussize real,
 syntactically incorrect, Java programs (Section~\ref{experiment}). Within the
 timeout of 0.5s: \cpctplus is able to find repairs for \cpctplussuccessrate
-of files within this time, with a mean recovery time of \cpctplusmeantime; and
-\mf is able to find repairs for \mfsuccessrate of files within this time, with
+of files, with a mean recovery time of \cpctplusmeantime; and
+\mf is able to find repairs for \mfsuccessrate of files, with
 a mean recovery time of \mfmeantime. As this shows, both algorithms perform well,
 though \mf gets slightly closer to the ideal. We believe that this shows that such
 approaches are ready for wider usage, either on their own, or as part of a multi-phase
@@ -339,7 +339,7 @@ $s$ & INT  & \texttt{+}    & \texttt{*}    & \texttt{(} & \texttt{)}    & \$   \
 2     &      & S(7)  &      &      & R(II)  & R(II) \\
 3     &      & R(IV) & S(8) &      & R(IV)  & R(IV) \\
 4     &      & R(VI) & R(VI)&      & R(VI)  & R(VI) \\
-5     &      &       &      &      &        & Acpt \\
+5     &      &       &      &      &        & Accept \\
 6     &      &       &      &      & S(9)   &      \\
 7     & S(4) &       &      & S(1) &        &      \\
 8     & S(4) &       &      & S(1) &        &      \\
@@ -374,10 +374,10 @@ $s$ & Term & Factor & Expr\\
 \vspace{-5pt}
 \caption{An example grammar (top left), its corresponding stategraph (right), and statetable
 (split into separate action and goto tables; bottom left). Productions in
-the grammar are labelled \texttt{(1)} to \texttt{(6)}. In the stategraph: S($x$)
+the grammar are labelled \texttt{(I)} to \texttt{(VI)}. In the stategraph: S($x$)
 means `shift to state $x$'; R($x$) means `reduce production $x$ from the
-grammar' (e.g.~the state 3, terminal `\texttt{+}' reduction is of production 4
-i.e. the production `\texttt{Term: Factor;}'); and `Acpt' means `accept'.
+grammar' (e.g.~the state 3, terminal `\texttt{+}' reduction is of production IV
+i.e. the production `\texttt{Term: Factor;}').
   Each item within a state $[N \colon \alpha \bullet \beta]$ references one
   of the rule $N$'s productions; $\alpha$ and $\beta$ each
 represent zero or more symbols; with the \emph{dot} ($\bullet$) representing
