@@ -1637,10 +1637,7 @@ major editing events (e.g.~compiling a file) and sends them to a central
 repository. Crucially, one can see the source code associated with each event.
 What makes Blackbox most appealing as a
 data source is its scale and diversity: it has hundreds of thousands of users, and a
-correspondingly huge collection of source code. In our mind these more than
-offset its two inherent limitations: it only contains Java source code;
-and the vast majority of users are students -- and hence more likely than
-average to be somewhat novice programmers.
+correspondingly huge collection of source code.
 
 We first obtained a Java 1.5 Yacc grammar and modified it to support Java
 1.7.\footnote{Unfortunately, changes to the method calling syntax in Java 1.8
@@ -1740,25 +1737,39 @@ The most obvious threat to validity is our results comparing \cpctplus and \mf.
 They are specific to our implementation context and it is possible that their
 relative positions could change if implemented in a different fashion.
 Nevertheless, the absolute performance numbers for both are already good, and
-alternative implementations are only likely to further improve our view of both
-algorithms.
+better implementations will only improve our view of both algorithms.
 
 A less obvious problem is that, even after repair sequence ranking, \cpctplus
 and \mf are still non-deterministic. This is because, in general, multiple
 repair sequences may have identical effects up to $N_\textit{try}$ tokens, but
 cause different effects after that value. Thus our results inevitably vary a
-little from run to run. Ideally we would have presented confidence intervals to
-make this clear, but obtaining sufficient data is time-consuming: we lacked the
-\laurie{30ish} days running time required to do so for this version of the
-paper, but will have such results for the next version.
+little from run to run. In future versions of this paper we will produce
+confidence intervals from multiple runs of the experiment, but we lacked
+the significant time (approximately 15 days) necessary to run them.
+
+Blackbox contains an astonishingly large amount of source code but has two
+inherent limitations. First, it only contains Java source code. This means that
+our main experiment is limited to one grammar: it is possible that our
+techniques do not generalise beyond the Java grammar. However, we are not aware
+of an equivalent repository for other language's source code. One solution might
+seem to be to mutate correct source files (e.g.~randomly deleting tokens), thus
+obtaining incorrect inputs which we can later test: however, it seems unlikely
+that one can effectively emulate the numerous, sometimes surprising, ways that
+humans make syntax errors. Second, Blackbox's data comes largely from students,
+who are more likely than average to be somewhat novice programmers. It is likely
+that novice programmers make some different syntax errors -- or, at least, make
+the same syntax errors more often -- relative to advanced programmers. It is
+thus possible that a corpus consisting of programs from advanced programmers
+would lead to different results.
 
 Our corpus was parsed using a Java 1.7 grammar, but some members of the corpus
-would have been written for Java 1.8. Many -- though not all -- Java 1.8
-features require a new keyword: most candidate source files would thus have
+were almost certainly written using Java 1.8 features. Many -- though not all -- Java 1.8
+features require a new keyword: such candidate source files would thus have
 failed our initial lexing test and not been included in our corpus. However,
-some Java 1.8 files will have made it through. Arguably these are still a valid
-test of our error recovery algorithms and, indeed, they may even be a little
-more challenging on average.
+some Java 1.8 files will have made it through our checks. Arguably these are still a valid
+test of our error recovery algorithms. It is even likely that they may be a little
+more challenging on average, since they are likely to be further away from being valid
+syntax than files intended for Java 1.7.
 
 
 \section{Related work}
