@@ -429,7 +429,13 @@ parse states at that point) and edges are labelled with terminals or
 nonterminals. Since even on a modern machine, a canonical
 (i.e.~unmerged) LR stategraph for a real-world grammar takes several seconds to
 build, and a surprising amount of memory to store, we use the state merging
-algorithm of \citet{pager77practical} to merge together compatible states. The
+algorithm of \citet{pager77practical} to merge together compatible
+states.\footnote{Unfortunately \citet{pager77practical} can over-merge states when conflict
+resolution is used \cite[p.~3]{denny10ielr} (i.e.~when users give Yacc an
+ambiguous grammar and use its precedence rules to disambiguate the grammar).
+Since our error recovery approach is intended to be independent of the merging
+approach, it should be possible to use the more sophisticated state merging
+approach of \cite{denny10ielr} without problems.} The
 effect of this is significant, reducing the Java grammar we use later from
 8908 to 1148 states. The stategraph is then transformed into a
 \emph{statetable} with one row per state. Each row has a possibly empty \emph{action} (shift, reduce,
@@ -1897,27 +1903,28 @@ of~\citet{rajasekaran16error}. These improve on the time complexity, though none
 that we are aware of address the issue of how to present what has been done to
 the user.
 
-Finally, all error recovery algorithms we are aware of (including \cpctplus and
-\mf) come without correctness guarantees. Indeed, as shown in this paper,
-several have serious flaws. We are only aware of two works which have begun to
-consider what correctness for such algorithms might mean:
+We are not aware of any error recovery algorithms that are formally verified.
+Indeed, as shown in this paper, several have serious flaws. We are only aware of
+two works which have begun to consider what correctness for such algorithms might mean:
 \citet{zaytsev14formal} provides a brief philosophical justification of the need
 and \citet{gomezrodriguez10error} provides an outlines of an approach. Until
 such time as someone verifies a full error recovery algorithm, it is difficult
-to guess the effort involved.
-
-
-\section{Future work}
-
-Our current parsing tool uses the merging algorithm from
-\citet{pager77practical}, but this can over-merge states when conflict
-resolution is used \cite[p.~3]{denny10ielr}. Since our error recovery approach
-is intended to be independent of the merging approach, it should be possible to
-use the more sophisticated state merging approach of \cite{denny10ielr} without
-problems.
+to estimate the effort involved, or what issues may be uncovered.
 
 
 \section{Conclusions}
+
+In this paper we have shown that it is possible to do a better job of error
+recovery than is currently the case, and that this can be done fast enough to be
+practical in existing compilers. In particular, creating the complete set of
+minimal cost repair sequences significantly reduces the cascading error problem.
+We believe that both \cpctplus and \mf give good enough results to be usable in
+practise. If time is scarce, we suggest implementing \cpctplus, since it avoids
+having to calculate and store distance tables. However, the extra effort
+involved in implementing \mf -- roughly 250LoC more than \cpctplus -- is small
+enough to justify the performance improvement. In particular, users who require
+the best performance -- e.g.~when error recovery is used in an interactive
+environment -- are likely to prefer \mf over \cpctplus.
 
 \begin{acks}
 We are particularly grateful to the Blackbox developers for allowing us access
