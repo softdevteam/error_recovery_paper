@@ -275,9 +275,9 @@ far they allow parsing to continue successfully, and choose from the
 subset that gets furthest. We thus also test a second hypothesis:
 
 \begin{description}
-  \item[H2] Choosing a minimum cost repair sequence $s$ which allows local
-parsing to continue further than a different minimum cost repair sequence $s'$
-reduces the cascading error problem.\lukas{This hypothesis is not very punchy. Maybe we can shorten it to: Choosing minimum cost repair sequences which allow local parsing to continue further reduce the cascading error problem.}
+  \item[H2] The cascading error problem can be significantly reduced by ranking
+the complete set of minimum cost repair sequences and choosing from those which
+allow parsing to continue the furthest.
 \end{description}
 
 We also strongly validate this hypothesis. We do this by comparing `normal' \mf
@@ -418,8 +418,8 @@ determining whether a stream of tokens is correct with respect to the underlying
 grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
 to specify `semantic actions' which are executed when a production in the grammar is
 successfully matched. In this paper, we assume that the semantic actions build
-a \emph{parse tree}, ordering the tokens into a tree of nonterminal nodes (
-which can have children) and terminal nodes (which cannot have children)
+a \emph{parse tree}, ordering the tokens into a tree of nonterminal nodes
+(which can have children) and terminal nodes (which cannot have children)
 relative to the underlying grammar.
 
 The beauty of LR parsing stems from the way a parser is constructed. The CFG is
@@ -454,7 +454,7 @@ A full LR parse $\lrarrowstar$ repeatedly applies the two $\lrarrow$ rules
 until neither applies, which means that \textsf{action}$(s_n, t_0)$ is either:
 $\textit{accept}$ (i.e.~the input has been fully parsed); or
 $\textit{error}$ (i.e.~an error has been detected at the terminal $t_0$). A
-full parse of an empty file \lukas{if the file is empty how can there be t0...tn tokens?} takes a starting pair of $([0], [t_0 \ldots t_n, \$])$,
+full parse of takes a starting pair of $([0], [t_0 \ldots t_n, \$])$,
 where state $0$ is expected to represent the entry point into the stategraph, $t_0 \ldots t_n$
 is the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token.
 
@@ -508,15 +508,18 @@ as \cpctplus.
 \label{corchuelo:orig}
 
 As with all error recovery algorithms, \citet{corchuelo02repairing} is invoked
-when an error is found in main parsing i.e.~when \textsf{action}$(s_n, i) =
-\textit{error}$ \lukas{earlier we used action(sn, t0). Maybe we should make it consistent?}. Intuitively, the algorithm starts at the error state and tries
+when an error is found in main parsing i.e.~when \textsf{action}$(s_n, t_0) =
+\textit{error}$. Intuitively, the algorithm starts at the error state and tries
 to find a minimum cost repair sequence consisting of: \textit{insert T}
 (`insert a token of type T'), \textit{delete} (`delete the token at the current offset'),
-or \textit{shift} (`skip over \lukas{better?: parse} the token at the current offset without changing it'). The
+or \textit{shift} (`parse the token at the current offset'). The
 algorithm completes successfully if it reaches an accept state or shifts
 `enough' tokens ($N_\textit{shifts}$; set at 3 in \citet{corchuelo02repairing}),
 or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
-10 in \citet{corchuelo02repairing}).
+10 in \citet{corchuelo02repairing}). In order to do this, the algorithm
+creates \emph{configurations}, which store the current search state;
+configurations are searched for their neighbours until a success configuration
+is found.
 
 \begin{figure}[tb]
 \small
@@ -613,7 +616,7 @@ cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\
 The algorithm maintains a todo list of lists (modelled
 on \citet[p.~25]{cerecke03phd} rather than the suggestion
 in \citet{corchuelo02repairing}); the first sub-list contains
-configurations \lukas{first mention of this term. maybe add (i.e. repair sequence)?} of cost 0, the second sub-list contains configurations of cost 1 and
+configurations of cost 0, the second sub-list contains configurations of cost 1 and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
 lowest cost configuration $n$ is picked (line 4--8). If $n$ represents an accept state (line
@@ -756,7 +759,7 @@ Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
 at a time. This causes them to skip intermediate
 positions from which minimum cost repair sequences may be found
 (this problem, and the basis of a fix, derive from \cite[p.~12]{kimyi10astar},
-though their suggestion suffers from the problem fixed by \textsc{CR Shift 1}\lukas{not 2 or 3?}).
+though their suggestion suffers from the same problem as \textsc{CR Shift 1}).
 The solution is simple: at most one shift can be generated at any one
 time, so that intermediate positions are not missed. \textsc{CR Shift 3} in
 Figure \ref{fig:corchuelo:kimyi} (as well as incorporating the fix from
@@ -791,7 +794,7 @@ adding elements requires only an \texttt{append} to the relevant sub-list
 data-structure is a good fit because costs never get
 big (double digits is unusual for real-world
 grammars); and each neighbour generated from a configuration with cost $c$ has
-a cost $\geq c$ (i.e.~we never have to search \lukas{search how? I'm not sure what this is saying} previous cost sub-lists \lukas{if the previous sublists have a smaller cost why don't we have to search them? aren't they better?}).
+a cost $\geq c$.
 
 \label{duplicateconfigurations}
 Second, the algorithm often creates configurations which, from the search's perspective
@@ -805,10 +808,11 @@ near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 weeds out duplicates with near-identical performance to an unordered hashset.
 We hash configurations, and compare them for equality, based on their parsing stack and
 remaining input (i.e.~the repair sequence is not used for hashing or
-equality). Although this cannot detect duplicates when the
-relevant configuration has already been popped from
-the todo list \lukas{just double-checking: this means that there may be configurations that we don't really have to look at since they are duplicates of other configurations. But since that other configuration has already been removed, we can't remove this one as well and have to unnecessarily process it.}, it finds the vast majority, while avoiding the impractical memory overhead of
-remembering all past configurations. Depending on the example, this can lead to 20\% or
+equality). Since we only record configurations which we have yet to search
+(i.e.~we don't record configurations we have already searched), we cannot detect
+all possible duplicates. However, this scheme finds the vast majority, while
+avoiding the impractical memory overhead of recording past congiurations.
+Depending on the example, this can lead to 20\% or
 more of configurations being filtered out, with a commensurate effect on
 performance.
 
@@ -872,7 +876,13 @@ Figure~\ref{fig:corchuelo:algorithm}) or if it ends in $N_\textit{shifts}$ shift
 repairs (line 10). The former case is only affected by the parsing stack (and
 thus doesn't affect compatible configurations which have identical parsing stacks),
 but the latter requires care with the number of shift repairs at
-the end of the sequence.\lukas{I feel like this can be expanded a bit. It doesn't really explain WHY these conditions mean we can merge the configurations. Also this seems to suggest that in Fig9 there should be more merges as there are other configurations that fulfill those conditions, e.g. all success configs except the one ending with a delete! Maybe we need an additional example here for two or more configurations that can be merged or we need to forward reference Fig9}
+the end of the sequence. This is because when we perform the $N_\textit{shifts}$
+check, we only check one element of a merge: thus the check is potentially
+non-symmetric. For example, if the `dominant' part of the merge had fewer shifts
+at the end of its repair sequence than the `subsumed' part, then the check would
+fail, but reversing the dominant and subsumed parts may lead to success. It is
+therefore only safe to merge repair sequences which end in the same number of
+shifts.
 
 The second condition relates to the weak form of compatible merging inherited
 from \citet[p.~8]{corchuelo02repairing}: delete repairs are never followed by an
@@ -886,7 +896,12 @@ duplicate repair sequences are uninteresting from a user perspective, so we
 would have to weed them out later anyway; and each additional merge costs
 memory.
 
-Our implementation of compatible configurations subsumes our detection of duplicate configurations
+An example of compatible configuration merging can be seen in
+Figure~\ref{fig:cpctplus:full}. Note that, as with our earlier duplicate
+detection, we cannot merge all compatible configurations, since we only record
+configurations we have yet to search. Nevertheless, this is still a powerful
+optimisation. Indeed, our implementation of compatible configurations subsumes
+our detection of duplicate configurations
 (Section~\ref{duplicateconfigurations}), relying on the fact that our todo data-structure
 is a list-of-ordered-hashsets. We need only loosen configuration equality to allow compatible
 repair sequences to be considered as equal. This leads to efficient
@@ -902,12 +917,13 @@ The basic idea is that configurations no longer reference a parent pointer tree 
 repairs directly, but instead a parent pointer tree of \emph{repair merges}. A
 repair merge is a pair (\textit{repair}, \textit{merged}) where
 \textit{repair} is a plain repair and \textit{merged} is a (possibly null) set of
-repair merge sequences \lukas{This sentence has so many `pairs' that it made me hungry for fruit. Maybe we can rewrite this so it's easier to read?}. The reason for using a pair apart is twofold \lukas{what is this saying? what pair is apart? I thought we are separating configurations}: we can quickly
-perform the compatibility checks on \textit{repair} alone; and we avoid allocating
-additional memory for configurations which have not yet been subject to a merge. The small
+repair merge sequences. This structure has two advantages. First, the
+$N_\textit{shifts}$ check can be performed solely using the first element of
+repair merge pairs. Second, we avoid allocating memory for configurations which
+have not yet been subject to a merge. The small
 downside to this scheme is that expanding configurations into repair sequences requires
-recursively expanding both the normal parent pointer tree of \textit{repair}s \lukas{why is this plural and merged is not?}
-and the merged parent pointer trees of \textit{merged}.
+recursively expanding both the normal parent pointer tree of the first
+element as well as the merged parent pointer trees of the second element.
 
 
 \subsection{Putting together the \cpctplus algorithm}
