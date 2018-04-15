@@ -86,7 +86,7 @@
 % Document starts
 \begin{document}
 % Title portion. Note the short title for running heads
-\title[Fast Multiple Repair Error Recovery]{Fast Multiple Repair Error Recovery}
+\title{Reducing Cascading Errors When Parsing}
 
 \author{Lukas Diekmann}
 \affiliation{%
@@ -110,17 +110,19 @@
 Syntax errors are generally easy to fix for humans, but not for parsers: the
 latter often fail to find an effective recovery, leading to a cascading chain of
 errors that drown out the original. More advanced recovery techniques
-suffer much less from this problem but have seen little practical use because
+suffer less from this problem but have seen little practical use because
 their typical performance was seen as poor and their worse case unbounded.
 In this paper we show that not only can an advanced approach run in acceptable time
 -- which we define as spending a maximum of 0.5s in error recovery per file -- but
 that we can increase the complexity of the problem to finding the complete set of minimum
-cost repair sequences, and still do so within acceptable time. We first extend
+cost repair sequences, and still do so within acceptable time. We then use the
+existence of the complete set of minimum cost repair sequences to further
+reduce the cascading error problem. We first extend
 Corchuelo et al.'s algorithm, before introducing a new, faster, alternative \mf. We
 validate our algorithms with a corpus of \corpussize real-world
 syntactically invalid Java programs: \mf is able to repair \mfsuccessrate of files
 within acceptable time. We show that making use of the complete set of repair
-sequences reduces cascading errors by \mfreverrorlocsratioovermf.
+sequences reduces the worse case for cascading errors by \mfreverrorlocsratioovermf.
 \end{abstract}
 
 \keywords{Parsing, error recovery, programming languages}
@@ -248,7 +250,7 @@ easily adapted to give human-friendly feedback. However, they
 have seen little practical use because their typical
 performance was seen as poor and their worse case unbounded \cite[p.~14]{mckenzie95error}.
 
-In this paper we test the following hypothesis:
+In this paper we first test the following hypothesis:
 
 \begin{description}
   \item[H1] The complete set of minimum cost repair sequences can nearly
@@ -256,23 +258,26 @@ In this paper we test the following hypothesis:
 \end{description}
 
 We define `acceptable time' as 0.5s for error recovery per file (i.e.~all errors
-in a file must be recovered from within 0.5s) since we think that even the most
+in a file must be recovered within the timeout of 0.5s) since we think that even the most
 demanding user will tolerate such a delay. We strongly validate this hypothesis,
-repairing \mfsuccessrate of files within this time limit. While, relative to
-previous approaches in the \citet{fischer79locally} family we have quite clearly
-benefited from faster modern hardware, it is important to note that we have
-stated a stronger, and thus harder hypothesis than previous approaches: where
-they have aimed to find only a single minimal cost repair sequence, we are able
+with our new error recovery algorithm \mf
+repairing \mfsuccessrate of files within the timeout. Relative
+to previous approaches, we are the clear beneficiaries of faster modern
+hardware, which undoubtedly makes it easier to validate this hypothesis.
+However, it it is important to note that we have
+stated a much stronger hypothesis than previous approaches: where
+they have aimed to find only a single minimum cost repair sequence, we are able
 to find the complete set.
 
-The complete set of minimal cost repair sequences allows us to display
+The complete set of minimum cost repair sequences allows us to display
 higher quality, and more programmer
 friendly, error messages (see Figure~\ref{fig:javaerror} for an example).
-Once we have one or more repair sequences, we then have to choose one
+Once we have one or more repair sequences, we then choose one
 to repair the input, and allow parsing to continue as normal. Rather
 than pick an arbitrary candidate, we rank repair sequences by how
 far they allow parsing to continue successfully, and choose from the
-subset that gets furthest. We thus also test a second hypothesis:
+subset that gets furthest. In essence, this turns our `local' error recovery technique
+into a `regional' technique. We thus also test a second hypothesis:
 
 \begin{description}
   \item[H2] The cascading error problem can be significantly reduced by ranking
