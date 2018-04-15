@@ -1047,12 +1047,12 @@ longest acceptable to users.
 
 While performance problems such as those with unmatched brackets
 are fairly rare, it would be better if they did not occur at
-all. \citet{kimyi10astar} propose a new error recovery -- which is in the
+all. \citet{kimyi10astar} propose a new error recovery algorithm -- which is in the
 \citet{fischer79locally} family, but by far its most radical member --  which
 claims to hugely reduce such performance problems. This work has not,
 to the best of our knowledge, received prior attention in the community, despite
 this promise. In this section we provide a brief overview of this work: we
-give enough information to understand relevant details but
+give enough information to understand details relevant to this paper but
 we elide several details which an
 implementation would need to consider. We also adjust the algorithm's style to
 match this paper's and correct several minor mistakes.
@@ -1081,7 +1081,7 @@ heuristic $h(n)$ returns an estimate of the additional cost needed to reach a su
 $n$. The heuristic must be `admissible': it must
 never overestimate the cost to reach a success node (or else non-minimum
 cost routes to success nodes may be found first); however, it may safely
-underestimate (i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
+underestimate (i.e.~the simplest admissible heuristic is $h(n) = 0$). A priority queue is
 used to order nodes by their $d(n) + h(n)$. On
 each iteration the node in the queue with the lowest $d(n) + h(n)$ is selected,
 its neighbours explored and each entered into the priority queue. The search
@@ -1127,7 +1127,7 @@ in the core (or `kernel') state which would lead to a reduction if the
 sequence of symbols (terminals and non-terminals) $\beta_0 \ldots \beta_n$ were
 to be found; it then optimistically creates insert repairs for each, and
 performs the corresponding reduction. \textsc{KY Delete} is virtually identical
-to \textsc{CR Delete}. \textsc{KY Shift} is similar to \textsc{CR Shift} but
+to \textsc{CR Delete}. \textsc{KY Shift} is similar to \textsc{CR Shift 3} but
 has to always shift a single symbol to avoid creating repairs which
 duplicate those found by \textsc{KY Reduce}.}
 \label{fig:kimyi:rules}
@@ -1140,9 +1140,8 @@ from (\textit{parsing stack}, \textit{token list}, \textit{w}) to
 (\textit{parsing stack}, \textit{token list}, \textit{w}, \textit{repairs},
 \textit{heuristic}) tuples. Of these values, $w$ is the least intuitive:
 since the A* heuristic used doesn't take into account reductions/gotos or deletions,
-it is only valid for sequences of \textsc{KY Insert} and \textsc{KY Shift};
-were \textsc{KY Reduce} or \textsc{KY Delete} to be used, the heuristic
-would be inadmissible. The initial configuration sets $w = \bot$. Since \textsc{KY Insert} is the only
+heuristic values are only valid for sequences of \textsc{KY Insert} and \textsc{KY Shift}.
+The initial configuration sets $w = \bot$. Since \textsc{KY Insert} is the only
 rule which uses the heuristic, it sets $w = \top$. Only \textsc{KY Shift} can
 turn $w = \top$ into $\bot$.
 
@@ -1180,6 +1179,7 @@ def mk_ky_table(sgraph, terms, eof_idx):
 \end{adjustbox}%
 \small
 \begin{adjustbox}{valign=t,minipage=.35\textwidth}
+\vspace{5pt}
 \begin{tabular}{rcccccc}
 \toprule
       & \multicolumn{6}{c}{$t$} \\
@@ -1205,10 +1205,10 @@ $s$ & INT & \texttt{+} & \texttt{*} & \texttt{(} & \texttt{)} & \$ \\
 \caption{A fixed-point algorithm for the \textit{ky\_dist} distance table (left)
 and a distance table for the grammar from Figure~\ref{fig:exprgrammar} (right).
 The algorithm takes in the stategraph, an ordered list of
-terminals, and the index of the \$ terminal (line 1), and returns a table with
+terminals, and the index of the `\$' terminal (line 1), and returns a table with
 one column per terminal and one row per state. Each entry starts
-at $\infty$ (line 2) except for the accept state's (i.e.~the only state with
-an \textit{accept} action) `\$' terminal which is set
+at $\infty$ (line 2) except for the `\$' terminal in the accept state (i.e.~the only state with
+an \textit{accept} action) which is set
 to 0 (lines 3, 4): entries monotonically reduce to a minimum of 0. For each
 state $i$ in the stategraph (line 7), the algorithm explores its outgoing edges
 (via the \texttt{edges} function (line 8)), each of which is labelled with a
@@ -1222,12 +1222,12 @@ lower than the cost of $t$ in $i$ then we update the latter (lines 19--25).}
 \label{fig:kimyi:dist}
 \end{figure}
 
-The A* heuristic used is \textsf{dist(s, t)} which is best
+The A* heuristic used is \textsf{ky\_dist(s, t)} which is best
 summarised as follows: if we are in parsing state $s$, what is the cost of the
 minimum route through the stategraph to a state $s'$ (where $s$ and $s'$ may be
 the same state), where $s'$ has the terminal $t$ as an outgoing edge? In other
 words, this gives us the cost of inserting symbols to reach a state $s'$
-where $t$ is a valid next token. If no such route
+where $t$ is a valid next terminal. If no such route
 exists, \textsf{ky\_dist} returns $\infty$. While \citet{kimyi10astar} provide a
 specification of \textsf{ky\_dist}, we provide a fixed-point algorithm
 (Figure~\ref{fig:kimyi:dist}). The result is cached in a table at the point
@@ -1255,7 +1255,7 @@ from Figure~\ref{fig:exprgrammar} and its distance table in Figure~\ref{fig:kimy
 `\texttt{*}', `\texttt{(}', and `\texttt{INT}'): however, from
 state 3, we could reduce to state 0 and goto state 2, which has an outgoing edge labelled
 `\texttt{+}' (i.e.~without inserting any terminals). As this shows,
-the heuristic would be inadmissible in the face of reductions.
+the heuristic would be inadmissible in the face of reductions/gotos.
 The second flaw results from trying to fix the
 first: the $w$ part of the $\kyarrow$ relation is a hack to ensure that
 \textsc{KY Reduce} and \textsc{KY Delete} do not interfere when the heuristic is $> 0$.
@@ -1270,9 +1270,9 @@ Given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
 (whereas \cpctplus returns the minimum cost repair sequence
 [\textit{insert b}, \textit{delete}].
 The third and final flaw is that optimistically inserting the remainder of a
-production prevents the terminals involved from being shifted if the user's
+production in \textsc{KY Insert} prevents the terminals involved from being shifted if the user's
 input happens to overlap with them: since it is more expensive to insert $a$
-than to shift $a$, this can cause the search to produce non-minimum cost repair
+than to shift $a$, this can cause the search to generate non-minimum cost repair
 sequences.
 
 The third flaw is easily fixed by disallowing the search from optimistically
