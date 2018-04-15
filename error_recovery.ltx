@@ -939,14 +939,14 @@ homage to \citet{corchuelo02repairing}).
 
 \begin{figure}[t]
 \includegraphics[width=1.0\textwidth]{cpctplus}
-\caption{An elided visualisation of the search tree for \cpctplus with the input
+\caption{An elided visualisation of a real run of \cpctplus with the input
 `2 3 +' and the grammar from Figure~\ref{fig:exprgrammar}. The left hand side of
 the tree shows the `normal' parser at work, which hits an error as soon as it
 has shifted the token `\texttt{2}': at this point, \cpctplus starts operating.
 As this shows, the search encounters various dead ends, as well as successful
 routes. As shown in Figure~\ref{fig:crshift2:example}, this input has 6 minimum
 cost repair sequences, but the search only has 5 success configurations, because
-two routes are merged together.}
+two configurations were merged together.}
 \label{fig:cpctplus:full}
 \end{figure}
 
@@ -1302,7 +1302,7 @@ In this section we present a new recovery algorithm \mf. As with \cpctplus,
 \mf finds the complete set of minimum cost repair sequences, although it does so
 using the A* algorithm. While
 \cpctplus and \mf find precisely the same repair sequences, \mf does so
-in less time. However, \mf requires more up-front calculations that require slightly
+slightly quicker. However, \mf requires more up-front calculations that require slightly
 more implementation effort: \mf is approximately 950LoC whereas \cpctplus
 is approximately 700LoC.
 
@@ -1422,12 +1422,8 @@ The main part of the \mf algorithm is deliberately similar to that of \cpctplus
 success configuration) and consistent (i.e.~the total estimated cost to reach a success
 configuration is monotonically non-decreasing) we know that neighbouring configurations will
 always be the same, or greater, cost as the current configuration. This allows us to
-use a simple, and efficient, variant of the A* algorithm that is similar
-to the algorithm of \cpctplus with the notable difference that
-\textsf{mf\_dist} is used to defer configurations later in the todo list than
-\cpctplus (often not needing to explore them if less costly successful
-configurations are found).
-Finally, compatible configuration merging, repair sequence simplification, and so on are identical
+reuse the todo data-structure from \cpctplus as-is. Finally, compatible
+configuration merging, repair sequence simplification, and so on are identical
 to that in \cpctplus.
 
 
@@ -1490,10 +1486,10 @@ def goto_states(sgraph, stable, st_idx):
 reductions/gotos. \texttt{goto\_states} returns the set of state indexes which a state
 \textit{st\_idx} may end up in after all possible reductions/gotos have
 occurred. To calculate this, all core items of a state with a dot at the end are
-considered (lines 39--42). We then recursively iterate backwards over the graph
+considered (lines 39--42). We then recursively iterate backwards over the stategraph
 (using \texttt{rev\_edges(i)} which returns all the states which have an
 edge pointing to state \texttt{i}), exploring all possible reduction routes that
-could be encountered dynamically (lines 43--48). The underlying idea is that an
+could be encountered dynamically (lines 43--48). The intuition behind this is that an
 item $[N: \alpha \bullet]$ will cause $|\alpha|$ items to be popped from the
 parsing stack; we thus iterate backwards $|\alpha|$ times over the stategraph
 (line 44), recording at each point the states we can reach (lines 46--47).
@@ -1540,15 +1536,14 @@ in \textit{mf\_dist}'s distance table the cost is 0. The reason for this can be
 clearly seen from the stategraph in Figure~\ref{fig:stategraphtable}: in state
 3, the terminal `\texttt{+}' causes a reduction to state 0, and then a goto to
 state 2. State 2 has an outgoing edge labelled with \texttt{+} and hence a
-distance of 0 to it. Notice also that every state now has a distance to the \$
-terminal, since every (reachable) state must via reductions/gotos and insertions
-be able to reach the accept state.}
+distance of 0 to it. Notice also that every state now has a non-$\infty$ distance to the `\$'
+terminal, since every (reachable) state must be able to reach the accept state.}
 \label{fig:mf:dist:example}
 \end{adjustbox}
 \end{figure}
 
 The A* heuristic of \citet{kimyi10astar} builds a distance table of
-states and tokens: \textsf{dist(s, t)} then returns the cumulative cost of
+states and terminals: \textsf{dist(s, t)} then returns the cumulative cost of
 the sequence of token insertions from state $s$ such that a state $s'$ can be
 found which has an outgoing edge labelled with $t$. This is a useful base,
 but we also need to take into account reductions/gotos to stop any search which
@@ -1582,8 +1577,10 @@ def mf_dist(rprs, s, toks):
     if len(toks) == 1:
       break
     toks = toks[1:]
-  if ld == <!$\infty$!>: return None
-  else: return ld
+  if ld == <!$\infty$!>:
+    return None
+  else:
+    return ld
 \end{lstlisting}
 \end{adjustbox}%
 \begin{adjustbox}{valign=t,minipage=.60\textwidth}
@@ -1594,7 +1591,7 @@ sequence of repairs \textit{rprs}, a state \textit{s}, and the remaining tokens
 from the user's input \textit{toks} and returns an integer distance or
 \texttt{None} if no route can be found. The function starts with a special case:
 if the repair sequence ends in $N_\textit{shifts}$ shifts then the distance to a
-success confguration is by definition 0 (lines 2--3). Otherwise the current
+success configuration is by definition 0 (lines 2--3). Otherwise, the current
 least distance to a success configuration is set to $\infty$ (line 4; this value
 monotonically decreases as the main loop executes) and the current cost of
 deleting tokens to 0 (line 5). We then continually iterate over the user's input
@@ -1612,52 +1609,48 @@ the next token (line 13).}
 The dynamic part of \textsf{mf\_dist} is shown in
 Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
 \texttt{mk\_mf\_table} and also takes into account the cost of deleting user
-input. The basic idea is to discover if, were a token in the user's input to
-be deleted, the cost to a success configuration would be reduced. For example,
+input. The intuition is that we need to check if were one or more tokens
+from the user's input to be deleted, the cost to a success configuration would be reduced. For example,
 consider the input `\texttt{(1()}'. Parsing this against the grammar from Figure
-\ref{fig:stategraphtable} causes an error in state 4 when before the
+\ref{fig:stategraphtable} causes an error in state 4 before the
 `\texttt{(}' token; after applying \textsc{MF Reduce} we end up in state 6.
 Looking up the next token `\texttt{(}' in the distance table returns a cost of
-2. However, if we were to delete that symbol (at a cost of 1), the distance to
+2. However, the next token costs 1 to delete, while the distance to
 the subsequent token `\texttt{)}' is 0. Thus the combination of the deletion
 cost (1) and the cost to reach the second token from the current state (0) is
-less than the cost to reach the first token (2). \textsf{mf\_dist} must thus
-return a cost of 1 in this case in order that the heuristic remains admissible.
+lower than the cost to reach the first token (2). \textsf{mf\_dist} must thus
+return a cost of 1 in order that the heuristic remains admissible.
 
-The remaining subtlety of \textsf{mf\_dist}
-comes from the fact that we have to ensure that we don't accidentally
-defer success configurations. While configurations that reach an accept state
-have a distance of 0 in the statetable, we have to deal with the other success
-route, which is when a repair sequence ends with $N_\textit{shifts}$ shifts.
+The remaining subtlety of \textsf{mf\_dist} comes from checking that we don't
+accidentally defer success configurations. While configurations that reach an
+accept state have a distance of 0 in the distance table by definition,
+configurations that may end with $N_\textit{shifts}$ shifts have to be checked manually.
 Because of this \textsf{mf\_dist} has to take the repair sequence of
 the new configuration being created: if it ends with $N_\textit{shifts}$ shifts,
-then \textsf{mf\_dist} returns a distance of 0. This ensures that the new
-configuration will be checked for success at the current cost, and is not
-accidentally deferred until later in the todo list.
+then a distance of 0 is returned to ensure that the configuration
+is checked for success at the current cost.
 
 
 \subsection{Skipping intermediate reduction/gotos}
 
-\textsc{MF Reduce} can be optimised further than is easily expressible in the
-reduction rules of Figure~\ref{fig:mf:rules}. As written, each reduction/goto
-gives rise to a configuration whose neighbours are explored as normal. However,
-when two or more reduction/gotos are valid in succession, this can be
-unproductive as certain operations are impossible in the middle of such a chain.
+Although not easily expressed in the reduction rules of Figure~\ref{fig:mf:rules},
+\textsc{MF Reduce} can be further optimised. In its original form, \textsc{MF Reduce}
+causes each reduction/goto to produce a new configuration whose neighbours are
+then explored as normal. However, this is not always necessary.
 As can be seen from \textsc{LR Reduce}, reduction/gotos are taken based on the
 next token in the user's input: a sequence of configurations [\textit{reduce},
 \textit{delete}, \textit{reduce}], for example, is nonsensical, as the
 next token in the user's input cannot suddenly change in the middle of a
 sequence of reduction/gotos.
 
-Our implementation of \textsc{MF Reduce} therefore skips configurations which
-reduce/goto states that, in the statetable, both: only contain reductions; and
+Our implementation of \textsc{MF Reduce} therefore skips configurations whose
+goto state both: only contains reductions; and
 where all reductions reference the same production. For example, if, for the
 grammar of Figure~\ref{fig:stategraphtable} we reduce/goto state 10 (which
 contains two reduction actions, both referencing the same production), we
-immediately perform the next reduction/goto without storing a configuration
-which references state 10. Conversely, if we reduce/goto state 3, we must create
-a configuration, since it contains a shift action (as well as several reduce
-actions).
+skip it and immediately perform the next reduction/goto. Conversely, if we
+reduce/goto state 3, we must create a configuration, since it contains a shift
+action (as well as several reduce actions).
 
 
 \section{Experiment}
@@ -1666,16 +1659,16 @@ actions).
 In order to understand the performance of \cpctplus and \mf we conducted a large
 experiment on real-world Java code. In this section we outline our methodology
 (Section~\ref{methodology}) and results (Section~\ref{results}). Our experiment
-is fully repeatable and downloadable from \laurie{XXX}.
+is fully repeatable and downloadable from \emph{blinded for review}.
 
 
 \subsection{Methodolgy}
 \label{methodology}
 
 In order to evaluate \cpctplus and \mf, we need a concrete implementation. We
-implemented a new Yacc-compatible parsing library \emph{lrpar} (including
-associated libraries for LR table generation and so on, consisting of just under
-10KLoC) in Rust. Although intended as a production library, it has accidentally
+implemented a new Yacc-compatible parsing library \emph{lrpar} in Rust. including
+associated libraries for LR table generation and so on, lrpar is just under
+10KLoC. Although intended as a production library, it has accidentally
 played a part as a flexible test bed for experimenting with, and understanding,
 error recovery algorithms. We added a simple front-end which produces the output
 seen in e.g.~Figure~\ref{fig:javaerror}. We use lrpar for all experiments in
@@ -1693,24 +1686,22 @@ major editing events (e.g.~compiling a file) and sends them to a central
 repository. Crucially, one can see the source code associated with each event.
 What makes Blackbox most appealing as a
 data source is its scale and diversity: it has hundreds of thousands of users, and a
-correspondingly huge collection of source code.
+huge collection of source code.
 
-We first obtained a Java 1.5 Yacc grammar and modified it to support Java
+We first obtained a Java 1.5 Yacc grammar and updated it to support Java
 1.7.\footnote{Unfortunately, changes to the method calling syntax in Java 1.8
 mean that it is an awkward, though not impossible, fit for an LR(1) formalism
 such as Yacc, requiring substantial changes to the current Java Yacc grammar. We
 consider the work involved beyond that useful for this paper.} We then
 randomly selected source files from Blackbox's database (following the lead of
 \citet{santos18syntax}, we selected data from Blackbox's beginning until the end
-of 2017-12-31) which resulted from explicit compilation events. In other
-words, we selected inputs which a user had thought worthwhile enough to try
-compiling. We then ran such inputs through our Java 1.7 lexer. We immediately
+of 2017-12-31). We then ran such inputs through our Java 1.7 lexer. We immediately
 rejected files which didn't lex, since such files cannot be considered
 for parsing.\footnote{Happily, this also excludes outputs which can't
 possibly be Java source code. Some odd things are pasted into text
 editors.} We then parsed candidate files with our Java grammar and rejected any
 which did parse successfully, since there is little point running an error
-recovery algorithm on correct input. We collected \corpussize source files
+recovery algorithm on correct input. The final corpus consists of \corpussize source files
 (collectively a total of \corpussizemb{}MiB). Although we cannot distribute the
 source files directly (Blackbox, quite reasonably, requires each person with
 access to the source files to register with them), we do distribute the
@@ -1723,24 +1714,28 @@ succeeded in repairing all errors (true or false); and the number of errors
 found. Note that there are two ways of failing to repair all errors in a file:
 exceeding the timeout; or running out of plausible candidate repair sequences.
 The latter is rare, but does occur on occasion. Unlike
-\citet{corchuelo02repairing} lrpar does not implement traditional `panic mode'
-as a backup recovery mechanism: in our experience, if \cpctplus or \mf cannot
-repair an error, then using panic mode simply causes cascading errors. The time
-spent in error recovery is wall-clock time (measured with a monotonic clock)
-and covers all aspects of error recovery: it is suspended when normal parsing
+\citet{corchuelo02repairing} lrpar does not use traditional `panic mode'
+as a backup recovery mechanism (in our experience, if neither \cpctplus nor \mf can
+repair an error, then panic mode does not produce useful results). We
+measure the time spent in error recovery with a monotonic wall-clock timer,
+covering all aspects of error recovery from when the main parser first invokes
+error recovery until an updated parsing stack and parsing index are returned
+along with minimum cost repair sequences. The timer is suspended when normal parsing
 restarts and resumed if error recovery is needed again.
 
 In order to test hypothesis H2, we created a variant of \mf called \mfrev
-which reverses the ranking order and collected the same data as for \cpctplus
+and collected the same data as for \cpctplus
 and \mf. Instead of selecting from the minimum cost repair sequences which allow
 parsing to continue furthest, \mfrev selects from those which allow parsing to
 continue the least far. This models the worse case for other members of the
 \citet{fischer79locally} family which non-deterministically select a single minimum
-cost repair sequence.
+cost repair sequence. In other words, it allows us to understand how many
+more errors could be reported to users of other members of the
+\citet{fischer79locally} family compared to \mf.
 
 All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with 32GiB RAM running
-Debian 9. We used Rust nightly-2018-03-25 to compile lrpar (the full
-\texttt{Cargo.lock} file necessary to reproduce the build is included in our
+Debian 9. We used Rust nightly-2018-03-25 to compile lrpar (the two
+\texttt{Cargo.lock} files necessary to reproduce the build are included in our
 experimental repository).
 
 
@@ -1790,8 +1785,10 @@ recovery time suggests that only a small number of outliers cause error recovery
 take long enough to be perceptible to humans; this is confirmed by the
 histogram in Figure~\ref{fig:results:mf_histogram}. \mf's failure rate is only
 \mfcpctplusfailurerateratio that of \cpctplus's, though in absolute terms
-both are already extremely low. \mf also has noticeably better median and (more
-importantly) mean repair times, though, again, in absolute terms both are
+both are already extremely low. \mf also has noticeably better median and 
+mean repair times (the latter, in our opinion, more important, since users
+are more sensitive to worse case than best case performance) though,
+again, in absolute terms both are
 already fairly low. These results strongly validate Hypothesis H1.
 
 \begin{figure}[t]
@@ -1801,8 +1798,9 @@ $x$ axis shows the number of error locations and the $y$ axis is a logarithmic
 scale for the number of files. Note that we have elided outliers beyond $x=300$
 (5 for \mf; 7 for \mfrev) to prevent the significant part of the distribution
 from being visually squashed. In essence, the entire distribution is skewed
-slightly rightwards by \mfrev, showing that many files suffer slightly more from
-cascading errors in the absence of repair sequence ranking.}
+slightly rightwards by \mfrev, showing that \mfrev makes error recovery in many
+files slightly worse (rather than making error recovery in a small number of
+files a lot worse).}
 \label{fig:results:mf_mfrev_histogram}
 \end{figure}
 
@@ -1811,17 +1809,19 @@ far each allows parsing to continue and choose from those which allow parsing to
 continue furthest. \mfrev, in contrast, selects from those which allow parsing
 to continue the least far. \mfrev shows that the ranking technique used in \mf substantially
 reduces the potential for cascading errors: \mfrev leads to
-\mfreverrorlocsratioovermf more error locations being reported to users than
-with \mf. As Figure~\ref{fig:results:mf_mfrev_histogram} shows, most files
-have one or two more error locations with \mfrev: in other words, \mfrev
-makes error recovery in a lot of files slightly worse (rather than making error
+\mfreverrorlocsratioovermf more error locations being reported to users
+relative to \mf. As the histogram in Figure~\ref{fig:results:mf_mfrev_histogram} shows,
+the distribution of error locations in \mf and \mfrev is extremely
+similar, with the latter simply shifted slightly to the right.
+In other words, \mfrev
+makes error recovery in many files slightly worse (rather than making error
 recovery in a small number of files a lot worse). This strongly validates
 Hypothesis H2.
 
 
 \section{Threats to validity}
 
-The most obvious threat to validity is our results comparing \cpctplus and \mf.
+The most obvious threat to validity is our performance comparison of \cpctplus and \mf.
 They are specific to our implementation context and it is possible that their
 relative positions could change if implemented in a different fashion.
 Nevertheless, the absolute performance numbers for both are already good, and
@@ -1830,17 +1830,17 @@ better implementations will only improve our view of both algorithms.
 A less obvious problem is that, even after repair sequence ranking, \cpctplus
 and \mf are still non-deterministic. This is because, in general, multiple
 repair sequences may have identical effects up to $N_\textit{try}$ tokens, but
-cause different effects after that value. Thus our results inevitably vary a
-little from run to run. In future versions of this paper we will produce
+cause different effects after that value. Thus our results inevitably vary
+very slightly from run to run. In the next version of this paper we will produce
 confidence intervals from multiple runs of the experiment, but we lacked
-the significant time (approximately 15 days) necessary to run them.
+the 30 days running time necessary for this version of the paper.
 
 Blackbox contains an astonishingly large amount of source code but has two
 inherent limitations. First, it only contains Java source code. This means that
 our main experiment is limited to one grammar: it is possible that our
-techniques do not generalise beyond the Java grammar (though previous
-work in the \citet{fischer79locally} family suggests that different grammars
-make relatively little difference~\cite[p.~109]{cerecke03phd}). However, we are not aware
+techniques do not generalise beyond the Java grammar, though \citet[p.~109]{cerecke03phd}
+suggests that there different grammars make relatively little difference
+to the performance of such error recovery algorithms. Unfortunately, we are not aware
 of an equivalent repository for other language's source code. One solution is
 to mutate correct source files (e.g.~randomly deleting tokens), thus
 obtaining incorrect inputs which we can later test: however, it is difficult
@@ -1848,11 +1848,19 @@ to uncover and then emulate the numerous, sometimes surprising, ways that
 humans make syntax errors, particularly as some are language specific
 (though there is some early work in this area~\cite{dejonge12automated}).
 Second, Blackbox's data comes largely from students,
-who are more likely than average to be somewhat novice programmers. It is likely
+who are more likely than average to be somewhat novice programmers. It is clear
 that novice programmers make some different syntax errors -- or, at least, make
-the same syntax errors more often -- relative to advanced programmers. It is
-thus possible that a corpus consisting of programs from advanced programmers
-would lead to different results.
+the same syntax errors more often -- relative to advanced programmers. An
+extreme example is the furthest outlier elided from
+Figure~\ref{fig:results:mf_mfrev_histogram}: its main function consists of 1001
+lines, each with an integer incrementing from 0 to 1000 (inclusive), and each
+with the same syntax error --- an advanced programmer would have used a
+\texttt{for} loop. It is
+thus possible that a corpus consisting solely of programs from advanced programmers
+would lead to slightly different results. We consider this a minor issue,
+partly because we doubt that the overall picture would change much given
+such a corpus, and partly because a good error recovery algorithm should
+deal well with diverse users.
 
 Our corpus was parsed using a Java 1.7 grammar, but some members of the corpus
 were almost certainly written using Java 1.8 features. Many -- though not all -- Java 1.8
@@ -1881,7 +1889,7 @@ sequence reported may be very different from the fix the user considers
 appropriate (note that this is distinct from the cascading error problem,
 which our ranking of repair sequences in Section~\ref{rankingrepairs} partly
 addresses). Perhaps the most common -- and without doubt the most frustrating
--- example of this is missing a \texttt{\}} character within the method of a
+-- example of this is missing a `\texttt{\}}' character within the method of a
 Java-like languages. \citet{santos18syntax} use
 machine learning to train a system on syntactically correct programs: when a
 syntax error is encountered, they use their model to suggest appropriate global
@@ -1929,26 +1937,30 @@ significantly more complex than our merging of compatible configurations; since 
 gives us acceptable performance in practise, we have not investigated other
 pruning mechanisms.
 
-\cpctplus and \mf take only the grammar and user's input into account. However,
-it is possible to take further information, such as nesting (e.g.~taking into
-account curly brackets) and indentation, when undertaking error recovery. The
-advantage of such information is that it can reduce the search space by making
-educated guesses about the user's true intentions. The most sophisticated
+\cpctplus and \mf take only the grammar and token types into account. However,
+it is possible to use additional information, such as nesting (e.g.~taking into
+account curly brackets) and indentation when recovering from errors. The
+advantage of such information is that it can allow one to make
+informed guesses about the user's true intentions, reducing the size of the search space
+significantly. The most sophisticated
 approach in this vein we are aware of is that of \citet{deJonge12natural} which
 uses factors such as regionality and indentation to improve the quality of error
 recovery. Although judging performance across time is difficult, it appears to
 be somewhat slower than \mf, failing to recover around 20\% of files within 1s.
-It would be interesting to combine these with \mf.
+It would be interesting to combine additional sources of information with \mf.
 
 A very different approach is that taken by \cite{pottier16reachability}: rather
 than try and recover from errors directly, it reports precisely and accurately
 how the user's input caused the parser got into an error state (e.g.~`I was
 parsing an expression but I would have expected a close bracket here'), and
 possible routes out of the error (e.g.~`A function or variable declaration is
-valid here'). This involves significant manual work, though the approach has
+valid here'). This involves significant manual work, as every parser state
+(1148 in the Java grammar we use) in which an error can occur needs to be
+manually marked up, though the approach has
 various techniques to lessen the problem of maintaining messages as a grammar
 involves. This approach seems complementary to ours: in an ideal world it would
-be possible to give precise, human-orientated, messages whilst also showing
+be possible to give precise, high-level, messages about the problem
+encountered whilst also showing
 repair sequences that allowed parsing to continue. One challenge may be to make
 the top ranked repair sequences match the manually written messages.
 
@@ -1962,24 +1974,32 @@ We are not aware of any error recovery algorithms that are formally verified.
 Indeed, as shown in this paper, several have serious flaws. We are only aware of
 two works which have begun to consider what correctness for such algorithms might mean:
 \citet{zaytsev14formal} provides a brief philosophical justification of the need
-and \citet{gomezrodriguez10error} provides an outlines of an approach. Until
+and \citet{gomezrodriguez10error} provides an outline of an approach. Until
 such time as someone verifies a full error recovery algorithm, it is difficult
 to estimate the effort involved, or what issues may be uncovered.
 
 
 \section{Conclusions}
 
-In this paper we have shown that it is possible to do a better job of error
-recovery than is currently the case, and that this can be done fast enough to be
-practical in existing compilers. In particular, creating the complete set of
-minimum cost repair sequences significantly reduces the cascading error problem.
-We believe that both \cpctplus and \mf give good enough results to be usable in
-practise. If time is scarce, we suggest implementing \cpctplus, since it avoids
+In this paper we have shown that error recovery algorithms in the
+\citet{fischer79locally} family can run fast enough to be usable in the real
+world. Furthermore, extending such algorithms to produce the complete set of
+minimum cost repair sequences allows better feedback to users and significantly
+reduces the cascading error problem. If time is scarce, we suggest implementing
+\cpctplus, since it avoids
 having to calculate and store distance tables. However, the extra effort
-involved in implementing \mf -- roughly 250LoC more than \cpctplus -- is small
-enough to justify the performance improvement. In particular, users who require
-the best performance -- e.g.~when error recovery is used in an interactive
-environment -- are likely to prefer \mf over \cpctplus.
+involved in implementing \mf -- roughly 250LoC more than \cpctplus -- is arguably small
+enough to justify the performance improvement. In particular, users who need
+the best performance possible -- particularly if error recovery is used
+in an interactive environment -- may prefer \mf over \cpctplus.
+
+Looking to the future, we (perhaps immodestly) suspect that \mf is `good enough'
+to serve as the main representative of the \citet{fischer79locally} family.
+However, we do not think that \mf on its own is the perfect solution. We suspect
+that, in the future, multi-phase solutions will be developed. For example, one
+may use a machine-learning approach such as that of \citet{santos18syntax} as a
+first-step and when it fails (which it will probably do fairly often) fall back
+to \mf.
 
 \begin{acks}
 We are particularly grateful to the Blackbox developers for allowing us access
