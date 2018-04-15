@@ -521,8 +521,8 @@ to find a minimum cost repair sequence consisting of: \textit{insert T}
 or \textit{shift} (`parse the token at the current offset'). The
 algorithm completes successfully if it reaches an accept state or shifts
 `enough' tokens ($N_\textit{shifts}$; set at 3 in \citet{corchuelo02repairing}),
-or unsuccessfully if it consumes `too many' tokens (10 in \citet{corchuelo02repairing}).
-In order to do this, the algorithm
+or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at 10
+in \citet{corchuelo02repairing}). In order to do this, the algorithm
 operates on \emph{configurations}, which store the current search state;
 configurations are searched for their neighbours until a success configuration
 is found.
@@ -621,7 +621,7 @@ sequence}) triple where \emph{repair sequence} is guaranteed to be a minimum
 cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\[9pt]
 %
 The algorithm maintains a todo list of lists: the first sub-list contains
-configurations of cost 0, the second sub-list contains configurations of cost 1 and
+configurations of cost 0, the second sub-list configurations of cost 1, and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
 lowest cost configuration $n$ is picked (line 4--8). If $n$ represents an accept state (line
@@ -632,8 +632,7 @@ then it is discarded (lines 12, 13). Otherwise, $n$'s neighbours
 are gathered using the $\crarrow$ relation (lines 14, 32--35). To avoid
 duplicate repairs, \textit{delete} repairs never follow \textit{insert} repairs
 (lines 15--17). Each neighbour has its repairs costed (line 18) and is then
-assigned to the correct todo sub-list (lines 21--22) after they were
-added to the todo list (line 19-20).\\[9pt]
+assigned to the correct todo sub-list (lines 21--22).\\[9pt]
 %
 The \texttt{rprs\_cst} function returns the cost of a repair sequence. Inserts
 and deletes cost 1, shifts 0.}
@@ -661,8 +660,8 @@ unclear whether non-uniform token costs are useful in practise
 \subsection{Ensuring that minimum cost repair sequences aren't missed}
 \label{corchuelo:kimyi}
 
-\textsc{CR Shift 1} has two flaws that mean that it is
-unable to generate some minimum cost repair sequences.
+\textsc{CR Shift 1} has two flaws which prevent it generating
+all possible minimum cost repair sequences.
 
 \begin{figure}[tb]
 \small
@@ -695,22 +694,21 @@ unable to generate some minimum cost repair sequences.
 }
 \]
 \vspace{-10pt}
-\caption{\textsc{CR Shift 2} fixes the problem that
-\textsc{CR Shift} always forces a shift to occur, which misses repair sequences
-whose final repair is a delete: it allows reductions/gotos to occur without
-a corresponding shift. \textsc{CR Shift 3} fixes the problem that both
-\textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shift
-repairs in one go, skipping `intermediate' repair positions. \textsc{CR
-Shift 3} generates at most one shift, exploring all intermediate repair
-positions.}
+\caption{\textsc{CR Shift 1} always consumes input, when sometimes performing
+one or more reduction/gotos without consuming input would be better. \textsc{CR
+Shift 2} addresses this issue. Both \textsc{CR Shift 1} and \textsc{CR Shift 2}
+generate multiple shift repairs in one go, which causes them to skip
+`intermediate' (and sometimes important) configurations. \textsc{CR Shift 3}
+generates at most one shift, exploring all intermediate configurations.}
 \label{fig:corchuelo:kimyi}
 \vspace*{-8pt}
 \end{figure}
 
 
 \begin{figure}[t]
+\hspace*{-7pt}
 \begin{tabular}{llll}
-\begin{subfigure}{0.02\textwidth}
+\begin{subfigure}{0.012\textwidth}
 \vspace{-31.5pt}
 \caption{}
 \label{lst:crshift2:crshift2}
@@ -723,7 +721,7 @@ Insert "PLUS", Shift "3", Shift "+", Insert "INT"
 Insert "MULT", Shift "3", Shift "+", Insert "INT"
 \end{lstlisting}
 &
-\begin{subfigure}{0.02\textwidth}
+\begin{subfigure}{0.012\textwidth}
 \vspace{-31.5pt}
 \caption{}
 \label{lst:crshift2:crshift3}
@@ -738,18 +736,18 @@ Insert "PLUS", Shift "3", Delete "+"
 \vspace{-10pt}
 \caption{Given the input `\texttt{2 3 +}' and the grammar from
 Figure~\ref{fig:exprgrammar}, \textsc{CR Shift 1} is unable to find any repair
-sequences (because it does not perform the reductions/gotos necessary after
-\textit{insert} repairs at the end of the input to reach an accept state). With
-\textsc{CR Shift 2} it can find 4 minimum cost repair sequences
-(\subref{lst:crshift2:crshift2}) and with \textsc{CR Shift 3} a further 2
+sequences because it does not perform the reductions/gotos necessary after
+the final \textit{insert} or \textit{delete} repairs to reach an accept state.
+\textsc{CR Shift 2} can find 4 minimum cost repair sequences
+(\subref{lst:crshift2:crshift2}). \textsc{CR Shift 3} can find a further 2
 minimum cost repair sequences (i.e.~6 in total)
 (\subref{lst:crshift2:crshift3}).}
 \label{fig:crshift2:example}
 \end{figure}
 
 First, \textsc{CR Shift 1} requires at least one token to be shifted. However,
-after a non-shift repair, all that may be needed to reach a useful next configuration
-(or indeed an \textit{accept} state) is one or more reductions/gotos via
+after a non-shift repair, all that may be needed to reach a useful next configuration,
+or an \textit{accept} state, is one or more reductions/gotos via
 \textsc{LR Reduce}. \textsc{CR Shift 2} in Figure~\ref{fig:corchuelo:kimyi}
 shows the two-phase fix which addresses this problem.
 We first change the condition $0 < j \leq N_\textit{shifts}$ to $0 \leq j \leq
@@ -761,15 +759,15 @@ to be made, even if that progress does not require consuming any input.
 
 Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
 at a time. This causes them to skip intermediate
-positions from which minimum cost repair sequences may be found
+configurations from which minimum cost repair sequences may be found
 (this problem, and the basis of a fix, derive from \cite[p.~12]{kimyi10astar},
 though their suggestion suffers from the same problem as \textsc{CR Shift 1}).
 The solution is simple: at most one shift can be generated at any one
-time, so that intermediate positions are not missed. \textsc{CR Shift 3} in
+time. \textsc{CR Shift 3} in
 Figure \ref{fig:corchuelo:kimyi} (as well as incorporating the fix from
 \textsc{CR Shift 2}) generates at most one shift repair at a time. Relative to
 \textsc{CR Shift 1}, it is simpler, though it also inevitably slows down the
-search for repair sequences, as more are tried.
+search, as more configurations tried.
 
 The problems with \textsc{CR Shift 1}, in particular, can be severe.
 Figure~\ref{fig:crshift2:example} shows an example input where \textsc{CR Shift
@@ -789,7 +787,7 @@ First, rather than use a general queue data-structure (probably based on a
 tree), we use a similar queue data-structure to
 \citet[p.~25]{cerecke03phd}. This consists of one sub-list per cost (i.e.~ the
 first sub-list contains configurations
-of cost 0, the second sub-list contains configurations of cost 1 and so on).
+of cost 0, the second sub-list configurations of cost 1 and so on).
 Since we always know what cost we are currently investigating,
 finding the next todo element requires only a single \texttt{pop}
 (line 8 of Figure~\ref{fig:corchuelo:algorithm}). Similarly,
@@ -797,7 +795,7 @@ adding elements requires only an \texttt{append} to the relevant sub-list
 (lines 18, 21, 22). This
 data-structure is a good fit because costs never get
 big (double digits is unusual for real-world
-grammars); and each neighbour generated from a configuration with cost $c$ has
+grammars) and each neighbour generated from a configuration with cost $c$ has
 a cost $\geq c$.
 
 \label{duplicateconfigurations}
@@ -812,10 +810,10 @@ near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 weeds out duplicates with near-identical performance to an unordered hashset.
 We hash configurations, and compare them for equality, based on their parsing stack and
 remaining input (i.e.~the repair sequence is not used for hashing or
-equality). Since we only record configurations which we have yet to search
-(i.e.~we don't record configurations we have already searched), we cannot detect
-all possible duplicates. However, this scheme finds the vast majority, while
-avoiding the impractical memory overhead of recording past congiurations.
+equality). Since we only record configurations which we have yet to
+search, we cannot detect
+all duplicates. However, this scheme finds the vast majority, while
+avoiding the impractical memory overhead of recording past configurations.
 Depending on the example, this can lead to 20\% or
 more of configurations being filtered out, with a commensurate effect on
 performance.
@@ -847,16 +845,18 @@ better for a garbage collected language.
 
 The algorithm as described to this point non-deterministically completes as soon
 as it has found a single minimum cost repair sequence.
-In this section we show how we can efficiently find
+In this section we show how to efficiently find
 the complete set of minimum cost repair sequences.
 
 The basis of a solution is simple: when a repair sequence of cost $c$ is found to
 be successful, we discard all repair sequences with cost $> c$, and continue
 exploring configurations in cost $c$ (including, transitively, all neighbours that are
-also of cost $c$), recording each successful configuration we encounter. However, this
+also of cost $c$). Each successful configuration is recorded and, when all configurations
+in $c$ have been explored, the set of successful configurations returned. However, this
 requires that we do not throw away duplicate configurations, as they may contain distinct
-repair sequences. Unfortunately, turning off duplicate detection is a big
-performance loss, not least because there can be
+repair sequences. Turning off duplicate detection is a big
+performance loss on its own. The problem is compounded because even after we
+have found the first successful configuration, there may be
 many remaining configurations in $c$, which may, transitively, have many neighbours.
 
 We therefore need a scheme which gives us most of the performance benefit of
@@ -874,19 +874,17 @@ are compatible:
 ends in a delete.
 \end{enumerate}
 
-The first condition is a result of having to take into account
-that a configuration can be deemed successful in two ways: if it reaches an accept state (line 9,
-Figure~\ref{fig:corchuelo:algorithm}) or if it ends in $N_\textit{shifts}$ shift
-repairs (line 10). The former case is only affected by the parsing stack (and
-thus doesn't affect compatible configurations which have identical parsing stacks),
-but the latter requires care with the number of shift repairs at
-the end of the sequence. This is because when we perform the $N_\textit{shifts}$
-check, we only check one element of a merge: thus the check is potentially
-non-symmetric. For example, if the `dominant' part of the merge had fewer shifts
-at the end of its repair sequence than the `subsumed' part, then the check would
-fail, but reversing the dominant and subsumed parts may lead to success. It is
-therefore only safe to merge repair sequences which end in the same number of
-shifts.
+The first condition is a direct consequence of the fact that a configuration
+is deemed successful if it ends in $N_\textit{shifts}$ shift
+repairs. When we merge configurations, one part of the merge is `dominant'
+(i.e.~checked for $N_\textit{shifts}$) and the other `subsumed'. Thus we have to
+maintain symmetry between the dominant and subsumed parts to prevent the
+dominant part accidentally preventing the subsumed part from being recorded as
+successful. In other words, if the dominant part of the merge had fewer shifts
+at the end of its repair sequence than the subsumed part, then the
+$N_\textit{shifts}$ check would fail, but reversing the dominant and subsumed
+parts may lead to success. It is therefore only safe to merge repair sequences
+which end in the same number of shifts.
 
 The second condition relates to the weak form of compatible merging inherited
 from \citet[p.~8]{corchuelo02repairing}: delete repairs are never followed by an
@@ -904,14 +902,13 @@ An example of compatible configuration merging can be seen in
 Figure~\ref{fig:cpctplus:full}. Note that, as with our earlier duplicate
 detection, we cannot merge all compatible configurations, since we only record
 configurations we have yet to search. Nevertheless, this is still a powerful
-optimisation. Indeed, our implementation of compatible configurations subsumes
-our detection of duplicate configurations
-(Section~\ref{duplicateconfigurations}), relying on the fact that our todo data-structure
+optimisation, and surprisingly easy to implement. We simply reuse
+the fact that our todo data-structure
 is a list-of-ordered-hashsets. We need only loosen configuration equality to allow compatible
 repair sequences to be considered as equal. This leads to efficient
 detection of compatible configurations.
 
-Conceptually, merging two configurations together is simple: each configuration simply
+Conceptually, merging two configurations together is simple: each configuration
 needs to store a set of repair sequences, each of which is updated as further
 repairs are found. However, this is an extremely inefficient representation as
 the sets involved need to be copied and extended as each new repair is found.
@@ -935,10 +932,23 @@ element as well as the merged parent pointer trees of the second element.
 \label{rankingrepairs}
 
 The \textsc{CR Shift 3} rule and our ability to find the complete
-set of minimum cost repair sequences are two of the three key ingredients
-in our our new error recovery algorithm. In this subsection
-we make one further addition to the algorithm, calling the result \cpctplus (in
-homage to its roots in \citet{corchuelo02repairing}).
+set of minimum cost repair sequences are two of the key ingredients
+in our new error recovery algorithm. In this subsection
+we make two further additions to the algorithm, calling the result \cpctplus (in
+homage to \citet{corchuelo02repairing}).
+
+\begin{figure}[t]
+\includegraphics[width=1.0\textwidth]{cpctplus}
+\caption{An elided visualisation of the search tree for \cpctplus with the input
+`2 3 +' and the grammar from Figure~\ref{fig:exprgrammar}. The left hand side of
+the tree shows the `normal' parser at work, which hits an error as soon as it
+has shifted the token `\texttt{2}': at this point, \cpctplus starts operating.
+As this shows, the search encounters various dead ends, as well as successful
+routes. As shown in Figure~\ref{fig:crshift2:example}, this input has 6 minimum
+cost repair sequences, but the search only has 5 success configurations, because
+two routes are merged together.}
+\label{fig:cpctplus:full}
+\end{figure}
 
 \begin{figure}[t]
 \begin{tabular}{p{0.02\textwidth}p{0.45\textwidth}p{0.02\textwidth}p{0.45\textwidth}}
@@ -978,9 +988,9 @@ sequences found: [\textit{insert} \texttt{,}], [\textit{insert} \texttt{?}], and
 [\textit{insert} \texttt{(}]. These repair sequences are then ranked by how far
 they allow parsing to continue successfully. [\textit{insert} \texttt{,}] leads
 to the rest of the file being parsed without further error. [\textit{insert}
-\texttt{?}] causes a cascading error at `\texttt{;}` which must then be resolved
+\texttt{?}] causes a cascading error at `\texttt{;}' which must then be resolved
 by completing the ternary expression started by `?' (e.g.~changing line 3 to
-\texttt{T ? y : this;}). Similarly, [\textit{insert} \texttt{(}] causes a
+`\texttt{T ? y : this;}'). Similarly, [\textit{insert} \texttt{(}] causes a
 cascading error at `\texttt{;}' which must then be resolved by inserting a
 `\texttt{)}'. Since [\textit{insert} \texttt{,}] is ranked more highly than the
 other repair sequences, the latter are discarded, leading to the parsing output shown
@@ -989,7 +999,7 @@ in (\subref{lst:ranking:output}). javac in contrast attempts to insert
 \label{fig:ranking}
 \end{figure}
 
-The final step in our new algorithm allows us to somewhat compensate for the
+The penultimate step in our new algorithm allows us to somewhat compensate for the
 small value of $N_\textit{shifts}$. This value has to be a small integer (we
 use 3, the value suggested by \citet{corchuelo02repairing})
 because each additional token searched exponentially increases the
@@ -1004,7 +1014,8 @@ why we rank the configurations, and not the repair sequences, is that we only
 need to rank one repair sequence for each merged configuration, a useful
 optimisation. We then expand the top ranked configurations into repair
 sequences, remove shifts from the end of repair sequences, and
-remove duplicates.
+remove duplicates. Figure~\ref{fig:cpctplus:full} shows a visualisation of \cpctplus
+in action.
 
 Particularly on real-world grammars, selecting the top-ranked sequences
 substantially decreases cascading errors sequence causing cascading errors (see
@@ -1013,36 +1024,29 @@ It also does so for very little additional computational cost as the complete se
 minimum cost repair sequences is much smaller than the number of configurations
 searched.
 
-\begin{figure}[t]
-\includegraphics[width=1.0\textwidth]{cpctplus}
-\caption{An elided visualisation of the search tree for \cpctplus with the input
-`2 3 +' and the grammar from Figure~\ref{fig:exprgrammar}. The left hand side of
-the tree shows the `normal' parser at work, which hits an error as soon as it
-has shifted the token `\texttt{2}': at this point, \cpctplus starts operating.
-As this shows, the search encounters various dead ends, as well as successful
-routes. As shown in Figure~\ref{fig:crshift2:example}, this input has 6 minimum
-cost repair sequences, but the search only has 5 success configurations, because
-two routes are merged together.}
-\label{fig:cpctplus:full}
-\end{figure}
-
-Figure~\ref{fig:cpctplus:full} shows a visualisation of \cpctplus
-operating on the input `2 3 +' and the grammar from Figure~\ref{fig:exprgrammar}.
-
-
-\section{The Kim and Yi algorithm}
-\label{kimyi}
-
-Algorithms in the \citet{fischer79locally} family have unbounded worse case
-performance, which is easily seen on inputs with unbalanced brackets
+The final part of \cpctplus relates to the use of $N_\textit{total}$ in
+\citet{corchuelo02repairing}. As with all members of the
+\citet{fischer79locally} family, \cpctplus is not only unbounded in time, but
+potentially unbounded in memory. $N_\textit{total}$ is an attempt to stop the
+algorithm from running unacceptably long. Unfortunately it is impossible to find
+a good value for this, as `too long' is entirely dependent on the grammar and
+erroneous input. This can be most easily seen on inputs with unbalanced brackets
 (e.g.~expressions such as `\texttt{x = f(();}'): each additional unmatched
 bracket exponentially increases the search space. On a modern machine
 with a Java grammar, the \cpctplus algorithm takes about 0.3s to find
 the complete set of minimum cost repair sequences for 3 unmatched brackets, 3s
 for 4 unmatched brackets, and 6 unmatched brackets caused our 32GiB test machine
-to run out of RAM.
+to run out of RAM. We believe that the only acceptable solution is a timeout: up
+to several seconds is safe in our experience. For the purposes of this paper
+this problem is solved for us, because we define a timeout of 0.5s to be the
+longest acceptable to users.
 
-While such cases are fairly rare, it would be better if they did not occur at
+
+\section{The Kim and Yi algorithm}
+\label{kimyi}
+
+While performance problems such as those with unmatched brackets
+are fairly rare, it would be better if they did not occur at
 all. \citet{kimyi10astar} propose a new error recovery -- which is in the
 \citet{fischer79locally} family, but by far its most radical member --  which
 claims to hugely reduce such performance problems. This work has not,
