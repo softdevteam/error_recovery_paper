@@ -1612,6 +1612,30 @@ configuration will be checked for success at the current cost, and is not
 accidentally deferred until later in the todo list.
 
 
+\subsection{Skipping intermediate reduction/gotos}
+
+\textsc{MF Reduce} can be optimised further than is easily expressible in the
+reduction rules of Figure~\ref{fig:mf:rules}. As written, each reduction/goto
+gives rise to a configuration whose neighbours are explored as normal. However,
+when two or more reduction/gotos are valid in succession, this can be
+unproductive as certain operations are impossible in the middle of such a chain.
+As can be seen from \textsc{LR Reduce}, reduction/gotos are taken based on the
+next token in the user's input: a sequence of configurations [\textit{reduce},
+\textit{delete}, \textit{reduce}], for example, is nonsensical, as the
+next token in the user's input cannot suddenly change in the middle of a
+sequence of reduction/gotos.
+
+Our implementation of \textsc{MF Reduce} therefore skips configurations which
+reduce/goto states that, in the statetable, both: only contain reductions; and
+where all reductions reference the same production. For example, if, for the
+grammar of Figure~\ref{fig:stategraphtable} we reduce/goto state 10 (which
+contains two reduction actions, both referencing the same production), we
+immediately perform the next reduction/goto without storing a configuration
+which references state 10. Conversely, if we reduce/goto state 3, we must create
+a configuration, since it contains a shift action (as well as several reduce
+actions).
+
+
 \section{Experiment}
 \label{experiment}
 
