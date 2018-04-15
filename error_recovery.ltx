@@ -286,9 +286,11 @@ allow parsing to continue the furthest.
 \end{description}
 
 We also strongly validate this hypothesis. We do this by comparing `normal' \mf
-with a simple variant \mfrev which always selects the worst minimal cost repair
-sequence: \mfrev leads to \mfreverrorlocsratioovermf more errors being raised
-(i.e.~it substantially worsens the cascading error problem).
+with a simple variant \mfrev, which always selects the worst minimum cost repair
+sequence, modelling the worst case of previous approaches in the
+\citet{fischer79locally} family which non-deterministically select a single
+minimum cost repair sequence. \mfrev leads to \mfreverrorlocsratioovermf more
+errors being raised (i.e.~it substantially worsens the cascading error problem).
 
 We first use one of the more recent algorithms in this family -- that of
 \citet{corchuelo02repairing} -- as a base, correcting and substantially extending it
@@ -313,6 +315,41 @@ recovery system.
 
 
 \section{Background}
+
+We assume a high-level understanding of the mechanics of parsing in this paper,
+but in this section we provide a handful of definitions, and a brief refresher
+of relevant low-level details, needed to understand the rest of this paper.
+Although the parsing tool we created for this paper is written in Rust, we
+appreciate that this is still an unfamiliar language to most readers: code examples
+are therefore given in Python which, we hope, is familiar to most.
+
+Although there are many flavours of parsing, the \citet{fischer79locally} family
+of error recovery algorithms, including those presented in this paper, are based on LR
+parsing~\cite{knuth65lllr}. As well as describing the largest practical set
+of unambiguous grammars, LR parsing remains one of the most widely used parsing
+approaches due to the ubiquity of Yacc~\cite{johnson75yacc} and its
+descendants (which include the Rust parsing tool we created for this paper).
+We use Yacc syntax throughout this paper so that
+examples can easily be tested in Yacc-compatible parsing tools.
+
+Yacc-like tools take in a Context-Free Grammar (CFG) and produce a parser from
+it. The CFG has one or more \emph{rules}; each rule has a name and one or more
+\emph{productions} (often called `alternatives'); each production contains one
+or more \emph{symbols}; and a symbol is either a \emph{terminal} (i.e.~a token
+type such as \texttt{INT}) or a \emph{nonterminal} (i.e.~a reference to another rule in
+the grammar). One rule is designated the \emph{start rule}. The resulting parser
+takes as input a stream of tokens, each of which has a \emph{type}
+(e.g.~\texttt{INT}) and a \emph{value} (e.g.~\texttt{123}).\footnote{In practise, the
+system we outline requires a \emph{lexer} which splits string inputs up into
+tokens. In the interests of brevity, we assume the existence of a tool such as
+Lex which performs this task.} Strictly speaking, parsing is the act of
+determining whether a stream of tokens is correct with respect to the underlying
+grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
+to specify `semantic actions' which are executed when a production in the grammar is
+successfully matched. In this paper, we assume that the semantic actions build
+a \emph{parse tree}, ordering the tokens into a tree of nonterminal nodes
+(which can have children) and terminal nodes (which cannot have children)
+relative to the underlying grammar.
 
 \begin{figure}[t]
 \begin{minipage}{0.44\textwidth}
@@ -382,7 +419,7 @@ $s$ & Term & Factor & Expr\\
 the grammar are labelled \texttt{(I)} to \texttt{(VI)}. In the stategraph: S($x$)
 means `shift to state $x$'; R($x$) means `reduce production $x$ from the
 grammar' (e.g.~the state 3, terminal `\texttt{+}' reduction is of production IV
-i.e. the production `\texttt{Term: Factor;}').
+i.e.~`\texttt{Term: Factor;}').
   Each item within a state $[N \colon \alpha \bullet \beta]$ references one
   of the rule $N$'s productions; $\alpha$ and $\beta$ each
 represent zero or more symbols; with the \emph{dot} ($\bullet$) representing
@@ -391,41 +428,6 @@ represent zero or more symbols; with the \emph{dot} ($\bullet$) representing
 \label{fig:stategraphtable}
 \label{fig:exprgrammar}
 \end{figure}
-
-We assume a high-level understanding of the mechanics of parsing in this paper,
-but in this section we provide a handful of definitions, and a brief refresher
-of relevant low-level details, needed to understand the rest of this paper.
-Although the parsing tool we created for this paper is written in Rust, we
-appreciate that this is still an unfamiliar language to most readers: code examples
-are therefore given in Python which, we hope, is familiar to most.
-
-Although there are many flavours of parsing, the \citet{fischer79locally} family
-of algorithms, including those presented in this paper, are based on LR
-parsing~\cite{knuth65lllr}. As well as describing the largest practical set
-of unambiguous grammars, LR parsing remains one of the most widely used parsing
-approaches due to the ubiquity of Yacc~\cite{johnson75yacc} and its
-descendants (which include the Rust parsing tool we created for this paper).
-We use Yacc syntax throughout this paper so that
-examples can easily be tested in Yacc-compatible parsing tools.
-
-Yacc-like tools take in a Context-Free Grammar (CFG) and produce a parser from
-it. The CFG has one or more \emph{rules}; each rule has a name and one or more
-\emph{productions} (often called `alternatives'); each production contains one
-or more \emph{symbols}; and a symbol is either a \emph{terminal} (i.e.~a token
-type such as \texttt{INT}) or a \emph{nonterminal} (i.e.~a reference to another rule in
-the grammar). One rule is designated the \emph{start rule}. The resulting parser
-takes as input a stream of tokens, each of which has a \emph{type}
-(e.g.~\texttt{INT}) and a \emph{value} (e.g.~\texttt{123}).\footnote{In practise, the
-system we outline requires a \emph{lexer} which splits string inputs up into
-tokens. In the interests of brevity, we assume the existence of a tool such as
-Lex which performs this task.} Strictly speaking, parsing is the act of
-determining whether a stream of tokens is correct with respect to the underlying
-grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
-to specify `semantic actions' which are executed when a production in the grammar is
-successfully matched. In this paper, we assume that the semantic actions build
-a \emph{parse tree}, ordering the tokens into a tree of nonterminal nodes
-(which can have children) and terminal nodes (which cannot have children)
-relative to the underlying grammar.
 
 The beauty of LR parsing stems from the way a parser is constructed. The CFG is
 first transformed into a \emph{stategraph}, which is a statemachine
@@ -436,8 +438,8 @@ nonterminals. Since even on a modern machine, a canonical
 build, and a surprising amount of memory to store, we use the state merging
 algorithm of \citet{pager77practical} to merge together compatible
 states.\footnote{Unfortunately \citet{pager77practical} can over-merge states when conflict
-resolution is used \cite[p.~3]{denny10ielr} (i.e.~when users give Yacc an
-ambiguous grammar and use its precedence rules to disambiguate the grammar).
+resolution is used \cite[p.~3]{denny10ielr} (i.e.~when Yacc uses its
+precedence rules to turn an ambiguous input into an unambiguous LR parser).
 Since our error recovery approach is intended to be independent of the merging
 approach, it should be possible to use the more sophisticated state merging
 approach of \cite{denny10ielr} without problems.} The
@@ -459,9 +461,9 @@ A full LR parse $\lrarrowstar$ repeatedly applies the two $\lrarrow$ rules
 until neither applies, which means that \textsf{action}$(s_n, t_0)$ is either:
 $\textit{accept}$ (i.e.~the input has been fully parsed); or
 $\textit{error}$ (i.e.~an error has been detected at the terminal $t_0$). A
-full parse of takes a starting pair of $([0], [t_0 \ldots t_n, \$])$,
+full parse takes a starting pair of $([0], [t_0 \ldots t_n, \$])$,
 where state $0$ is expected to represent the entry point into the stategraph, $t_0 \ldots t_n$
-is the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token.
+is the sequence of input tokens, and `$\$$' is the special End-Of-File (EOF) token.
 
 \begin{figure}[t]
 \small
@@ -478,7 +480,7 @@ is the sequence of input tokens, and $\$$ is the special End-Of-File (EOF) token
        \wedge (\textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s')}
 \]
 \vspace{-15pt}
-\caption{Reduction rules for $\lrarrow$ relative to $(\textit{parsing stack},
+\caption{Reduction rules for $\lrarrow$, which operate on $(\textit{parsing stack},
 \textit{token list})$ pairs. \textsc{LR Shift}
 advances the input by one token and grows the parsing stack, while
 \textsc{LR Reduce} unwinds (`reduces') the parsing stack when a production is
@@ -490,15 +492,14 @@ complete before moving to a new (`goto') state.}
 \section{\cpctplus}
 \label{corchueloplus}
 
-The \citet{fischer79locally} family of error recovery algorithms has many
-members --- far too many to cover them all in one paper (see
-\citet{cerecke03phd} for a fairly comprehensive summary). We therefore start
-with one of the more recent members -- \citet{corchuelo02repairing}. We first
+The \citet{fischer79locally} family of error recovery algorithms has far
+too many members to cover in one paper. We therefore start
+with one of the more recent -- \citet{corchuelo02repairing}. We first
 explain the original algorithm (Section~\ref{corchuelo:orig}), although we use
 different notation than the original, fill in several missing details, and
 provide a more formal definition. We then
-make two correctness fixes that ensure that the algorithm can always
-find minimum cost repair sequences (Section~\ref{corchuelo:kimyi}). Since the original description
+make two correctness fixes to ensure that the algorithm always
+finds minimum cost repair sequences (Section~\ref{corchuelo:kimyi}). Since the original description
 gives few details as to how the algorithm might best be implemented, we then
 explain the steps we took to make a performant implementation
 (Section~\ref{corchuelo:implementation}). We then show how the algorithm can
@@ -513,16 +514,16 @@ as \cpctplus.
 \label{corchuelo:orig}
 
 As with all error recovery algorithms, \citet{corchuelo02repairing} is invoked
-when an error is found in main parsing i.e.~when \textsf{action}$(s_n, t_0) =
+when an error is found when parsing i.e.~when \textsf{action}$(s_n, t_0) =
 \textit{error}$. Intuitively, the algorithm starts at the error state and tries
 to find a minimum cost repair sequence consisting of: \textit{insert T}
 (`insert a token of type T'), \textit{delete} (`delete the token at the current offset'),
 or \textit{shift} (`parse the token at the current offset'). The
 algorithm completes successfully if it reaches an accept state or shifts
 `enough' tokens ($N_\textit{shifts}$; set at 3 in \citet{corchuelo02repairing}),
-or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at
-10 in \citet{corchuelo02repairing}). In order to do this, the algorithm
-creates \emph{configurations}, which store the current search state;
+or unsuccessfully if it consumes `too many' tokens (10 in \citet{corchuelo02repairing}).
+In order to do this, the algorithm
+operates on \emph{configurations}, which store the current search state;
 configurations are searched for their neighbours until a success configuration
 is found.
 
@@ -572,7 +573,7 @@ token shifted is created.}
 
 
 \begin{figure}[tb]
-\begin{multicols}{2}
+\begin{adjustbox}{valign=t,minipage=.49\textwidth}
 \begin{lstlisting}[numbers=left]
 def corchueloetal(pstack, toks):
   todo = [[(pstack, toks, [])]]
@@ -610,17 +611,16 @@ def all_cr_star(pstack, toks):
   # (pstack, toks) and return the resulting
   # list of (pstack, toks, repair) triples.
 \end{lstlisting}
-\columnbreak
-\vspace*{-18pt}
+\end{adjustbox}
+\begin{adjustbox}{valign=t,minipage=.49\textwidth}
+\vspace*{-10pt}
 \caption{Our version of the \citet{corchuelo02repairing} algorithm. The main function
 \texttt{corchueloetal} takes in a (\emph{parsing stack}, \emph{token list})
 pair and returns: a (\emph{parsing stack}, \emph{token list}, \emph{repair
 sequence}) triple where \emph{repair sequence} is guaranteed to be a minimum
 cost repair sequence; or \texttt{None} if it failed to find a repair sequence.\\[9pt]
 %
-The algorithm maintains a todo list of lists (modelled
-on \citet[p.~25]{cerecke03phd} rather than the suggestion
-in \citet{corchuelo02repairing}); the first sub-list contains
+The algorithm maintains a todo list of lists: the first sub-list contains
 configurations of cost 0, the second sub-list contains configurations of cost 1 and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
@@ -638,8 +638,7 @@ added to the todo list (line 19-20).\\[9pt]
 The \texttt{rprs\_cst} function returns the cost of a repair sequence. Inserts
 and deletes cost 1, shifts 0.}
 \label{fig:corchuelo:algorithm}
-\end{multicols}
-\vspace*{-15pt}
+\end{adjustbox}
 \end{figure}
 
 As with the original, we explain the approach in two parts. First is a new reduction relation
@@ -998,7 +997,7 @@ search space. Thus the repair sequences we find can be less than ideal when furt
 user input is considered. Fortunately, we can use the
 complete set of minimum cost repair sequences to lessen this weakness.
 After we have generated the set of configurations which represents the
-complete set of minimal cost repair sequences, we then rank the
+complete set of minimum cost repair sequences, we then rank the
 configurations by how far they allow parsing to continue, up to a limit of
 $N_\textit{try}$ tokens (which we somewhat arbitrarily set at 250). The reason
 why we rank the configurations, and not the repair sequences, is that we only
@@ -1021,7 +1020,7 @@ searched.
 the tree shows the `normal' parser at work, which hits an error as soon as it
 has shifted the token `\texttt{2}': at this point, \cpctplus starts operating.
 As this shows, the search encounters various dead ends, as well as successful
-routes. As shown in Figure~\ref{fig:crshift2:example}, this input has 6 minimal
+routes. As shown in Figure~\ref{fig:crshift2:example}, this input has 6 minimum
 cost repair sequences, but the search only has 5 success configurations, because
 two routes are merged together.}
 \label{fig:cpctplus:full}
@@ -1076,7 +1075,7 @@ a graph where each edge has an associated cost $c$. The current lowest
 cost to reach a node $n$ from the start node is represented by $d(n)$. A
 heuristic $h(n)$ returns an estimate of the additional cost needed to reach a success node from
 $n$. The heuristic must be `admissible': it must
-never overestimate the cost to reach a success node (or else non-minimal
+never overestimate the cost to reach a success node (or else non-minimum
 cost routes to success nodes may be found first); however, it may safely
 underestimate (i.e.~the simplest safe heuristic is $h(n) = 0$). A priority queue is
 used to order nodes by their $d(n) + h(n)$. On
@@ -1212,7 +1211,7 @@ state $i$ in the stategraph (line 7), the algorithm explores its outgoing edges
 symbol \texttt{sym} and points to another state with index \texttt{end\_st}. If
 the edge's symbol is a terminal then by definition the cost of reaching that
 terminal from state $i$ is 0 (lines 13-16). We then calculate the cost of the
-edge: if the label's symbol is a nonterminal, we return the cost of the minimal
+edge: if the label's symbol is a nonterminal, we return the cost of the minimum
 sentence matching that nonterminal (line 10); if a terminal we return a cost of 1 (line 17).
 If the cost of $t$ in \texttt{end\_st} plus the distance to \texttt{end\_st} is
 lower than the cost of $t$ in $i$ then we update the latter (lines 19--25).}
@@ -1269,7 +1268,7 @@ Given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
 The third and final flaw is that optimistically inserting the remainder of a
 production prevents the terminals involved from being shifted if the user's
 input happens to overlap with them: since it is more expensive to insert $a$
-than to shift $a$, this can cause the search to produce non-minimal cost repair
+than to shift $a$, this can cause the search to produce non-minimum cost repair
 sequences.
 
 The third flaw is easily fixed by disallowing the search from optimistically
@@ -1726,10 +1725,10 @@ repair an error, then using panic mode simply causes cascading errors.
 
 In order to test hypothesis H2, we created a variant of \mf called \mfrev
 which reverses the ranking order and collected the same data as for \cpctplus
-and \mf. Instead of selecting from the minimal cost repair sequences which allow
+and \mf. Instead of selecting from the minimum cost repair sequences which allow
 parsing to continue furthest, \mfrev selects from those which allow parsing to
 continue the least far. This models the worse case for other members of the
-\citet{fischer79locally} family which non-deterministically select a single minimal
+\citet{fischer79locally} family which non-deterministically select a single minimum
 cost repair sequence.
 
 All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with 32GiB RAM running
@@ -1758,7 +1757,7 @@ not. The failure rate is the percentage of files which could not be fully
 repaired within the timeout. The number of error locations shows how many separate points in files
 are reported as errors. Since both \cpctplus and \mf are non-deterministic, we
 expect some variation in this figure. However \mfrev (which always selects
-from the minimal cost repair sequences that allow parsing to continue the least far)
+from the minimum cost repair sequences that allow parsing to continue the least far)
 suffers significantly from the cascading error problem, reporting
 \mfreverrorlocsratioovermf more error locations than \mf to users.}
 \label{fig:results:summary}
@@ -1962,7 +1961,7 @@ to estimate the effort involved, or what issues may be uncovered.
 In this paper we have shown that it is possible to do a better job of error
 recovery than is currently the case, and that this can be done fast enough to be
 practical in existing compilers. In particular, creating the complete set of
-minimal cost repair sequences significantly reduces the cascading error problem.
+minimum cost repair sequences significantly reduces the cascading error problem.
 We believe that both \cpctplus and \mf give good enough results to be usable in
 practise. If time is scarce, we suggest implementing \cpctplus, since it avoids
 having to calculate and store distance tables. However, the extra effort
