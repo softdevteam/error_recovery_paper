@@ -1725,7 +1725,10 @@ exceeding the timeout; or running out of plausible candidate repair sequences.
 The latter is rare, but does occur on occasion. Unlike
 \citet{corchuelo02repairing} lrpar does not implement traditional `panic mode'
 as a backup recovery mechanism: in our experience, if \cpctplus or \mf cannot
-repair an error, then using panic mode simply causes cascading errors.
+repair an error, then using panic mode simply causes cascading errors. The time
+spent in error recovery is wall-clock time (measured with a monotonic clock)
+and covers all aspects of error recovery: it is suspended when normal parsing
+restarts and resumed if error recovery is needed again.
 
 In order to test hypothesis H2, we created a variant of \mf called \mfrev
 which reverses the ranking order and collected the same data as for \cpctplus
@@ -1759,8 +1762,10 @@ include files which exceeded the recovery timeout, so they represent the `real'
 times that users would experience, whether or not all errors are repaired or
 not. The failure rate is the percentage of files which could not be fully
 repaired within the timeout. The number of error locations shows how many separate points in files
-are reported as errors. Since both \cpctplus and \mf are non-deterministic, we
-expect some variation in this figure. However \mfrev (which always selects
+are reported as errors. Since fewer files in \mf timeout, it is able
+to continue repairing errors more often, hence the slightly higher
+number of error locations (though the inherent non-determinism of
+both \cpctplus and \mf plays a small part in this). However \mfrev (which always selects
 from the minimum cost repair sequences that allow parsing to continue the least far)
 suffers significantly from the cascading error problem, reporting
 \mfreverrorlocsratioovermf more error locations than \mf to users.}
