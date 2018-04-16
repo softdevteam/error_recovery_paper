@@ -211,9 +211,6 @@ C.java:2: error: <identifier> expected
 \end{minipage}
 \end{tabular}
 \end{minipage}
-%&
-%\begin{minipage}[t]{0.47\textwidth}
-%\vspace{-17pt}
 \vspace{-10pt}
 \caption{An example of a simple, common Java syntax error
 (\subref{lst:javaerror:input}) and the problems traditional error recovery has in
@@ -226,13 +223,11 @@ recovery algorithms (\cpctplus and \mf) we introduce in this paper both
 produce the output shown in (\subref{lst:javaerror:mf}): after spotting an error
 when parsing encounters `\texttt{y}', they then use the Java grammar to find the
 complete set of minimum cost repair sequences (unlike previous approaches which
-non-determinstically find one minimum cost repair sequence). In this case three
+non-deterministically find one minimum cost repair sequence). In this case three
 repair sequences are reported to the user: one can delete `\texttt{y}'
 entirely (`\texttt{int x;}'), or insert a comma
 (`\texttt{int x, y;}'), or insert an equals sign (\texttt{`int x = y;'}).}
 \label{fig:javaerror}
-%\end{minipage}
-%\end{tabular}
 \end{figure}
 
 Most of us are so used to this state of affairs that
@@ -1650,7 +1645,7 @@ experiment on real-world Java code. In this section we outline our methodology
 is fully repeatable and downloadable from \emph{blinded for review}.
 
 
-\subsection{Methodolgy}
+\subsection{Methodology}
 \label{methodology}
 
 In order to evaluate \cpctplus and \mf, we need a concrete implementation. We
