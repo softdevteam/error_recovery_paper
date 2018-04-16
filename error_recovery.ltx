@@ -118,7 +118,7 @@ that we can increase the complexity of the problem to finding the complete set o
 cost repair sequences, and still do so within acceptable time. We then use the
 existence of the complete set of minimum cost repair sequences to further
 reduce the cascading error problem. We first extend
-Corchuelo et al.'s algorithm, before introducing a new, faster, alternative \mf. We
+Corchuelo et al.'s algorithm, before introducing a new, faster, alternative called \mf. We
 validate our algorithms with a corpus of \corpussize real-world
 syntactically invalid Java programs: \mf is able to repair \mfsuccessrate of files
 within acceptable time. We show that making use of the complete set of repair
@@ -259,9 +259,9 @@ In this paper we first test the following hypothesis:
 
 We define `acceptable time' as 0.5s for error recovery per file (i.e.~all errors
 in a file must be recovered within the timeout of 0.5s) since we think that even the most
-demanding user will tolerate such a delay. We strongly validate this hypothesis,
-with our new error recovery algorithm \mf
-repairing \mfsuccessrate of files within the timeout. Relative
+demanding user will tolerate such a delay. We strongly validate this hypothesis
+with both error recovery algorithms we introduce in this paper (the more advanced
+algorithm, called \mf repairs \mfsuccessrate of files within the timeout). Relative
 to previous approaches, we are the clear beneficiaries of faster modern
 hardware, which undoubtedly make it easier to validate this hypothesis.
 However, it it is important to note that we have
@@ -873,7 +873,7 @@ by compatible configuration merging, we keep it as a separate optimisation becau
 such a frequent case; our
 use of the todo list means that we would not catch every case; the
 duplicate repair sequences are uninteresting from a user perspective, so we
-would have to weed them out later anyway; and each additional merge costs
+would have to filter them out later anyway; and each additional merge costs
 memory.
 
 Fortunately, implementing compatible configuration merging is simple. We
@@ -881,7 +881,7 @@ first modify the todo data-structure to be a
 list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
 and thus allows list-like integer indexing as well as hash-based lookups.}. This has
 near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
-weeds out duplicates with near-identical performance to an unordered hashset.
+filters out duplicates with near-identical performance to an unordered hashset.
 We hash configurations based on their parsing stack
 and remaining input (i.e.~we do not hash repair sequences). We define
 configuration equality to be identical parsing stacks, identical remaining
@@ -1649,7 +1649,7 @@ is fully repeatable and downloadable from \emph{blinded for review}.
 \label{methodology}
 
 In order to evaluate \cpctplus and \mf, we need a concrete implementation. We
-implemented a new Yacc-compatible parsing library \emph{lrpar} in Rust. including
+implemented a new Yacc-compatible parsing library \emph{lrpar} in Rust. Including
 associated libraries for LR table generation and so on, lrpar is just under
 10KLoC. Although intended as a production library, it has accidentally
 played a part as a flexible test bed for experimenting with, and understanding,
@@ -1756,7 +1756,8 @@ suffers significantly from the cascading error problem, reporting
 corpus. The $x$ axis shows time (up to the timeout of 0.5s) and the $y$ axis is
 a logarithmic scale for the number of files. As this clearly shows, most files
 are repaired extremely quickly. There is then a continual decrease
-until the timeout.}
+until the timeout of 0.5s, where the files that were unable to be repaired
+in the timeout cause a small peak.}
 \label{fig:results:mf_histogram}
 \end{figure}
 
@@ -1776,7 +1777,8 @@ already fairly low. These results strongly validate Hypothesis H1.
 
 \begin{figure}[t]
 \includegraphics[scale=.7]{mf_mfrev_error_locs_histogram.pdf}
-\caption{A histogram of the number of error locations for \mf and \mfrev. The
+\caption{A histogram of the number of error locations for \mf and \mfrev (fewer
+is better). The
 $x$ axis shows the number of error locations and the $y$ axis is a logarithmic
 scale for the number of files. Note that we have elided outliers beyond $x=300$
 (5 for \mf; 7 for \mfrev) to prevent the significant part of the distribution
@@ -1840,9 +1842,8 @@ lines, each with an integer incrementing from 0 to 1000 (inclusive), and each
 with the same syntax error --- an advanced programmer would have used a
 \texttt{for} loop. It is
 thus possible that a corpus consisting solely of programs from advanced programmers
-would lead to slightly different results. We consider this a minor issue,
-partly because we doubt that the overall picture would change much given
-such a corpus, and partly because a good error recovery algorithm should
+would lead to slightly different results. We consider this a minor worry,
+partly because a good error recovery algorithm should
 aim to perform well with inputs from users of different experience levels.
 
 Our corpus was parsed using a Java 1.7 grammar, but some members of the corpus
