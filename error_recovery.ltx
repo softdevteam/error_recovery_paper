@@ -111,7 +111,7 @@ Syntax errors are generally easy to fix for humans, but not for parsers: the
 latter often fail to find an effective recovery, leading to a cascading chain of
 errors that drown out the original. More advanced recovery techniques
 suffer less from this problem but have seen little practical use because
-their typical performance was seen as poor and their worse case unbounded.
+their typical performance was seen as poor and their worst case unbounded.
 In this paper we show that not only can an advanced approach run in acceptable time
 -- which we define as spending a maximum of 0.5s in error recovery per file -- but
 that we can increase the complexity of the problem to finding the complete set of minimum
@@ -122,7 +122,7 @@ Corchuelo et al.'s algorithm, before introducing a new, faster, alternative \mf.
 validate our algorithms with a corpus of \corpussize real-world
 syntactically invalid Java programs: \mf is able to repair \mfsuccessrate of files
 within acceptable time. We show that making use of the complete set of repair
-sequences reduces the worse case for cascading errors by \mfreverrorlocsratioovermf.
+sequences reduces the worst case for cascading errors by \mfreverrorlocsratioovermf.
 \end{abstract}
 
 \keywords{Parsing, error recovery, programming languages}
@@ -248,13 +248,13 @@ trace their roots to \citet{fischer79locally}, instead try to find a single mini
 recover. Algorithms in this family are good at recovering from errors and are
 easily adapted to give human-friendly feedback. However, they
 have seen little practical use because their typical
-performance was seen as poor and their worse case unbounded \cite[p.~14]{mckenzie95error}.
+performance was seen as poor and their worst case unbounded \cite[p.~14]{mckenzie95error}.
 
 In this paper we first test the following hypothesis:
 
 \begin{description}
-  \item[H1] The complete set of minimum cost repair sequences can nearly
-    always be found in acceptable time.
+  \item[H1] The complete set of minimum cost repair sequences can
+    be found in acceptable time.
 \end{description}
 
 We define `acceptable time' as 0.5s for error recovery per file (i.e.~all errors
@@ -263,7 +263,7 @@ demanding user will tolerate such a delay. We strongly validate this hypothesis,
 with our new error recovery algorithm \mf
 repairing \mfsuccessrate of files within the timeout. Relative
 to previous approaches, we are the clear beneficiaries of faster modern
-hardware, which undoubtedly makes it easier to validate this hypothesis.
+hardware, which undoubtedly make it easier to validate this hypothesis.
 However, it it is important to note that we have
 stated a much stronger hypothesis than previous approaches: where
 they have aimed to find only a single minimum cost repair sequence, we are able
@@ -276,7 +276,8 @@ Once we have one or more repair sequences, we then choose one
 to repair the input, and allow parsing to continue as normal. Rather
 than pick an arbitrary candidate, we rank repair sequences by how
 far they allow parsing to continue successfully, and choose from the
-subset that gets furthest. In essence, this turns our `local' error recovery technique
+subset that gets furthest (note that the time required to do this is included
+in the 0.5s timeout). In essence, this turns our `local' error recovery technique
 into a `regional' technique. We thus also test a second hypothesis:
 
 \begin{description}
@@ -324,8 +325,8 @@ appreciate that this is still an unfamiliar language to most readers: code examp
 are therefore given in Python which, we hope, is familiar to most.
 
 Although there are many flavours of parsing, the \citet{fischer79locally} family
-of error recovery algorithms, including those presented in this paper, are based on LR
-parsing~\cite{knuth65lllr}. As well as describing the largest practical set
+of error recovery algorithms are designed to be used with LR
+parsers~\cite{knuth65lllr}. As well as describing the largest practical set
 of unambiguous grammars, LR parsing remains one of the most widely used parsing
 approaches due to the ubiquity of Yacc~\cite{johnson75yacc} and its
 descendants (which include the Rust parsing tool we created for this paper).
@@ -418,10 +419,10 @@ $s$ & Term & Factor & Expr\\
 (split into separate action and goto tables; bottom left). Productions in
 the grammar are labelled \texttt{(I)} to \texttt{(VI)}. In the stategraph: S($x$)
 means `shift to state $x$'; R($x$) means `reduce production $x$ from the
-grammar' (e.g.~the state 3, terminal `\texttt{+}' reduction is of production IV
-i.e.~`\texttt{Term: Factor;}').
+grammar' (e.g.~\textit{action(3, `+')} returns R(IV) which references
+the production `\texttt{Term: Factor;}').
   Each item within a state $[N \colon \alpha \bullet \beta]$ references one
-  of the rule $N$'s productions; $\alpha$ and $\beta$ each
+  of rule $N$'s productions; $\alpha$ and $\beta$ each
 represent zero or more symbols; with the \emph{dot} ($\bullet$) representing
   how much of the production must have been matched ($\alpha$) if parsing has
   reached that state, and how much remains ($\beta$).}
@@ -429,8 +430,7 @@ represent zero or more symbols; with the \emph{dot} ($\bullet$) representing
 \label{fig:exprgrammar}
 \end{figure}
 
-The beauty of LR parsing stems from the way a parser is constructed. The CFG is
-first transformed into a \emph{stategraph}, which is a statemachine
+The CFG is first transformed into a \emph{stategraph}, which is a statemachine
 where each node contains one or more \emph{items} (describing the valid
 parse states at that point) and edges are labelled with terminals or
 nonterminals. Since even on a modern machine, a canonical
@@ -454,7 +454,8 @@ The statetable allows us to define a simple, efficient, parsing process. We
 first define two functions relative to the statetable: \textsf{action}$(s, t)$
 returns the action for the state $s$ and token $t$
 or \emph{error} if no such action exists; and \textsf{goto}$(s, N)$
-returns the goto state for the state $s$ and the nonterminal $N$. We then define
+returns the goto state for the state $s$ and the nonterminal $N$ or \emph{error}
+if no such goto state exists. We then define
 a reduction relation $\lrarrow$ for $(\textit{parsing stack}, \textit{token
 list})$ pairs with two reduction rules as shown in Figure~\ref{fig:lrreduction}.
 A full LR parse $\lrarrowstar$ repeatedly applies the two $\lrarrow$ rules
@@ -564,7 +565,7 @@ is found.
 \textsc{CR Insert} finds all terminals reachable from the current state and
 creates insert repairs for them (other than the EOF token `$\$$').
 \textsc{CR Delete} creates deletion repairs if user defined input remains.
-\textsc{CR Shift 1} parses at most $N_\textit{shifts}$ tokens; if it reaches an accept or error
+\textsc{CR Shift 1} parses at least 1 and at most $N_\textit{shifts}$ tokens; if it reaches an accept or error
 state, or parses exactly $N_\textit{shifts}$ tokens, then a shift repair per
 token shifted is created.}
 \label{fig:corchuelo:reductions}
@@ -573,7 +574,7 @@ token shifted is created.}
 
 
 \begin{figure}[tb]
-\begin{adjustbox}{valign=t,minipage=.49\textwidth}
+\begin{adjustbox}{valign=t,minipage=.51\textwidth}
 \begin{lstlisting}[numbers=left]
 def corchueloetal(pstack, toks):
   todo = [[(pstack, toks, [])]]
@@ -612,7 +613,7 @@ def all_cr_star(pstack, toks):
   # list of (pstack, toks, repair) triples.
 \end{lstlisting}
 \end{adjustbox}
-\begin{adjustbox}{valign=t,minipage=.49\textwidth}
+\begin{adjustbox}{valign=t,minipage=.47\textwidth}
 \vspace*{-10pt}
 \caption{Our version of the \citet{corchuelo02repairing} algorithm. The main function
 \texttt{corchueloetal} takes in a (\emph{parsing stack}, \emph{token list})
@@ -1727,7 +1728,7 @@ In order to test hypothesis H2, we created a variant of \mf called \mfrev
 and collected the same data as for \cpctplus
 and \mf. Instead of selecting from the minimum cost repair sequences which allow
 parsing to continue furthest, \mfrev selects from those which allow parsing to
-continue the least far. This models the worse case for other members of the
+continue the least far. This models the worst case for other members of the
 \citet{fischer79locally} family which non-deterministically select a single minimum
 cost repair sequence. In other words, it allows us to understand how many
 more errors could be reported to users of other members of the
@@ -1787,7 +1788,7 @@ histogram in Figure~\ref{fig:results:mf_histogram}. \mf's failure rate is only
 \mfcpctplusfailurerateratio that of \cpctplus's, though in absolute terms
 both are already extremely low. \mf also has noticeably better median and 
 mean repair times (the latter, in our opinion, more important, since users
-are more sensitive to worse case than best case performance) though,
+are more sensitive to worst case than best case performance) though,
 again, in absolute terms both are
 already fairly low. These results strongly validate Hypothesis H1.
 
