@@ -860,7 +860,8 @@ maintain symmetry between the dominant and subsumed parts to prevent the
 dominant part accidentally preventing the subsumed part from being recorded as
 successful. In other words, if the dominant part of the merge had fewer shifts
 at the end of its repair sequence than the subsumed part, then the
-$N_\textit{shifts}$ check would fail \lukas{can we reference a linenumber of Fig5 here?}, but reversing the dominant and subsumed
+$N_\textit{shifts}$ check (line 10, Figure~\ref{fig:corchuelo:algorithm}) would
+fail, but reversing the dominant and subsumed
 parts may lead to success. It is therefore only safe to merge repair sequences
 which end in the same number of shifts.
 
@@ -868,13 +869,16 @@ The second condition relates to the weak form of compatible merging inherited
 from \citet[p.~8]{corchuelo02repairing}: delete repairs are never followed by an
 insert (see Figure~\ref{fig:corchuelo:algorithm}) since [\textit{delete},
 \textit{insert x}] always leads to the same configuration as [\textit{insert x},
-\textit{delete}]. Although this is largely subsumed
+\textit{delete}]. Although we get much of the same effect through
 by compatible configuration merging, we keep it as a separate optimisation because: it is
 such a frequent case; our
 use of the todo list means that we would not catch every case; the
 duplicate repair sequences are uninteresting from a user perspective, so we
 would have to filter them out later anyway; and each additional merge costs
-memory\lukas{I feel like this doesn't properly explain why we need that condition. I can't make the connection of "insert can't follow delete" to "if a repair ends in a delete the other also needs to end in a delete"}.
+memory. We thus have to make sure that merged repair sequences don't accidentally
+suppress insert repairs because one part of the repair sequence ends in a delete
+while the other does not. The simplest way of solving this problem is thus simply to
+forbid merging repair sequences if one sequence ends in a delete and the other does not.
 
 Fortunately, implementing compatible configuration merging is simple. We
 first modify the todo data-structure to be a
@@ -1121,7 +1125,7 @@ relation $\kyarrow$ which defines when repairs are created
 from (\textit{parsing stack}, \textit{token list}, \textit{w}) to
 (\textit{parsing stack}, \textit{token list}, \textit{w}, \textit{repairs},
 \textit{heuristic}) tuples. Of these values, $w$ is the least intuitive:
-since the A* heuristic used doesn't take into account reductions/gotos or deletions,
+since the A* heuristic used does not take into account reductions/gotos or deletions,
 heuristic values are only valid for sequences of \textsc{KY Insert} and \textsc{KY Shift}.
 The initial configuration sets $w = \bot$. Since \textsc{KY Insert} is the only
 rule which uses the heuristic, it sets $w = \top$. Only \textsc{KY Shift} can
@@ -1252,7 +1256,7 @@ Given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
 (whereas \cpctplus returns the minimum cost repair sequence
 [\textit{insert b}, \textit{delete}].
 The third and final flaw is that optimistically inserting the remainder of a
-production in \textsc{KY Insert} \lukas{I can't find where this happens in Fig.10.} prevents the terminals involved from being shifted if the user's
+production in \textsc{KY Reduce} prevents the terminals involved from being shifted if the user's
 input happens to overlap with them: since it is more expensive to insert $a$
 than to shift $a$, this can cause the search to generate non-minimum cost repair
 sequences.
