@@ -1360,7 +1360,7 @@ from \textit{(parsing stack, token list, repair sequence)} to \textit{(parsing
 stack, token list, repair sequence, heuristic)} tuples and that each rule
 uses a new A* heuristic \textsf{mf\_dist} (which takes into account reductions/gotos
 and deletions; see Section~\ref{mf:mf_dist}). Less obviously, the rules do not
-use the $\lrarrow$ relation: \textsc{MF Shift} and \textsc{MF Reduce} subsume
+use the $\lrarrowstar$ relation: \textsc{MF Shift} and \textsc{MF Reduce} subsume
 the functionality of \textsc{LR Shift} and \textsc{LR Reduce} (making this aspect of \mf
 closer in spirit to \citet{mckenzie95error} than either \citet{corchuelo02repairing}
 or \citet{kimyi10astar}).
@@ -1395,11 +1395,11 @@ def all_mf_star(pstack, toks, rprs):
 \caption{The main \mf algorithm. Lines 2--13 are identical to those of
 Figure~\ref{fig:corchuelo:algorithm} (with the exception that \mf does
 not return when the first success configuration is found, but stores it until
-the current cost $c$ is fully evaluated; at that point it returns all
+the current cost $c$ \lukas{isn't it \texttt{cur\_cst}?} is fully evaluated; at that point it returns all
 the success configurations found). The main difference between \cpctplus
 and \mf is the use of the A* heuristic, which allows configurations to be deferred
 beyond their actual cost. In other words a configuration $c$ with a heuristic $h$ is
-placed in $\text{todo}[c + h]$ (lines 18, 21, 22).}
+placed in $\text{todo}[c + h]$ \lukas{what happens when I add a heuristic to a configuration? or does this mean the configuration and heuristic are both hashed?} (lines 18, 21, 22).}
 \label{fig:mf:algorithm}
 \end{figure}
 
@@ -1411,14 +1411,14 @@ configuration is monotonically non-decreasing) we know that neighbouring configu
 always be the same, or greater, cost as the current configuration. This allows us to
 reuse the todo data-structure from \cpctplus as-is. Finally, compatible
 configuration merging, repair sequence simplification, and so on are identical
-to that in \cpctplus.
+to that\lukas{those?} in \cpctplus.
 
 
 \subsection{The \texttt{mf\_dist} heuristic}
 \label{mf:mf_dist}
 
 \textsf{mf\_dist} comes in static and dynamic parts: the former handles insertion
-sequences and reductions/gotos; and the latter handles deletions (which
+sequences and reductions/gotos\lukas{weird wrapping: reduction-s/gotos}; and the latter handles deletions (which
 require examining the user's input). The static part
 extends the distance table algorithm used in \citet{kimyi10astar} while the dynamic part
 is entirely new. In this subsection we explain both parts.
@@ -1597,10 +1597,10 @@ The dynamic part of \textsf{mf\_dist} is shown in
 Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
 \texttt{mk\_mf\_table} and also takes into account the cost of deleting user
 input. The intuition is that we need to check whether the cost to a success
-configuration would be reduced if were one or more tokens
-from the user's input to be deleted. For example,
+configuration would be reduced if one or more tokens
+from the user's input were to be deleted. For example,
 consider the input `\texttt{(1()}'. Parsing this against the grammar from Figure
-\ref{fig:stategraphtable} causes an error in state 4 before the
+\ref{fig:stategraphtable} causes an error in state 4 before the second
 `\texttt{(}' token; after applying \textsc{MF Reduce} we end up in state 6.
 Looking up the next token `\texttt{(}' in the distance table returns a cost of
 2. However, the next token costs 1 to delete, while the distance to
