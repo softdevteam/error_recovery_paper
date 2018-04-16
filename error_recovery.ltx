@@ -523,10 +523,11 @@ or \textit{shift} (`parse the token at the current offset'). The
 algorithm completes successfully if it reaches an accept state or shifts
 `enough' tokens ($N_\textit{shifts}$; set at 3 in \citet{corchuelo02repairing}),
 or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at 10
-in \citet{corchuelo02repairing}). In order to do this, the algorithm
+in \citet{corchuelo02repairing}). The algorithm
 operates on \emph{configurations}, which store the current search state;
 configurations are searched for their neighbours until a success configuration
-is found.
+is found. The cost of a configuration is the cumulative cost of the repairs
+in its repair sequence.
 
 \begin{figure}[tb]
 \small
@@ -755,7 +756,7 @@ We first change the condition $0 < j \leq N_\textit{shifts}$ to $0 \leq j \leq
 N_\textit{shifts}$ (i.e.~we don't force the LR parser to consume any tokens).
 However, this then opens the possibility of an infinite loop. We avoid this by
 saying that, if the input is not advanced, the parsing stack must have changed.
-Put another way, in either case, we require progress
+Put another way, in either case we require progress
 to be made, even if that progress does not require consuming any input.
 
 Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
@@ -781,7 +782,7 @@ Figure~\ref{fig:crshift2:example} shows an example input where \textsc{CR Shift
 
 The definitions we have given thus far do not obviously lead to
 an efficient implementation and \citet{corchuelo02repairing} give few useful
-hints. We found that three techniques were both
+hints. We found that two techniques were both
 effective at improving performance while being simple to implement.
 
 First, rather than use a general queue data-structure (probably based on a
@@ -794,8 +795,8 @@ finding the next todo element requires only a single \texttt{pop}
 (line 8 of Figure~\ref{fig:corchuelo:algorithm}). Similarly,
 adding elements requires only an \texttt{append} to the relevant sub-list
 (lines 18, 21, 22). This
-data-structure is a good fit because costs never get
-big (double digits is unusual for real-world
+data-structure is a good fit because costs in our setting are always small
+(double digits is unusual for real-world
 grammars) and each neighbour generated from a configuration with cost $c$ has
 a cost $\geq c$.
 
@@ -833,13 +834,12 @@ The basis of a solution is simple: when a repair sequence of cost $c$ is found t
 be successful, we discard all repair sequences with cost $> c$, and continue
 exploring configurations in cost $c$ (including, transitively, all neighbours that are
 also of cost $c$). Each successful configuration is recorded and, when all configurations
-in $c$ have been explored, the set of successful configurations returned. However, this
-requires that we do not throw away duplicate configurations, as they may contain distinct
-repair sequences. This significantly slows down the search because $c$
+in $c$ have been explored, the set of successful configurations returned.
+This significantly slows down the search because $c$
 may have many remaining configurations in $c$, which may, transitively, have many neighbours.
 
-We therefore need a scheme which makes the overhead of finding the complete
-set of minimum cost repair sequences more efficient. Our solution is to merge together
+We therefore need a scheme which reduces the overhead of finding the complete
+set of minimum cost repair sequences. Our solution is to merge together
 \emph{compatible} configurations, preserving their distinct repair sequences while still
 reducing the search space. Two configurations are compatible if: their
 parsing stacks are identical; they both have an identical amount of input
@@ -997,12 +997,11 @@ why we rank the configurations, and not the repair sequences, is that we only
 need to rank one repair sequence for each merged configuration, a useful
 optimisation. We then expand the top ranked configurations into repair
 sequences, remove shifts from the end of repair sequences, and
-remove duplicates. Figure~\ref{fig:cpctplus:full} shows a visualisation of \cpctplus
-in action.
+remove any duplicate repair sequences. Figure~\ref{fig:cpctplus:full} shows a
+visualisation of \cpctplus in action.
 
 Particularly on real-world grammars, selecting the top-ranked sequences
-substantially decreases cascading errors sequence causing cascading errors (see
-Figure~\ref{fig:ranking} for an example).
+substantially decreases cascading errors (see Figure~\ref{fig:ranking} for an example).
 It also does so for very little additional computational cost as the complete set of
 minimum cost repair sequences is much smaller than the number of configurations
 searched.
@@ -1040,9 +1039,9 @@ we elide several details which an
 implementation would need to consider. We also adjust the algorithm's style to
 match this paper's and correct several minor mistakes.
 
-We then show that the algorithm contains two serious flaws
+We then show that the algorithm contains three serious flaws
 which cause it to miss minimum cost repair sequences
-(Section~\ref{kimyi:flaws}). These flaws are not easily fixed, but parts of the
+(Section~\ref{kimyi:flaws}). We are unable to fix all of these flaws, but parts of the
 approach serve as inspiration for our new \mf error recovery algorithm.
 
 
@@ -1111,7 +1110,7 @@ sequence of symbols (terminals and non-terminals) $\beta_0 \ldots \beta_n$ were
 to be found; it then optimistically creates insert repairs for each, and
 performs the corresponding reduction. \textsc{KY Delete} is virtually identical
 to \textsc{CR Delete}. \textsc{KY Shift} is similar to \textsc{CR Shift 3} but
-has to always shift a single symbol to avoid creating repairs which
+has to shift a single symbol to avoid creating repairs which
 duplicate those found by \textsc{KY Reduce}.}
 \label{fig:kimyi:rules}
 \end{figure}
@@ -1234,7 +1233,7 @@ The first flaw is that the \textsf{ky\_dist} heuristic does not take into
 account reductions/gotos or deletions: hence the heuristic is only valid for sequences of
 inserts via \textsc{KY Insert}. A simple example of this can be seen for the grammar
 from Figure~\ref{fig:exprgrammar} and its distance table in Figure~\ref{fig:kimyi:dist}:
-\textsf{dist(3, `+')} returns 3 (which can be achieved by inserting
+\textsf{ky\_dist(3, `+')} returns 3 (which can be achieved by inserting
 `\texttt{*}', `\texttt{(}', and `\texttt{INT}'): however, from
 state 3, we could reduce to state 0 and goto state 2, which has an outgoing edge labelled
 `\texttt{+}' (i.e.~without inserting any terminals). As this shows,
@@ -1526,7 +1525,7 @@ terminal, since every (reachable) state must be able to reach the accept state.}
 \end{figure}
 
 The A* heuristic of \citet{kimyi10astar} builds a distance table of
-states and terminals: \textsf{dist(s, t)} then returns the cumulative cost of
+states and terminals: \textsf{ky\_dist(s, t)} then returns the cumulative cost of
 the sequence of token insertions from state $s$ such that a state $s'$ can be
 found which has an outgoing edge labelled with $t$. This is a useful base,
 but we also need to take into account reductions/gotos to stop any search which
@@ -1592,8 +1591,9 @@ the next token (line 13).}
 The dynamic part of \textsf{mf\_dist} is shown in
 Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
 \texttt{mk\_mf\_table} and also takes into account the cost of deleting user
-input. The intuition is that we need to check if were one or more tokens
-from the user's input to be deleted, the cost to a success configuration would be reduced. For example,
+input. The intuition is that we need to check whether the cost to a success
+configuration would be reduced if were one or more tokens
+from the user's input to be deleted. For example,
 consider the input `\texttt{(1()}'. Parsing this against the grammar from Figure
 \ref{fig:stategraphtable} causes an error in state 4 before the
 `\texttt{(}' token; after applying \textsc{MF Reduce} we end up in state 6.
@@ -1768,7 +1768,7 @@ recovery time suggests that only a small number of outliers cause error recovery
 take long enough to be perceptible to humans; this is confirmed by the
 histogram in Figure~\ref{fig:results:mf_histogram}. \mf's failure rate is only
 \mfcpctplusfailurerateratio that of \cpctplus's, though in absolute terms
-both are already extremely low. \mf also has noticeably better median and 
+both are already extremely low. \mf also has noticeably better median and
 mean repair times (the latter, in our opinion, more important, since users
 are more sensitive to worst case than best case performance) though,
 again, in absolute terms both are
@@ -1794,7 +1794,7 @@ to continue the least far. \mfrev shows that the ranking technique used in \mf s
 reduces the potential for cascading errors: \mfrev leads to
 \mfreverrorlocsratioovermf more error locations being reported to users
 relative to \mf. As the histogram in Figure~\ref{fig:results:mf_mfrev_histogram} shows,
-the distribution of error locations in \mf and \mfrev is extremely
+the distribution of error locations in \mf and \mfrev is
 similar, with the latter simply shifted slightly to the right.
 In other words, \mfrev
 makes error recovery in many files slightly worse (rather than making error
@@ -1822,7 +1822,7 @@ Blackbox contains an astonishingly large amount of source code but has two
 inherent limitations. First, it only contains Java source code. This means that
 our main experiment is limited to one grammar: it is possible that our
 techniques do not generalise beyond the Java grammar, though \citet[p.~109]{cerecke03phd}
-suggests that there different grammars make relatively little difference
+suggests that different grammars make relatively little difference
 to the performance of such error recovery algorithms. Unfortunately, we are not aware
 of an equivalent repository for other language's source code. One solution is
 to mutate correct source files (e.g.~randomly deleting tokens), thus
@@ -1843,7 +1843,7 @@ thus possible that a corpus consisting solely of programs from advanced programm
 would lead to slightly different results. We consider this a minor issue,
 partly because we doubt that the overall picture would change much given
 such a corpus, and partly because a good error recovery algorithm should
-deal well with diverse users.
+aim to perform well with inputs from users of different experience levels.
 
 Our corpus was parsed using a Java 1.7 grammar, but some members of the corpus
 were almost certainly written using Java 1.8 features. Many -- though not all -- Java 1.8
@@ -1968,8 +1968,9 @@ In this paper we have shown that error recovery algorithms in the
 \citet{fischer79locally} family can run fast enough to be usable in the real
 world. Furthermore, extending such algorithms to produce the complete set of
 minimum cost repair sequences allows better feedback to users and significantly
-reduces the cascading error problem. If time is scarce, we suggest implementing
-\cpctplus, since it avoids
+reduces the cascading error problem.
+
+If time is scarce, we suggest implementing \cpctplus, since it avoids
 having to calculate and store distance tables. However, the extra effort
 involved in implementing \mf -- roughly 250LoC more than \cpctplus -- is arguably small
 enough to justify the performance improvement. In particular, users who need
@@ -1981,8 +1982,8 @@ to serve as the main representative of the \citet{fischer79locally} family.
 However, we do not think that \mf on its own is the perfect solution. We suspect
 that, in the future, multi-phase solutions will be developed. For example, one
 may use a machine-learning approach such as that of \citet{santos18syntax} as a
-first-step and when it fails (which it will probably do fairly often) fall back
-to \mf.
+first-step and when it fails (which current evidence suggests it
+will do fairly often) fall back to \mf.
 
 \begin{acks}
 We are particularly grateful to the Blackbox developers for allowing us access
