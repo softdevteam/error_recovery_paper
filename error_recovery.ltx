@@ -799,35 +799,15 @@ big (double digits is unusual for real-world
 grammars) and each neighbour generated from a configuration with cost $c$ has
 a cost $\geq c$.
 
-\label{duplicateconfigurations}
-Second, the algorithm often creates configurations which, from the search's perspective
-are duplicates. Formally, we say that two configurations are duplicates if their parsing
-stack and remaining input are identical (i.e.~filtering out a duplicate
-simply removes its repair sequence from consideration). We
-therefore modify the queue data-structure to be a
-list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
-and thus allows list-like integer indexing as well as hash-based lookups.}. This has
-near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
-weeds out duplicates with near-identical performance to an unordered hashset.
-We hash configurations, and compare them for equality, based on their parsing stack and
-remaining input (i.e.~the repair sequence is not used for hashing or
-equality). Since we only record configurations which we have yet to
-search, we cannot detect
-all duplicates. However, this scheme finds the vast majority, while
-avoiding the impractical memory overhead of recording past configurations.
-Depending on the example, this can lead to 20\% or
-more of configurations being filtered out, with a commensurate effect on
-performance.
-
 \label{cactusconfigurations}
-Third, we do not use lists to represent parsing stacks and repair sequences
+Second, we do not use lists to represent parsing stacks and repair sequences
 as Figure~\ref{fig:corchuelo:algorithm} may suggest. We found
 that this representation consumes noticeably more memory, and is slightly less
 efficient, than using parent pointer trees (often called `cactuses').
 Every node in such a tree has a reference to a single parent (or \texttt{null} for the
 root node) but no references to child nodes. Since our implementation is written
 in Rust -- a language without garbage collection -- we reference
-count nodes (a parent is only freed when it is not in a todo list and
+count nodes (i.e.~a parent is only freed when it is not in a todo list and
 no children point to it). When the error recovery algorithm starts, it
 converts the main parsing stack (a list) into a parent pointer tree; and
 repair sequences start as empty parent pointer trees. The $\crarrow$ part
@@ -855,14 +835,11 @@ exploring configurations in cost $c$ (including, transitively, all neighbours th
 also of cost $c$). Each successful configuration is recorded and, when all configurations
 in $c$ have been explored, the set of successful configurations returned. However, this
 requires that we do not throw away duplicate configurations, as they may contain distinct
-repair sequences. Turning off duplicate detection is a big
-performance loss on its own. The problem is compounded because even after we
-have found the first successful configuration, there may be
-many remaining configurations in $c$, which may, transitively, have many neighbours.
+repair sequences. This significantly slows down the search because $c$
+may have many remaining configurations in $c$, which may, transitively, have many neighbours.
 
-We therefore need a scheme which gives us most of the performance benefit of
-duplicate detection but which still records all possible repair sequences.
-Our solution is to remove duplicate detection and instead merge together
+We therefore need a scheme which makes the overhead of finding the complete
+set of minimum cost repair sequences more efficient. Our solution is to merge together
 \emph{compatible} configurations, preserving their distinct repair sequences while still
 reducing the search space. Two configurations are compatible if: their
 parsing stacks are identical; they both have an identical amount of input
@@ -899,15 +876,20 @@ duplicate repair sequences are uninteresting from a user perspective, so we
 would have to weed them out later anyway; and each additional merge costs
 memory.
 
+Fortunately, implementing compatible configuration merging is simple. We
+first modify the todo data-structure to be a
+list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
+and thus allows list-like integer indexing as well as hash-based lookups.}. This has
+near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
+weeds out duplicates with near-identical performance to an unordered hashset.
+We hash configurations based on their parsing stack
+and remaining input (i.e.~we do not hash repair sequences). We define
+configuration equality to be identical parsing stacks, identical remaining
+input, and compatible repair sequences. Since we only record configurations
+which we have yet to search, we cannot detect all possible compatible merges.
+Nevertheless, this is still a powerful optimisation.
 An example of compatible configuration merging can be seen in
-Figure~\ref{fig:cpctplus:full}. Note that, as with our earlier duplicate
-detection, we cannot merge all compatible configurations, since we only record
-configurations we have yet to search. Nevertheless, this is still a powerful
-optimisation, and surprisingly easy to implement. We simply reuse
-the fact that our todo data-structure
-is a list-of-ordered-hashsets. We need only loosen configuration equality to allow compatible
-repair sequences to be considered as equal. This leads to efficient
-detection of compatible configurations.
+Figure~\ref{fig:cpctplus:full}.
 
 Conceptually, merging two configurations together is simple: each configuration
 needs to store a set of repair sequences, each of which is updated as further
