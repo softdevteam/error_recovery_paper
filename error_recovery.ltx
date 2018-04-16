@@ -1251,8 +1251,8 @@ Given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
 [\textit{insert b}, \textit{shift}, \textit{insert a}, \textit{insert a}]
 (whereas \cpctplus returns the minimum cost repair sequence
 [\textit{insert b}, \textit{delete}].
-The third and final flaw is that optimistically inserting the remainder \lukas{I can't see this in Fig.10. On that note I also can't see in KY Insert where it inserts nonterminals. It seems it only inserts terminals.} of a
-production in \textsc{KY Insert} prevents the terminals involved from being shifted if the user's
+The third and final flaw is that optimistically inserting the remainder of a
+production in \textsc{KY Insert} \lukas{I can't find where this happens in Fig.10.} prevents the terminals involved from being shifted if the user's
 input happens to overlap with them: since it is more expensive to insert $a$
 than to shift $a$, this can cause the search to generate non-minimum cost repair
 sequences.
