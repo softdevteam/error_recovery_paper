@@ -662,7 +662,7 @@ unclear whether non-uniform token costs are useful in practise
 \subsection{Ensuring that minimum cost repair sequences aren't missed}
 \label{corchuelo:kimyi}
 
-\textsc{CR Shift 1} has two flaws which prevent it generating
+\textsc{CR Shift 1} has two flaws which prevent it from generating
 all possible minimum cost repair sequences.
 
 \begin{figure}[tb]
@@ -769,7 +769,7 @@ time. \textsc{CR Shift 3} in
 Figure \ref{fig:corchuelo:kimyi} (as well as incorporating the fix from
 \textsc{CR Shift 2}) generates at most one shift repair at a time. Relative to
 \textsc{CR Shift 1}, it is simpler, though it also inevitably slows down the
-search, as more configurations tried.
+search, as more configurations are tried.
 
 The problems with \textsc{CR Shift 1}, in particular, can be severe.
 Figure~\ref{fig:crshift2:example} shows an example input where \textsc{CR Shift
@@ -834,7 +834,7 @@ The basis of a solution is simple: when a repair sequence of cost $c$ is found t
 be successful, we discard all repair sequences with cost $> c$, and continue
 exploring configurations in cost $c$ (including, transitively, all neighbours that are
 also of cost $c$). Each successful configuration is recorded and, when all configurations
-in $c$ have been explored, the set of successful configurations returned.
+in $c$ have been explored, the set of successful configurations is returned.
 This significantly slows down the search because $c$
 may have many remaining configurations in $c$, which may, transitively, have many neighbours.
 
@@ -860,7 +860,7 @@ maintain symmetry between the dominant and subsumed parts to prevent the
 dominant part accidentally preventing the subsumed part from being recorded as
 successful. In other words, if the dominant part of the merge had fewer shifts
 at the end of its repair sequence than the subsumed part, then the
-$N_\textit{shifts}$ check would fail, but reversing the dominant and subsumed
+$N_\textit{shifts}$ check would fail \lukas{can we reference a linenumber of Fig5 here?}, but reversing the dominant and subsumed
 parts may lead to success. It is therefore only safe to merge repair sequences
 which end in the same number of shifts.
 
@@ -874,7 +874,7 @@ such a frequent case; our
 use of the todo list means that we would not catch every case; the
 duplicate repair sequences are uninteresting from a user perspective, so we
 would have to filter them out later anyway; and each additional merge costs
-memory.
+memory\lukas{I feel like this doesn't properly explain why we need that condition. I can't make the connection of "insert can't follow delete" to "if a repair ends in a delete the other also needs to end in a delete"}.
 
 Fortunately, implementing compatible configuration merging is simple. We
 first modify the todo data-structure to be a
