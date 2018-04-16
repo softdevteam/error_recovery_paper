@@ -1762,7 +1762,7 @@ corpus. The $x$ axis shows time (up to the timeout of 0.5s) and the $y$ axis is
 a logarithmic scale for the number of files. As this clearly shows, most files
 are repaired extremely quickly. There is then a continual decrease
 until the timeout of 0.5s, where the files that were unable to be repaired
-in the timeout cause a small peak.\lukas{I wonder if we should split the 0.5 up as at the moment I can't tell how many files took exactly 0.5s to find a recovery. or are all 0.5s considered failures?}}
+in the timeout cause a small, but pronounced, peak.}
 \label{fig:results:mf_histogram}
 \end{figure}
 
@@ -1784,7 +1784,7 @@ already fairly low. These results strongly validate Hypothesis H1.
 \includegraphics[scale=.7]{mf_mfrev_error_locs_histogram.pdf}
 \caption{A histogram of the number of error locations for \mf and \mfrev (fewer
 is better). The
-$x$ axis shows the number of error locations \lukas{per file/in a file} and the $y$ axis is a logarithmic
+$x$ axis shows the number of error locations in a file and the $y$ axis is a logarithmic
 scale for the number of files. Note that we have elided outliers beyond $x=300$
 (5 for \mf; 7 for \mfrev) to prevent the significant part of the distribution
 from being visually squashed. In essence, the entire distribution is skewed
@@ -1947,7 +1947,7 @@ valid here'). This involves significant manual work, as every parser state
 (1148 in the Java grammar we use) in which an error can occur needs to be
 manually marked up, though the approach has
 various techniques to lessen the problem of maintaining messages as a grammar
-involves\lukas{evolves?}. This approach seems complementary to ours: in an ideal world it would
+evolves. This approach seems complementary to ours: in an ideal world it would
 be possible to give precise, high-level messages about the problem
 encountered whilst also showing
 repair sequences that allowed parsing to continue. One challenge may be to make
