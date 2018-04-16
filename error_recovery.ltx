@@ -515,14 +515,14 @@ as \cpctplus.
 \label{corchuelo:orig}
 
 As with all error recovery algorithms, \citet{corchuelo02repairing} is invoked
-when an error is found when parsing i.e.~when \textsf{action}$(s_n, t_0) =
+when an error is found during parsing i.e.~when \textsf{action}$(s_n, t_0) =
 \textit{error}$. Intuitively, the algorithm starts at the error state and tries
 to find a minimum cost repair sequence consisting of: \textit{insert T}
 (`insert a token of type T'), \textit{delete} (`delete the token at the current offset'),
 or \textit{shift} (`parse the token at the current offset'). The
 algorithm completes successfully if it reaches an accept state or shifts
 `enough' tokens ($N_\textit{shifts}$; set at 3 in \citet{corchuelo02repairing}),
-or unsuccessfully if it consumes `too many' tokens ($N_\textit{total}$; set at 10
+or unsuccessfully if it consumes \lukas{delete and insert?} `too many' tokens ($N_\textit{total}$; set at 10
 in \citet{corchuelo02repairing}). The algorithm
 operates on \emph{configurations}, which store the current search state;
 configurations are searched for their neighbours until a success configuration
@@ -1630,7 +1630,7 @@ Our implementation of \textsc{MF Reduce} therefore skips configurations whose
 goto state both: only contains reductions; and
 where all reductions reference the same production. For example, if, for the
 grammar of Figure~\ref{fig:stategraphtable} we reduce/goto state 10 (which
-contains two reduction actions, both referencing the same production), we
+contains two reduction actions, both referencing the same production \lukas{state 10 only contains one production}), we
 skip it and immediately perform the next reduction/goto. Conversely, if we
 reduce/goto state 3, we must create a configuration, since it contains a shift
 action (as well as several reduce actions).
