@@ -1341,7 +1341,7 @@ calculate the new \texttt{mf\_dist} heuristic (Section~\ref{mf:mf_dist}).
 \]
 \vspace{-12pt}
 \caption{The repair-creating rules for \mf from (\textit{parsing stack},
-\textit{token list}, \textit{repair sequence}) to (\textit{parsing stack},
+\textit{token list}, \textit{repair sequence}) configurations to (\textit{parsing stack},
 \textit{token list}, \textit{repair sequence}, \textit{heuristic}) tuples.
 \textit{mf\_dist} is the \mf A*
 heuristic: unlike \citet{kimyi10astar}, every rule makes use of the \textit{mf\_dist} heuristic.
@@ -1360,7 +1360,7 @@ from \textit{(parsing stack, token list, repair sequence)} to \textit{(parsing
 stack, token list, repair sequence, heuristic)} tuples and that each rule
 uses a new A* heuristic \textsf{mf\_dist} (which takes into account reductions/gotos
 and deletions; see Section~\ref{mf:mf_dist}). Less obviously, the rules do not
-use the $\lrarrowstar$ relation: \textsc{MF Shift} and \textsc{MF Reduce} subsume
+use the $\lrarrow$ relation: \textsc{MF Shift} and \textsc{MF Reduce} subsume
 the functionality of \textsc{LR Shift} and \textsc{LR Reduce} (making this aspect of \mf
 closer in spirit to \citet{mckenzie95error} than either \citet{corchuelo02repairing}
 or \citet{kimyi10astar}).
@@ -1395,11 +1395,11 @@ def all_mf_star(pstack, toks, rprs):
 \caption{The main \mf algorithm. Lines 2--13 are identical to those of
 Figure~\ref{fig:corchuelo:algorithm} (with the exception that \mf does
 not return when the first success configuration is found, but stores it until
-the current cost $c$ \lukas{isn't it \texttt{cur\_cst}?} is fully evaluated; at that point it returns all
+the current cost \texttt{cur\_cst} is fully evaluated; at that point it returns all
 the success configurations found). The main difference between \cpctplus
 and \mf is the use of the A* heuristic, which allows configurations to be deferred
-beyond their actual cost. In other words a configuration $c$ with a heuristic $h$ is
-placed in $\text{todo}[c + h]$ \lukas{what happens when I add a heuristic to a configuration? or does this mean the configuration and heuristic are both hashed?} (lines 18, 21, 22).}
+beyond their actual cost. In other words a configuration with cost $c$ and a heuristic $h$ is
+placed in $\texttt{todo}[c + h]$ (lines 18, 21, 22).}
 \label{fig:mf:algorithm}
 \end{figure}
 
@@ -1410,15 +1410,15 @@ success configuration) and consistent (i.e.~the total estimated cost to reach a 
 configuration is monotonically non-decreasing) we know that neighbouring configurations will
 always be the same, or greater, cost as the current configuration. This allows us to
 reuse the todo data-structure from \cpctplus as-is. Finally, compatible
-configuration merging, repair sequence simplification, and so on are identical
-to that\lukas{those?} in \cpctplus.
+configuration merging, repair sequence simplification, and so on are kept
+unchanged from \cpctplus.
 
 
 \subsection{The \texttt{mf\_dist} heuristic}
 \label{mf:mf_dist}
 
 \textsf{mf\_dist} comes in static and dynamic parts: the former handles insertion
-sequences and reductions/gotos\lukas{weird wrapping: reduction-s/gotos}; and the latter handles deletions (which
+sequences and reduc\-tions/gotos; and the latter handles deletions (which
 require examining the user's input). The static part
 extends the distance table algorithm used in \citet{kimyi10astar} while the dynamic part
 is entirely new. In this subsection we explain both parts.
