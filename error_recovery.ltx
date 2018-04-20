@@ -586,7 +586,7 @@ def corchueloetal(pstack, toks):
       return n
     elif len(n[1]) - len(toks) == N_total:
       continue
-    for nbr in all_cr_star(n.0, n.1):
+    for nbr in all_cr_star(n[0], n[1]):
       if len(n[2]) > 0 and n[2][-1] == <!{\textrm{\textit{delete}}}!> \
          and nbr[2][-1] == <!{\textrm{\textit{insert}}}!>:
         continue
