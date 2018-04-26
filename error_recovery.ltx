@@ -466,13 +466,13 @@ is the sequence of input tokens, and `$\$$' is the special End-Of-File (EOF) tok
 \small
 \[
 \infer[\textsc{LR Shift}]
-      {([s0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_n, s'], [t_1 \ldots t_n])}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_n, s'], [t_1 \ldots t_n])}
       {\textsf{action}(s_n, t_0) = \textit{shift}\ s'}
 \]
 \vspace{-3pt}
 \[
 \infer[\textsc{LR Reduce}]
-      {([s0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'], [t_0 \ldots t_n])}
+      {([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'], [t_0 \ldots t_n])}
       {(\textsf{action}(s_n, t_0) = \textit{reduce}\ N \colon \alpha)
        \wedge (\textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s')}
 \]
@@ -1000,11 +1000,16 @@ sequences, remove shifts from the end of repair sequences, and
 remove any duplicate repair sequences. Figure~\ref{fig:cpctplus:full} shows a
 visualisation of \cpctplus in action.
 
-Particularly on real-world grammars, selecting the top-ranked sequences
+Particularly on real-world grammars, selecting the top-ranked repair sequences
 substantially decreases cascading errors (see Figure~\ref{fig:ranking} for an example).
 It also does so for very little additional computational cost as the complete set of
 minimum cost repair sequences is much smaller than the number of configurations
-searched.
+searched. However, it cannot entirely reduce the cascading error problem. Since,
+from our perspective, each member of the top-ranked set is equivalently good, we
+non-deterministically select one of its members to repair the input and allow
+parsing to continue. This can mean that we select a repair sequence which
+performs less well beyond $N_\textit{try}$ tokens than other repair sequences in
+the top-ranked set.
 
 The final part of \cpctplus relates to the use of $N_\textit{total}$ in
 \citet{corchuelo02repairing}. As with all members of the
@@ -1080,7 +1085,7 @@ terminates when the first success node is found.
 \vspace{-3pt}
 \[
 \infer[\textsc{KY Reduce}]
-      {([s0 \ldots s_n], [t_0 \ldots t_n], \bot) \kyarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'],
+      {([s_0 \ldots s_n], [t_0 \ldots t_n], \bot) \kyarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'],
        [t_0 \ldots t_n], \bot, [\textit{insert}~\beta_0 \ldots \textit{insert}~\beta_n], 0)}
       {[N: \alpha \bullet \beta_0 \ldots \beta_n] \in \textsf{core}(s_n)
        \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'}
@@ -1308,7 +1313,7 @@ calculate the new \texttt{mf\_dist} heuristic (Section~\ref{mf:mf_dist}).
 \vspace{-3pt}
 \[
 \infer[\textsc{MF Reduce}]
-      {([s0 \ldots s_n], [t_0 \ldots t_n], [r_0 \ldots r_n])
+      {([s_0 \ldots s_n], [t_0 \ldots t_n], [r_0 \ldots r_n])
        \mfarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'],
        [t_0 \ldots t_n], [r_0 \ldots r_n], d)}
       {N: \alpha \in \textsf{core\_reduces}(s_n)
@@ -1817,8 +1822,8 @@ and \mf are still non-deterministic. This is because, in general, multiple
 repair sequences may have identical effects up to $N_\textit{try}$ tokens, but
 cause different effects after that value. Thus our results inevitably vary
 very slightly from run to run. In the next version of this paper we will produce
-confidence intervals from multiple runs of the experiment, but we lacked
-the 30 days running time necessary for this version of the paper.
+confidence intervals from multiple runs of the experiment (this will
+require about 30 days of computation time).
 
 Blackbox contains an astonishingly large amount of source code but has two
 inherent limitations. First, it only contains Java source code. This means that
@@ -1990,8 +1995,8 @@ will do fairly often) fall back to \mf.
 We are particularly grateful to the Blackbox developers for allowing us access
 to their data, and particularly to Neil Brown for help in extracting a relevant
 corpus. We thank Edd Barrett for helping to set up our benchmarking
-machine and for comments on the paper. We also thank Sarah Mount for comments
-on the paper.
+machine and for comments on the paper. We also thank Carl Friedrich
+Bolz-Tereick, Sarah Mount, and Christian Urban for comments on the paper.
 \end{acks}
 
 \bibliography{bib}
