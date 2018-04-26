@@ -1938,6 +1938,16 @@ recovery. Although judging performance across time is difficult, it appears to
 be somewhat slower than \mf, failing to recover around 20\% of files within 1s.
 It would be interesting to combine additional sources of information with \mf.
 
+The approach we have taken in this paper can only repair errors on files which
+are fully lexed. Since many users are unaware of the distinction between these
+two stages, this can cause confusion: a minor lexing error does not lead to any
+parsing errors. Looked at another way, fixing a single lexing error can,
+surprisingly, lead to a slew of parsing errors being reported. Scannerless
+parsing~\cite{salomon89scannerless} is one solution to this problem, since there
+is no distinction between lexing and parsing. Other possibilities are to
+intermingle parsing and lexing (see e.g.~\citet{wyk07context}) or to allow
+`fuzzy' or partial matching of tokens (see~\citet[p.~8]{vanter00displaying}).
+
 A very different approach is that taken by \cite{pottier16reachability}: rather
 than try and recover from errors directly, it reports precisely and accurately
 how the user's input caused the parser to reach an error state (e.g.~`I was
