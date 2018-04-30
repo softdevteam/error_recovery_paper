@@ -144,10 +144,10 @@ syntax errors in one go.
 
 When error recovery works well, it is a useful productivity gain. Unfortunately,
 widely used approaches are ad-hoc and simplistic, with
-two weaknesses limiting their usefulness: only limited consideration is
-given to the context of the error; and the only recoveries attempted are the
+two weaknesses limiting their usefulness. First, only limited consideration is
+given to the context of the error. Second, the only recoveries attempted are: the
 skipping of input until a pre-determined synchronisation
-token is reached~\cite[p.~3]{degano95comparison} or the insertion of a
+token is reached~\cite[p.~3]{degano95comparison}; and the insertion of a
 single synchronisation token. Inappropriate recoveries cause a
 cascade of spurious syntax errors (see
 Figure~\ref{fig:javaerror} for an example): programmers quickly learn that
@@ -236,9 +236,9 @@ as well as being able to deal with any LR grammar, take into account the full co
 several ways of recovering from errors. Probably the earliest such algorithm
 is \citet{aho72minimum}, which, upon encountering an error, creates on-the-fly an
 alternative (possibly ambiguous) grammar which allows the parser to recover.
-The implementation complexity of this algorithm, and the difficulty in making
-it clear to users what recovery has been used, may explain why it has fallen out of
-favour in programming language circles. A simpler family of algorithms, which
+However, this algorithm has fallen out of favour in programming language
+circles, we suspect for two reasons: its implementation complexity; and the difficulty of
+explaining to users what recovery has been used. A simpler family of algorithms, which
 trace their roots to \citet{fischer79locally}, instead try to find a single minimum cost
 \emph{repair sequence} of token insertions and deletions which allow the parser to
 recover. Algorithms in this family are good at recovering from errors and are
