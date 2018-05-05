@@ -274,7 +274,10 @@ than pick an arbitrary candidate, we rank repair sequences by how
 far they allow parsing to continue successfully, and choose from the
 subset that gets furthest (note that the time required to do this is included
 in the 0.5s timeout). In essence, this turns our `local' error recovery technique
-into a `regional' technique. We thus also test a second hypothesis:
+into a `regional' technique: while it doesn't guarantee that we recover
+in the manner that the user might like us to, it does increase the chances that
+we recover well enough to prevent cascading errors. We thus also test a second
+hypothesis:
 
 \begin{description}
   \item[H2] The cascading error problem can be significantly reduced by ranking
@@ -781,8 +784,10 @@ an efficient implementation and \citet{corchuelo02repairing} give few useful
 hints. We found that two techniques were both
 effective at improving performance while being simple to implement.
 
-First, rather than use a general queue data-structure (probably based on a
-tree), we use a similar queue data-structure to
+First, although \citet{corchuelo02repairing} do not refer to it as such,
+it was clear to us that the most natural way to model the search is as an instance of
+Dijkstra's algorithm. However, rather than use a general queue data-structure (probably based on a
+tree) to discover which element to search next, we use a similar queue data-structure to
 \citet[p.~25]{cerecke03phd}. This consists of one sub-list per cost (i.e.~ the
 first sub-list contains configurations
 of cost 0, the second sub-list configurations of cost 1 and so on).
@@ -1948,10 +1953,11 @@ is no distinction between lexing and parsing. Other possibilities are to
 intermingle parsing and lexing (see e.g.~\citet{wyk07context}) or to allow
 `fuzzy' or partial matching of tokens (see~\citet[p.~8]{vanter00displaying}).
 
-A very different approach is that taken by \cite{pottier16reachability}: rather
+A very different approach is that taken by \citet{pottier16reachability}: rather
 than try and recover from errors directly, it reports precisely and accurately
-how the user's input caused the parser to reach an error state (e.g.~`I was
-parsing an expression but I would have expected a close bracket here'), and
+how the user's input caused the parser to reach an error state (e.g.~``I
+read an open bracket followed by an expression, so I was expecting a close
+bracket here'), and
 possible routes out of the error (e.g.~`A function or variable declaration is
 valid here'). This involves significant manual work, as every parser state
 (1148 in the Java grammar we use) in which an error can occur needs to be
@@ -2006,7 +2012,7 @@ We are particularly grateful to the Blackbox developers for allowing us access
 to their data, and particularly to Neil Brown for help in extracting a relevant
 corpus. We thank Edd Barrett for helping to set up our benchmarking
 machine and for comments on the paper. We also thank Carl Friedrich
-Bolz-Tereick, Sarah Mount, and Christian Urban for comments on the paper.
+Bolz-Tereick, Sarah Mount, François Pottier, and Christian Urban for comments on the paper.
 \end{acks}
 
 \bibliography{bib}
