@@ -1695,11 +1695,11 @@ possibly be Java source code. Some odd things are pasted into text
 editors.} We then parsed candidate files with our Java grammar and rejected any
 which did parse successfully, since there is little point running an error
 recovery algorithm on correct input. The final corpus consists of \corpussize source files
-(collectively a total of \corpussizemb{}MiB). Although we cannot distribute the
-source files directly (Blackbox, quite reasonably, requires each person with
-access to the source files to register with them), we do distribute the
-identifiers necessary to extract the source files from Blackbox in our
-repeatable experiment.
+(collectively a total of \corpussizemb{}MiB). Since Blackbox, quite reasonably,
+requires each person with access to the source files to register with them, we
+cannot distribute the source files directly; instead, we distribute the
+(inherently anonymised) identifiers identifiers necessary to extract the source
+files for those who register with Blachbox.
 
 In order to test hypothesis H1 we ran \cpctplus and \mf against our
 corpus, collecting for each file: the time spent in recovery (in seconds); whether it
@@ -1726,6 +1726,16 @@ cost repair sequence. In other words, it allows us to understand how many
 more errors could be reported to users of other members of the
 \citet{fischer79locally} family compared to \mf.
 
+In order to understand the accuracy of the numbers we report, we provide 99\%
+confidence intervals. We bootstrapped~\cite{efron79bootstrap} our results
+\numbootstrap times to produce confidence intervals. However, since, as
+Figure~\ref{fig:results:mf_histogram} shows, our distribution is heavy-tailed,
+we cannot bootstrap naively. Instead, we ran each error recovery algorithm
+\numruns on each source file; when bootstrapping we randomly sample one of the
+\numruns values collected. The only subtlety is when bootstrapping the mean cost
+size: this value only makes sense if the file was successfully recovered from,
+so we do not sample from runs where error recovery failed.
+
 All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with 32GiB RAM running
 Debian 9. We used Rust nightly-2018-03-25 to compile lrpar (the two
 \texttt{Cargo.lock} files necessary to reproduce the build are included in our
@@ -1736,9 +1746,9 @@ experimental repository).
 \label{results}
 
 \begin{figure}[t]
-\begin{tabular}{lcccc}
+\begin{tabular}{lccccc}
 \toprule
-  & Mean time (s) & Median time (s) & Failure rate (\%) & Error locations (\#) \\
+  & Mean time (s) & Median time (s) & Cost size (\#) & Failure rate (\%) & Error locations (\#) \\
 \midrule
 \input{table.tex}
 \bottomrule
@@ -1748,7 +1758,9 @@ a corpus of \corpussize Java files. Mean and median times
 report how long was spent in error recovery per file: both figures
 include files which exceeded the recovery timeout, so they represent the `real'
 times that users would experience, whether or not all errors are repaired or
-not. The failure rate is the percentage of files which could not be fully
+not. Cost size reports the average cost of each error location
+repaired (or, in other words, the average number of insert and delete repairs).
+The failure rate is the percentage of files which could not be fully
 repaired within the timeout. The number of error locations shows how many separate points in files
 are reported as errors. Since fewer files in \mf timeout, it is able
 to continue repairing errors more often, hence the slightly higher
@@ -1761,6 +1773,7 @@ suffers significantly from the cascading error problem, reporting
 \end{figure}
 
 \begin{figure}[t]
+\vspace{-10pt}
 \includegraphics[scale=.7]{mf_histogram.pdf}
 \caption{A histogram of the time spent in error recovery by \mf for files in our
 corpus. The $x$ axis shows time (up to the timeout of 0.5s) and the $y$ axis is
@@ -1786,16 +1799,17 @@ again, in absolute terms both are
 already fairly low. These results strongly validate Hypothesis H1.
 
 \begin{figure}[t]
-\includegraphics[scale=.7]{mf_mfrev_error_locs_histogram.pdf}
-\caption{A histogram of the number of error locations for \mf and \mfrev (fewer
-is better). The
+\includegraphics[scale=.7]{mf_mfrev_error_locs_histogram_full.pdf}
+\includegraphics[scale=.7]{mf_mfrev_error_locs_histogram_zoomed.pdf}
+\caption{Histograms of the number of error locations for \mf and \mfrev (fewer
+is better). The top histogram shows the full spread of data. Since outliers
+obscure the main body of data, the bottom histogram only shows data up to 150 error
+recovery locations. For both histograms, the
 $x$ axis shows the number of error locations in a file and the $y$ axis is a logarithmic
-scale for the number of files. Note that we have elided outliers beyond $x=300$
-(5 for \mf; 7 for \mfrev) to prevent the significant part of the distribution
-from being visually squashed. In essence, the entire distribution is skewed
-slightly rightwards by \mfrev, showing that \mfrev makes error recovery in many
-files slightly worse (rather than making error recovery in a small number of
-files a lot worse).}
+scale for the number of files. As the bottom histogram clearly shows, the entire distribution is skewed
+slightly rightwards by \mfrev, showing that \mfrev makes error recovery
+slightly worse in a number of files (rather than making error recovery in a small
+number of files a lot worse).}
 \label{fig:results:mf_mfrev_histogram}
 \end{figure}
 
@@ -1809,9 +1823,18 @@ relative to \mf. As the histogram in Figure~\ref{fig:results:mf_mfrev_histogram}
 the distribution of error locations in \mf and \mfrev is
 similar, with the latter simply shifted slightly to the right.
 In other words, \mfrev
-makes error recovery in many files slightly worse (rather than making error
+makes error recovery slightly worse in a number of files
+(rather than making error
 recovery in a small number of files a lot worse). This strongly validates
 Hypothesis H2.
+
+Interestingly, \mfrev has a higher mean cost of repair sequences relative to
+\mf. In other words, \mfrev not only causes more error locations to be reported,
+but the repair sequences at the additional error locations have higher numbers
+of insert and delete repairs. This suggests that there is a double whammy from
+cascading errors: not only are more error locations reported, but the poorer
+quality repair sequences chosen make subsequent error locations
+disproportionately harder for the error recovery algorithm.
 
 
 \section{Threats to validity}
