@@ -694,7 +694,7 @@ all possible minimum cost repair sequences.
 \end{array}
 }
 \]
-\vspace{-10pt}
+\vspace{-16pt}
 \caption{\textsc{CR Shift 1} always consumes input, when sometimes performing
 one or more reduction/gotos without consuming input would be better. \textsc{CR
 Shift 2} addresses this issue. Both \textsc{CR Shift 1} and \textsc{CR Shift 2}
@@ -702,7 +702,7 @@ generate multiple shift repairs in one go, which causes them to skip
 `intermediate' (and sometimes important) configurations. \textsc{CR Shift 3}
 generates at most one shift, exploring all intermediate configurations.}
 \label{fig:corchuelo:kimyi}
-\vspace*{-8pt}
+\vspace*{-6pt}
 \end{figure}
 
 
@@ -734,7 +734,7 @@ Insert "MULT", Shift "3", Delete "+"
 Insert "PLUS", Shift "3", Delete "+"
 \end{lstlisting}
 \end{tabular}
-\vspace{-10pt}
+\vspace{-8pt}
 \caption{Given the input `\texttt{2 3 +}' and the grammar from
 Figure~\ref{fig:exprgrammar}, \textsc{CR Shift 1} is unable to find any repair
 sequences because it does not perform the reductions/gotos necessary after
@@ -1259,8 +1259,8 @@ For example, given the grammar \texttt{S: T 'b' 'c'; T: 'a';} and the input `c',
 Given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
 'a' 'a' 'd';} and the input `a c d', the algorithm incorrectly returns the repair sequence
 [\textit{insert b}, \textit{shift}, \textit{insert a}, \textit{insert a}]
-(whereas \cpctplus returns the minimum cost repair sequence
-[\textit{insert b}, \textit{delete}].
+(whereas \cpctplus finds the minimum cost repair sequence
+[\textit{insert b}, \textit{delete}]).
 The third and final flaw is that optimistically inserting the remainder of a
 production in \textsc{KY Reduce} prevents the terminals involved from being shifted if the user's
 input happens to overlap with them: since it is more expensive to insert $a$
@@ -1618,7 +1618,7 @@ The remaining subtlety of \textsf{mf\_dist} comes from checking that we don't
 accidentally defer success configurations. While configurations that reach an
 accept state have a distance of 0 in the distance table by definition,
 configurations that may end with $N_\textit{shifts}$ shifts have to be checked manually.
-Because of this \textsf{mf\_dist} has to take the repair sequence of
+\textsf{mf\_dist} therefore has to consider the repair sequence of
 the new configuration being created: if it ends with $N_\textit{shifts}$ shifts,
 then a distance of 0 is returned to ensure that the configuration
 is checked for success at the current cost.
@@ -1698,13 +1698,15 @@ recovery algorithm on correct input. The final corpus consists of \corpussize so
 (collectively a total of \corpussizemb{}MiB). Since Blackbox, quite reasonably,
 requires each person with access to the source files to register with them, we
 cannot distribute the source files directly; instead, we distribute the
-(inherently anonymised) identifiers identifiers necessary to extract the source
+(inherently anonymised) identifiers necessary to extract the source
 files for those who register with Blachbox.
 
 In order to test hypothesis H1 we ran \cpctplus and \mf against our
 corpus, collecting for each file: the time spent in recovery (in seconds); whether it
-succeeded in repairing all errors (true or false); and the number of errors
-found. Note that there are two ways of failing to repair all errors in a file:
+succeeded in repairing all errors (true or false); and (if the
+file was successfully repaired) the cost of the repair sequence(s) at
+each error location (which also allows us to determine the number of error
+locations). Note that there are two ways of failing to repair all errors in a file:
 exceeding the timeout; or running out of plausible candidate repair sequences.
 The latter is rare, but does occur on occasion. Unlike
 \citet{corchuelo02repairing} lrpar does not use traditional `panic mode'
@@ -2017,18 +2019,18 @@ reduces the cascading error problem.
 
 If time is scarce, we suggest implementing \cpctplus, since it avoids
 having to calculate and store distance tables. However, the extra effort
-involved in implementing \mf -- roughly 250LoC more than \cpctplus -- is arguably small
-enough to justify the performance improvement. In particular, users who need
+involved in implementing \mf -- roughly 250LoC more than \cpctplus -- will
+often be small enough to justify the performance improvement. In particular, users who need
 the best performance possible -- particularly if error recovery is used
 in an interactive environment -- may prefer \mf over \cpctplus.
 
-Looking to the future, we (perhaps immodestly) suspect that \mf is `good enough'
+Looking to the future, we (perhaps immodestly) suggest that \mf might be `good enough'
 to serve as the main representative of the \citet{fischer79locally} family.
 However, we do not think that \mf on its own is the perfect solution. We suspect
 that, in the future, multi-phase solutions will be developed. For example, one
 may use a machine-learning approach such as that of \citet{santos18syntax} as a
-first-step and when it fails (which current evidence suggests it
-will do fairly often) fall back to \mf.
+first-step and, when it fails (which current evidence suggests it
+will do fairly often), fall back to \mf.
 
 \begin{acks}
 We are particularly grateful to the Blackbox developers for allowing us access
