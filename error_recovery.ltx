@@ -256,10 +256,10 @@ In this paper we first test the following hypothesis:
 We define `acceptable time' as 0.5s for error recovery per file (i.e.~all errors
 in a file must be recovered within the timeout of 0.5s) since we think that even the most
 demanding user will tolerate such a delay. We strongly validate this hypothesis
-with both error recovery algorithms we introduce in this paper (the more advanced
-algorithm, called \mf repairs \mfsuccessrate of files within the timeout). Relative
+with both error recovery algorithms we introduce in this paper (\mf, the more advanced
+of the two algorithms, repairs \mfsuccessrate of files within the timeout). Relative
 to previous approaches, we are the clear beneficiaries of faster modern
-hardware, which undoubtedly make it easier to validate this hypothesis.
+hardware, which undoubtedly made it easier to validate this hypothesis.
 However, it it is important to note that we have
 stated a much stronger hypothesis than previous approaches: where
 they have aimed to find only a single minimum cost repair sequence, we are able
@@ -560,7 +560,7 @@ in its repair sequence.
  \textsf{action}(s'_m, t_j) \in \{\textit{accept}, \textit{error}\} 
 \end{array}}
 \]
-\vspace{-7pt}
+\vspace{-9pt}
 \caption{The repair-creating reduction rules \cite{corchuelo02repairing}.
 \textsc{CR Insert} finds all terminals reachable from the current state and
 creates insert repairs for them (other than the EOF token `$\$$').
@@ -569,7 +569,7 @@ creates insert repairs for them (other than the EOF token `$\$$').
 state, or parses exactly $N_\textit{shifts}$ tokens, then a shift repair per
 token shifted is created.}
 \label{fig:corchuelo:reductions}
-\vspace*{-10pt}
+\vspace*{-8pt}
 \end{figure}
 
 
