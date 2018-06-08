@@ -1734,7 +1734,9 @@ confidence intervals. We bootstrapped~\cite{efron79bootstrap} our results
 Figure~\ref{fig:results:mf_histogram} shows, our distribution is heavy-tailed,
 we cannot bootstrap naively. Instead, we ran each error recovery algorithm
 \numruns on each source file; when bootstrapping we randomly sample one of the
-\numruns values collected. The only subtlety is when bootstrapping the mean cost
+\numruns values collected (i.e.~our bootstapped data contains an entry for every
+file in the experiment; that entry is one of the \numruns values collected for
+that file). The only subtlety is when bootstrapping the mean cost
 size: this value only makes sense if the file was successfully recovered from,
 so we do not sample from runs where error recovery failed.
 
