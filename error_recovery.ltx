@@ -1430,7 +1430,7 @@ is entirely new. In this subsection we explain both parts.
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.55\textwidth}
-\begin{lstlisting}[numbers=left]
+\begin{lstlisting}[numbers=left,language=Python]
 def mk_mf_table(sgraph, stable, terms, eof_idx):
   table = [<!$\infty$!>] * len(sgraph) * len(terms)
   table[sgraph.accept_state * len(terms) \
@@ -1454,7 +1454,7 @@ def mk_mf_table(sgraph, stable, terms, eof_idx):
 \end{lstlisting}
 \end{adjustbox}
 \begin{adjustbox}{valign=t,minipage=.44\textwidth}
-\begin{lstlisting}[numbers=left,firstnumber=37]
+\begin{lstlisting}[numbers=left,firstnumber=37,language=Python]
 def goto_states(sgraph, stable, st_idx):
   gs = set()
   for nonterm, prod, dot in \
@@ -1555,7 +1555,7 @@ shows an example distance table.
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.38\textwidth}
-\begin{lstlisting}[numbers=left]
+\begin{lstlisting}[numbers=left,language=Python]
 def mf_dist(rprs, s, toks):
   if ends_in_N_shifts(rprs):
     return 0
