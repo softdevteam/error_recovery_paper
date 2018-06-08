@@ -33,7 +33,7 @@
 \startPage{1}
 
 \lstset{
-    basicstyle=\tt\scriptsize,
+    basicstyle=\ttfamily\scriptsize,
     xleftmargin=0pt,
     numbersep=.8em,
     numberstyle=\scriptsize\tt\color{gray},
@@ -164,7 +164,7 @@ subsequent errors -- can be relied upon to be accurate.
 &
 \begin{minipage}[t]{0.45\textwidth}
 \vspace{-7pt}
-\begin{lstlisting}
+\begin{lstlisting}[language=Java]
 class C {
   int x y;
 }
@@ -575,7 +575,7 @@ token shifted is created.}
 
 \begin{figure}[tb]
 \begin{adjustbox}{valign=t,minipage=.51\textwidth}
-\begin{lstlisting}[numbers=left]
+\begin{lstlisting}[numbers=left,language=Python]
 def corchueloetal(pstack, toks):
   todo = [[(pstack, toks, [])]]
   cur_cst = 0
@@ -947,7 +947,7 @@ two configurations were merged together.}
 &
 \begin{minipage}[t]{0.45\textwidth}
 \vspace{-7pt}
-\begin{lstlisting}
+\begin{lstlisting}[language=Java]
 class C {
     T x = 2 +
     T y = 3;
@@ -1139,7 +1139,7 @@ turn $w = \top$ into $\bot$.
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.63\textwidth}
-\begin{lstlisting}[numbers=left]
+\begin{lstlisting}[numbers=left,language=Python]
 def mk_ky_table(sgraph, terms, eof_idx):
   table = [<!$\infty$!>] * sgraph.len_states * len(terms)
   table[sgraph.accept_state * len(terms) \
@@ -1372,7 +1372,7 @@ or \citet{kimyi10astar}).
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.55\textwidth}
-\begin{lstlisting}[numbers=left]
+\begin{lstlisting}[numbers=left,language=Python]
 def mf(pstack, toks):<!\Suppressnumber!>
     ...<!\Reactivatenumber{14}!>
     for nbr in all_mf_star(n.0, n.1, n.2):
@@ -1388,7 +1388,7 @@ def mf(pstack, toks):<!\Suppressnumber!>
 \end{lstlisting}
 \end{adjustbox}%
 \begin{adjustbox}{valign=t,minipage=.45\textwidth}
-\begin{lstlisting}[numbers=left,firstnumber=24]
+\begin{lstlisting}[numbers=left,firstnumber=24,language=Python]
 def all_mf_star(pstack, toks, rprs):
   # Exhaustively apply the <!{$\mfarrowstar$}!> relation to
   # (pstack, toks, rprs) and return the
