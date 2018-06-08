@@ -900,9 +900,9 @@ Conceptually, merging two configurations together is simple: each configuration
 needs to store a set of repair sequences, each of which is updated as further
 repairs are found. However, this is an extremely inefficient representation as
 the sets involved need to be copied and extended as each new repair is found.
-Instead, we use a representation which relies on parent pointer trees (for the
-same reasons as in Section~\ref{cactusconfigurations}).
-The basic idea is that configurations no longer reference a parent pointer tree of
+Instead, we reuse the idea of graph-structured stacks from GLR
+parsing~\cite[p.~4]{tomita87efficient} which allows us to avoid copying whenever
+possible. The basic idea is that configurations no longer reference a parent pointer tree of
 repairs directly, but instead a parent pointer tree of \emph{repair merges}. A
 repair merge is a pair (\textit{repair}, \textit{merged}) where
 \textit{repair} is a plain repair and \textit{merged} is a (possibly null) set of
