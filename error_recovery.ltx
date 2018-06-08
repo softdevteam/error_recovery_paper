@@ -1958,15 +1958,25 @@ pruning mechanisms.
 
 \cpctplus and \mf take only the grammar and token types into account. However,
 it is possible to use additional information, such as nesting (e.g.~taking into
-account curly brackets) and indentation when recovering from errors. The
-advantage of such information is that it can allow one to make
-informed guesses about the user's true intentions, reducing the size of the search space
-significantly. The most sophisticated
-approach in this vein we are aware of is that of \citet{deJonge12natural} which
-uses factors such as regionality and indentation to improve the quality of error
-recovery. Although judging performance across time is difficult, it appears to
-be somewhat slower than \mf, failing to recover around 20\% of files within 1s.
-It would be interesting to combine additional sources of information with \mf.
+account curly brackets) and indentation when recovering from errors. This
+has two aims: reducing the size of the search space (i.e.~speeding up error
+recovery); and making it more likely that the repairs reported matched
+the user's intentions. The most sophisticated
+approach in this vein we are aware of is that of \citet{deJonge12natural}. In
+essence this is a multi-paradigm error recovery technique, making use of factors
+such as regionality and indentation. Such changes require annotating
+the grammar (whereas \mf requires no changes). Most significantly, it can backtrack
+from the point that an error is detected by the parser (adding a small overhead
+to normal parsing), making it more likely to find repairs that fix the true
+source of the error. However, this increases the size of the search space
+directly: on arbitrary Java grammars, it fails to recover around 10\% of files
+within 1s (whereas \mf's failure rate is \mffailurerate in 0.5s). Unfortunately,
+there is no artefact available for \citet{deJonge12natural}, so we cannot
+directly compare performance. However, the non-linear nature of error recovery
+(i.e.~most files are recovered from extremely quickly) means that even if we
+assume that CPU performance has doubled since its publication, its error rate
+still appears to be significantly higher than \mf's. Nevertheless, it would be
+interesting to make \mf part of a multi-paradigm error recovery technique.
 
 The approach we have taken in this paper can only repair errors on files which
 are fully lexed. Since many users are unaware of the distinction between these
