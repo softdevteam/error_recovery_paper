@@ -1328,9 +1328,9 @@ calculate the new \texttt{mf\_dist} heuristic (Section~\ref{mf:mf_dist}).
 \vspace{-4pt}
 \[
 \infer[\textsc{MF Delete}]
-      {(S, [t_0, t_1 \ldots t_n], [r_0 \ldots r_n])
+      {([s_0 \ldots s_n], [t_0, t_1 \ldots t_n], [r_0 \ldots r_n])
        \mfarrow
-       (S, [t_1 \ldots t_n], [r_0 \ldots r_n, \textit{delete}], d)}
+       ([s_0 \ldots s_n], [t_1 \ldots t_n], [r_0 \ldots r_n, \textit{delete}], d)}
       {t_0 \ne \$
        \wedge d = \textsf{mf\_dist}([r_0 \ldots r_n, \textit{delete}], s_n, [t_1 \ldots t_n]) < \infty}
 \]
