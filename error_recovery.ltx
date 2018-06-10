@@ -1973,14 +1973,30 @@ account curly brackets) and indentation when recovering from errors. This
 has two aims: reducing the size of the search space (i.e.~speeding up error
 recovery); and making it more likely that the repairs reported matched
 the user's intentions. The most sophisticated
-approach in this vein we are aware of is that of \citet{deJonge12natural}. In
-essence this is a multi-paradigm error recovery technique, making use of factors
-such as regionality and indentation. Such changes require annotating
-the grammar (whereas \mf requires no changes). Most significantly, it can backtrack
+approach in this vein we are aware of is that of \citet{deJonge12natural}. At
+its core, this approach uses GLR parsing: after a grammar is suitably
+annotated by the user, it is then transformed into a `permissive' grammar which
+can parse likely erroneous inputs; strings which match the permissive parts of
+the grammar can then be transformed into a non-permissive counterpart. In
+all practical cases, the transformed grammar will be ambiguous, hence the
+need for generalised parsing. There is an intriguing similarity between
+our approach and that of \citet{deJonge12natural}: our use of graph-structured
+stacks in configuration merging (see Section~\ref{corchuelo:allminimumcost})
+gives that part of our algorithm a similar feel to GLR parsing (even though
+we never generate ambiguous strings). However, there are two important
+differences in this part of the algorithm: the \citet{fischer79locally} family
+of algorithms do not require manually annotating, or statically increasing the
+size of, the grammar; and where \citet{deJonge12natural} restrict the types of
+erroneous inputs they are comfortable dealing with (perhaps in part to avoid
+unduly increasing the size of the permissive grammar), algorithms in the
+\citet{fischer79locally} family make no such restrictions.
+\citet{deJonge12natural} has several additional features which have no
+equivalent in \mf. Most significantly, \citet{deJonge12natural} can backtrack
 from the point that an error is detected by the parser (adding a small overhead
 to normal parsing), making it more likely to find repairs that fix the true
-source of the error. However, this increases the size of the search space
-directly: on arbitrary Java grammars, it fails to recover around 10\% of files
+source of the error. However, this increases the size of the search space.
+Perhaps because of this (and perhaps because the limits in the erroneous
+inputs that are dealt with), \citet{deJong12natural} fails to recover around 10\% of files
 within 1s (whereas \mf's failure rate is \mffailurerate in 0.5s). Unfortunately,
 there is no artefact available for \citet{deJonge12natural}, so we cannot
 directly compare performance. However, the non-linear nature of error recovery
