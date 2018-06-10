@@ -1911,7 +1911,16 @@ appropriate (note that this is distinct from the cascading error problem,
 which our ranking of repair sequences in Section~\ref{rankingrepairs} partly
 addresses). Perhaps the most common -- and without doubt the most frustrating
 -- example of this is missing a `\texttt{\}}' character within the method of a
-Java-like language. \citet{santos18syntax} use
+Java-like language. Some approaches are able to backtrack from the source of
+the error in order to try and more appropriate repairs. However, there are
+two problems with this: first, the cost of maintaining the necessary state to
+backtrack slows down normal parsing (e.g.~\cite{deJonge12natural} only store the
+relevant state at each line encountered to reduce this cost), whereas we add no
+overhead at all to normal parsing; second, the search-space is so hugely
+increased that it can be harder to find any repairs at
+all~\cite{degano95comparison}.
+
+A more recent possibility from~\citet{santos18syntax} is to use
 machine learning to train a system on syntactically correct programs: when a
 syntax error is encountered, they use their model to suggest appropriate global
 fixes. Although they also use data from Blackbox, their
@@ -1987,7 +1996,7 @@ parsing errors. Looked at another way, fixing a single lexing error can,
 surprisingly, lead to a slew of parsing errors being reported. Scannerless
 parsing~\cite{salomon89scannerless} is one solution to this problem, since there
 is no distinction between lexing and parsing. However, scannerless parsing
-introduces new trade-offs: it is inherently ambiguous (e.g.~is \texttt{IF} an
+introduces new trade-offs: it is inherently ambiguous (e.g.~is `if' an
 identifier or a keyword?); ambiguity is, in general, undecidable
 and even the best ambiguity heuristics
 fail to find all ambiguous parts of a grammar~\cite{vasudevan13detecting};
