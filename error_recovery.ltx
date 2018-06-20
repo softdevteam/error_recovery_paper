@@ -253,8 +253,11 @@ In this paper we first test the following hypothesis:
     be found in acceptable time.
 \end{description}
 
-We define `acceptable time' as 0.5s for error recovery per file (i.e.~all errors
-in a file must be recovered within the timeout of 0.5s) since we think that even the most
+The only work we are aware of with a similar concept of `acceptable time'
+is~\citet{deJonge12natural}, who define it as the total time in spent in error
+recovery per file, with a threshold of 1s. Since many compilers are able to
+fully execute in less time than this, we felt that a tighter threshold is more
+appropriate: we used 0.5s since we think that even the most
 demanding user will tolerate such a delay. We strongly validate this hypothesis
 with both error recovery algorithms we introduce in this paper (\mf, the more advanced
 of the two algorithms, repairs \mfsuccessrate of files within the timeout). Relative
