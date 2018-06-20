@@ -1765,16 +1765,15 @@ a corpus of \corpussize Java files. Mean and median times
 report how long was spent in error recovery per file: both figures
 include files which exceeded the recovery timeout, so they represent the `real'
 times that users would experience, whether or not all errors are repaired or
-not. Cost size reports the average cost of each error location
-repaired (or, in other words, the average number of insert and delete repairs).
+not. Cost size reports the mean cost (i.e.~the number of insert and delete
+repairs) of each error location repaired.
 The failure rate is the percentage of files which could not be fully
 repaired within the timeout. The number of error locations shows how many separate points in files
 are reported as errors. Since fewer files in \mf timeout, it is able
 to continue repairing errors more often, hence the slightly higher
-number of error locations (though the inherent non-determinism of
-both \cpctplus and \mf plays a small part in this). However \mfrev (which always selects
+number of error locations. However \mfrev (which always selects
 from the minimum cost repair sequences that allow parsing to continue the least far)
-suffers significantly from the cascading error problem, reporting
+is much more prone to cascading errors, reporting
 \mfreverrorlocsratioovermf more error locations than \mf to users.}
 \label{fig:results:summary}
 \end{figure}
