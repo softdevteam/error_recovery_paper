@@ -825,6 +825,22 @@ efficient when allocating and freeing objects of the same size.
 However, it is quite possible that a different representation would be
 better for a garbage collected language.
 
+One seemingly obvious further improvement is to parallelise the search. However,
+the nature of the problem means that it is not quite as easy as it may at first
+seem. There are two related problems: we cannot tell in advance if a given
+configuration will have huge numbers of successors or none at all; and
+configurations are, in general, searched for successors extremely quickly. Thus
+if we attempt to seed threads with initial sets of configurations, some threads
+quickly run out of work whilst others have ever growing queues. If,
+alternatively, we have a single global queue then significant amounts of time
+are spent adding or removing configurations in a thread-safe manner. This
+suggests that the right approach is likely to be a combination of the two
+approaches: threads would have a local queue which, if it gets too full,
+would be partly emptied into a global queue, from which otherwise idle threads
+can find new work. As we shall see in Section~\ref{experiment} \cpctplus runs
+fast enough that the additional complexity of such an approach is not, in our
+opinion, easily justified.
+
 
 \subsection{Finding all minimum cost repair sequences}
 \label{corchuelo:allminimumcost}
