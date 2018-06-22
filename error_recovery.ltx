@@ -1965,7 +1965,7 @@ configurations~\cite[p.~12]{mckenzie95error}, such as cycles in the parsing stac
 although this leads to some minimum cost repairs being
 skipped~\cite{bertsch99failure}. A number of interlocking, sophisticated pruning
 mechanisms which build on this are described in~\citet{cerecke03phd}. These are
-significantly more complex than our merging of compatible configurations; since this
+significantly more complex than our merging of compatible configurations: since this
 gives us acceptable performance in practise, we have not investigated other
 pruning mechanisms.
 
@@ -1997,15 +1997,10 @@ equivalent in \mf. Most significantly, \citet{deJonge12natural} can backtrack
 from the point that an error is detected by the parser (adding a small overhead
 to normal parsing), making it more likely to find repairs that fix the true
 source of the error. However, this increases the size of the search space.
-Perhaps because of this (and perhaps because the limits in the erroneous
-inputs that are dealt with), \citet{deJong12natural} fails to recover around 10\% of files
-within 1s (whereas \mf's failure rate is \mffailurerate in 0.5s). Unfortunately,
+Perhaps because of this, \citet{deJonge12natural} fails to recover around 10\% of files
+within 1s (whereas \mf's failure rate is \mffailurerate in 0.5s. Unfortunately,
 there is no artefact available for \citet{deJonge12natural}, so we cannot
-directly compare performance. However, the non-linear nature of error recovery
-(i.e.~most files are recovered from extremely quickly) means that even if we
-assume that CPU performance has doubled since its publication, its error rate
-still appears to be significantly higher than \mf's. Nevertheless, it would be
-interesting to make \mf part of a multi-paradigm error recovery technique.
+directly compare performance.
 
 The approach we have taken in this paper can only repair errors on files which
 are fully lexed. Since many users are unaware of the distinction between these
@@ -2038,6 +2033,17 @@ be possible to give precise, high-level messages about the problem
 encountered whilst also showing
 repair sequences that allowed parsing to continue. One challenge may be to make
 the top ranked repair sequences match the manually written messages.
+
+Many compilers and editors have hand-written parsers with hand-written error
+recovery. Though generally ad-hoc in their approach, it is possible, with
+sufficient effort, to make them perform reasonably well. However, this comes at
+a cost. For example, the hand-written error recovery routines in the Eclipse IDE
+are approximately 5KLoC of code and are solely for use with Java code: \cpctplus
+and \mf are approximately 0.75LoC and 1KLoC respectively and can be applied to
+any LR grammar. Furthermore, automated language-neutral approaches perform at
+least as well as this hand-written approach~\cite[p.~36]{deJonge12natural}. We
+are not aware of any hand-written approaches to error recovery which outperform
+automated approaches.
 
 While the programming language world has largely forgotten the approach of
 \citet{aho72minimum}, there are a number of successor works, most recently that
