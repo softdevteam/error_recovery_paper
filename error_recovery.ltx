@@ -1854,10 +1854,10 @@ better implementations will only improve our view of both algorithms.
 A less obvious problem is that, even after repair sequence ranking, \cpctplus
 and \mf are still non-deterministic. This is because, in general, multiple
 repair sequences may have identical effects up to $N_\textit{try}$ tokens, but
-cause different effects after that value. Thus our results inevitably vary
-very slightly from run to run. In the next version of this paper we will produce
-confidence intervals from multiple runs of the experiment (this will
-require about 30 days of computation time).
+cause different effects after that value. By running each file through each
+error recovery multiple times and reporting confidence intervals, we are able
+to give a good -- though inevitably not perfect -- sense of the likely variance
+induced by this non-determinism.
 
 Blackbox contains an astonishingly large amount of source code but has two
 inherent limitations. First, it only contains Java source code. This means that
