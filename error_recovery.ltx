@@ -2061,6 +2061,16 @@ least as well as this hand-written approach~\cite[p.~36]{deJonge12natural}. We
 are not aware of any hand-written approaches to error recovery which outperform
 automated approaches.
 
+Although error recovery approaches have, historically, been mostly LR based,
+there are several non-LR approaches. A full overview is impractical, though a
+couple of pointers are useful. When LL approaches encounter an error, they
+generally skip input until a token in the follow set is encountered (an early
+example is~\citet{turner77error}). Error recovery in PEGs is slightly more
+awkward, partly because there is not always a clearly defined point at which an
+error is determined. Perhaps because of this, recent approaches to PEG error
+recovery have tended to require additional annotations to the grammar in order
+to achieve good quality recovery (see e.g.~\cite{medeiros18syntax}).
+
 While the programming language world has largely forgotten the approach of
 \citet{aho72minimum}, there are a number of successor works, most recently that
 of~\citet{rajasekaran16error}. These improve on the time complexity, though none
