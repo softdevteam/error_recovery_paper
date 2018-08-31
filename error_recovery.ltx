@@ -80,6 +80,7 @@
 \newcommand{\mfrev}{\textrm{\textit{MF$_\textrm{rev}$}}\xspace}
 \newcommand{\mfarrow}{\rightarrow_{\textrm{\tiny MF}}}
 \newcommand{\mfarrowstar}{\rightarrow_{\textrm{\tiny MF}}^*}
+\newcommand{\panic}{\textrm{\textit{Panic}}\xspace}
 
 \include{experimentstats}
 
@@ -490,6 +491,13 @@ advances the input by one token and grows the parsing stack, while
 complete before moving to a new (`goto') state.}
 \label{fig:lrreduction}
 \end{figure}
+
+
+\section{Error recovery}
+
+\citet[p.~348]{holub90compilerdesign}
+
+The first use of follow sets for error recovery appears to be~\citet[p.~7]{ammann78error} (though the paper does not use that term, and its description is, to put it mildly, rather terse).
 
 
 \section{\cpctplus}
@@ -1752,7 +1760,7 @@ confidence intervals. We bootstrapped~\cite{efron79bootstrap} our results
 \numbootstrap times to produce confidence intervals. However, since, as
 Figure~\ref{fig:results:mf_histogram} shows, our distribution is heavy-tailed,
 we cannot bootstrap naively. Instead, we ran each error recovery algorithm
-\numruns on each source file; when bootstrapping we randomly sample one of the
+\numruns times on each source file; when bootstrapping we randomly sample one of the
 \numruns values collected (i.e.~our bootstapped data contains an entry for every
 file in the experiment; that entry is one of the \numruns values collected for
 that file). The only subtlety is when bootstrapping the mean cost
@@ -1769,22 +1777,28 @@ experimental repository).
 \label{results}
 
 \begin{figure}[t]
-\begin{tabular}{lccccc}
+\begin{tabular}{lcccccc}
 \toprule
-  & Mean time (s) & Median time (s) & Cost size (\#) & Failure rate (\%) & Error locations (\#) \\
+  & Mean     & Median   & Cost      & Failure   & Lexemes      & Error \\
+  & time (s) & time (s) & size (\#) & rate (\%) & skipped (\%) & locations (\#) \\
 \midrule
 \input{table.tex}
 \bottomrule
 \end{tabular}
 \caption{Summary statistics from running our error recovery algorithms over
-a corpus of \corpussize Java files. Mean and median times
+a corpus of \corpussize Java files (for all measures, lower values are better).
+Mean and median times
 report how long was spent in error recovery per file: both figures
 include files which exceeded the recovery timeout, so they represent the `real'
 times that users would experience, whether or not all errors are repaired or
 not. Cost size reports the mean cost (i.e.~the number of insert and delete
-repairs) of each error location repaired.
+repairs) of each error location repaired (this number is meaningless for \panic,
+which does not have a concept of costable repairs).
 The failure rate is the percentage of files which could not be fully
-repaired within the timeout. The number of error locations shows how many separate points in files
+repaired within the timeout. Lexemes skipped is the percentage of input
+skipped (either because of a delete repair, or because the recovery algorithm
+failed before the end of the file).
+The number of error locations shows how many separate points in files
 are reported as errors. Since fewer files in \mf timeout, it is able
 to continue repairing errors more often, hence the slightly higher
 number of error locations. However \mfrev (which always selects
@@ -1856,7 +1870,7 @@ but the repair sequences at the additional error locations have higher numbers
 of insert and delete repairs. This suggests that there is a double whammy from
 cascading errors: not only are more error locations reported, but the poorer
 quality repair sequences chosen make subsequent error locations
-disproportionately harder for the error recovery algorithm.
+disproportionately harder for the error recovery algorithm to recover from.
 
 
 \section{Threats to validity}
