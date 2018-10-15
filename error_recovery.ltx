@@ -1432,8 +1432,8 @@ In this section we present a new recovery algorithm \mf. As with \cpctplus,
 using the A* algorithm. While
 \cpctplus and \mf find precisely the same repair sequences, \mf does so
 slightly quicker. However, \mf requires more up-front calculations that require slightly
-more implementation effort: \mf is approximately 950LoC whereas \cpctplus
-is approximately 700LoC.
+more implementation effort: \mf is approximately 800LoC whereas \cpctplus
+is approximately 450LoC.
 
 We first provide an overview of the algorithm
 (Section~\ref{mf:overview}) before describing in detail the steps needed to
@@ -1799,7 +1799,7 @@ is fully repeatable and downloadable from \url{https://archive.org/download/erro
 In order to evaluate error recovery implementations, we need a concrete implementation. We
 implemented a new Yacc-compatible parsing library \emph{lrpar} in Rust. Including
 associated libraries for LR table generation and so on, lrpar is around
-10KLoC. Although intended as a production library, it has accidentally
+11KLoC. Although intended as a production library, it has accidentally
 played a part as a flexible test bed for experimenting with, and understanding,
 error recovery algorithms. We added a simple front-end which produces the output
 seen in e.g.~Figure~\ref{fig:javaerror}. We use lrpar for all experiments in
@@ -2191,7 +2191,7 @@ recovery. Though generally ad-hoc in their approach, it is possible, with
 sufficient effort, to make them perform reasonably well. However, this comes at
 a cost. For example, the hand-written error recovery routines in the Eclipse IDE
 are approximately 5KLoC of code and are solely for use with Java code: \cpctplus
-and \mf are approximately 0.75LoC and 1KLoC respectively and can be applied to
+and \mf are approximately 450LoC and 800LoC respectively and can be applied to
 any LR grammar. Furthermore, automated language-neutral approaches perform at
 least as well as this hand-written approach~\cite[p.~36]{deJonge12natural}. We
 are not aware of any hand-written approaches to error recovery which outperform
@@ -2233,7 +2233,7 @@ users, as well as significantly reducing the cascading error problem.
 
 If time is scarce, we suggest implementing \cpctplus, since it avoids
 having to calculate and store distance tables. However, the extra effort
-involved in implementing \mf -- roughly 250LoC more than \cpctplus -- may
+involved in implementing \mf -- roughly 350LoC more than \cpctplus -- may
 be small enough to justify the performance improvement. In particular, users who need
 the best performance possible -- particularly if error recovery is used
 in an interactive environment -- may prefer \mf over \cpctplus.
