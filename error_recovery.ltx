@@ -577,28 +577,18 @@ recovery algorithm now starts. It first tries \textsf{action}(7, `+') which
 \textit{error}; it then pops the top element from the parsing stack and tries
 \textsf{action}(2, `+'), which returns \textit{shift}. This is enough for the
 error algorithm to complete, and parsing resumes with a stack [0, 2]. In this
-example, parsing then completes successfully. However, there are three major
-problems with this algorithm.
+example, parsing then completes successfully.
 
-The first problem can be seen from the recovery performed in the simple example above: the
-adjustment made to the parsing stack is often not one that the user can
-replicate. Looked at another way, error recovery in this style is \emph{Deus ex
+The fundamental problem with error recovery can be seen from the above example:
+the adjustment made to the parsing stack is not one that the user can
+replicate. Looked at another way, error recovery is \emph{Deus ex
 machina}: while the parser correctly identified the location of the error and
 successfully carried on parsing after it, there is no practical way to report
 what modifications were performed (few, if any, users can interpret parsing
-stacks for large grammars), or what they could do to emulate its recovery.
-
-The second problem is that the algorithm is often unable to recover
-from seemingly simple errors. For example the input `\texttt{2 3 +}' leads to an
-error being discovered after the `+' token: however there is no input which can
-be skipped in order for the parse to complete. Thus the error recovery algorithm
-is unable to successfully recover from this input.
-
-The third problem is, in a sense, a corollary of the first two. Because the
-algorithm often recovers by putting the parser in a state that the user would
-not have been able to, its recoveries tend not to match what the user intended,
-leading to a cascade of parsing errors (as we will see later in
-Section~\ref{results}).
+stacks for large grammars), nor what the user could do to emulate its recovery.
+Because of this (as we will see later in Section~\ref{results}), the recoveries
+found tend not to match what the user intended,
+leading to a cascade of parsing errors.
 
 
 \section{\cpctplus}
