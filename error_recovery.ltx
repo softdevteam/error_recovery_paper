@@ -87,7 +87,7 @@
 % Document starts
 \begin{document}
 % Title portion. Note the short title for running heads
-\title{Don't Panic: Reducing Cascading Parsing Errors}
+\title{Don't Panic! Reducing Cascading Syntax Errors in LR Parsers}
 
 \author{Lukas Diekmann}
 \affiliation{%
@@ -108,10 +108,11 @@
 
 
 \begin{abstract}
-Syntax errors are generally easy to fix for humans, but not for parsers:
-traditional `panic mode' algorithms, though easy to implement and applicable to any grammar,
-often fails to find an effective recovery, leading to a cascading chain of
-errors that drown out the original. More advanced, generic, error recovery techniques
+Syntax errors are generally easy to fix for humans, but not for parsers in general,
+and LR parsers in particular. Traditional `panic mode' error recovery, though
+easy to implement and applicable to any grammar,
+often leads to a cascading chain of
+errors that drown out the original. More advanced error recovery techniques
 suffer less from this problem but have seen little practical use because
 their typical performance was seen as poor, their worst case unbounded, and the
 repairs they reported arbitrary. In this paper we show two generic error
@@ -120,8 +121,7 @@ the complete set of possible repair sequences for a given location, allowing
 programmers to select the one that best fits their intention. Second, on a
 corpus of \corpussize real-world syntactically invalid Java programs, we show
 that our best performing algorithm is able to repair \mfsuccessrate files within
-a cut-off of 0.5s. In comparison, a traditional panic mode algorithm only
-manages to repair \panicsuccessrate files. Furthermore, we are also able to
+a cut-off of 0.5s. Furthermore, we are also able to
 substantially reduce the cascading error problem, with our best performing
 algorithm reporting \mferrorlocs error locations in the corpus to the user, while the panic
 mode algorithm reports \panicerrorlocs error locations.
@@ -150,7 +150,7 @@ grammar-neutral approach to error recovery are those algorithms described as
 input until the parser finds something it is able to parse. A more
 grammar-specific variation of this idea is to skip input until a pre-determined
 synchronisation token (e.g. `;' in Java) is
-reached~\cite[p.~3]{degano95comparison} or to try inserting a single
+reached~\cite[p.~3]{degano95comparison}, or to try inserting a single
 synchronisation token. Unfortunately, such strategies are often unsuccessful,
 leading to a
 cascade of spurious syntax errors (see
@@ -221,8 +221,8 @@ C.java:2: error: <identifier> expected
 dealing with it. \texttt{javac} (\subref{lst:javaerror:javac}) spots the error
 when it encounters `\texttt{y}'. Its error recovery heuristic then
 repairs the input by inserting a semicolon before `\texttt{y}' (i.e.~making
-the input equivalent to `\texttt{int x; y;}'). This immediately leads to a spurious second parse error,
-since `\texttt{y}' on its own is not a valid statement. The two new error
+the input equivalent to `\texttt{int x; y;}'). This causes a (spurious) cascading
+parsing error, since `\texttt{y}' on its own is not a valid statement. The two new error
 recovery algorithms (\cpctplus and \mf) we introduce in this paper both
 produce the output shown in (\subref{lst:javaerror:mf}): after spotting an error
 when parsing encounters `\texttt{y}', they then use the Java grammar to find the
@@ -252,15 +252,15 @@ circles, we suspect for two reasons: its implementation complexity; and the diff
 explaining to users what recovery has been used. A simpler family of algorithms, which
 trace their roots to \citet{fischer79locally}, instead try to find a single minimum cost
 \emph{repair sequence} of token insertions and deletions which allow the parser to
-recover. Algorithms in this family are good at recovering from errors and are
-easily adapted to give human-friendly feedback. However, they
+recover. Algorithms in this family are much better at recovering from errors
+than naive approaches and can communicate the repairs they find in a way that
+humans can easily replicate. However, such algorithms
 have seen little practical use because their typical
 performance was seen as poor and their worst case unbounded \cite[p.~14]{mckenzie95error}.
 We add a further complaint to this mix: such approaches only report a single
 repair sequence to users. In general -- and especially in syntactically rich
 languages -- there are multiple reasonable repair sequences for a given error
-location. Reporting only one makes it less likely that the repair sequence is
-the one the user would apply themselves.
+location, and the algorithm has no way of knowing which best matches the user's intentions.
 
 In this paper we introduce two generic error recovery algorithms that run fast
 enough to be usable, are able to repair nearly all errors, and which report the
@@ -273,11 +273,11 @@ that they are realistic targets for tool builders: \cpctplus is the simpler of
 the two, though \mf is still less than 1,000 lines of Rust code.
 
 We then validate \cpctplus and \mf on a corpus of \corpussize real,
-syntactically incorrect, Java programs (Section~\ref{experiment}). A traditional
-panic mode error recovery algorithm is able to recover \panicsuccessrate of
-files, \cpctplus is able to recover \cpctplussuccessrate, and \mf is able to
-recover \mfsuccessrate. As this shows, our new algorithms perform much better than
-traditional panic mode, though \mf gets slightly closer to the ideal. We believe
+syntactically incorrect, Java programs (Section~\ref{experiment}). \cpctplus is
+able to recover \cpctplussuccessrate of files within a 0.5s timeout, and \mf is
+able to recover \mfsuccessrate. Significantly, both algorithms report well under
+half as many error locations to the user as a traditional panic mode algorithm:
+in other words, they substantially reduce the cascading error problem. We believe
 that this shows that such approaches are ready for wider usage, either on their
 own, or as part of a multi-phase recovery system.
 
@@ -299,7 +299,7 @@ appropriate: we used 0.5s since we think that even the most
 demanding user will tolerate such a delay. We strongly validate this hypothesis
 with both \cpctplus (which successfully recovers \cpctplussuccessrate of files) and \mf (\mfsuccessrate). Relative
 to previous approaches, we are the clear beneficiaries of faster modern
-hardware, which undoubtedly made it easier to validate this hypothesis.
+hardware, which undoubtedly make it easier to validate this hypothesis.
 However, it it is important to note that we have
 stated a much stronger hypothesis than previous approaches: where
 they have aimed to find only a single minimum cost repair sequence, we
@@ -307,14 +307,14 @@ find the complete set of minimum cost repair sequences, a much more challenging
 task.
 
 The complete set of minimum cost repair sequences makes it much more likely that
-the programmer will see the repair sequence that best matches their original
+the programmer will see a repair sequence that best matches their original
 intention (see Figure~\ref{fig:javaerror} for an example). It also opens up a
 new opportunity for error recovery algorithms. Previous error recovery
 algorithms find a single repair sequence, apply that to the input, and then
 continue parsing. While that repair sequence may have been a reasonable local
 choice, it may cause cascading errors later. Since we have the complete set of
-minimum cost repair sequences available, we can instead choose the repair
-sequence we think is less likely to cause cascading errors. We do this by
+minimum cost repair sequences available, we can instead choose a repair
+sequence that we can show causes fewer cascading errors. We do this by
 ranking repair sequences by how far they allow parsing to continue successfully
 (up to a threshold --- parsing the whole file would, in general, be too costly),
 and choose from the subset that gets furthest (note that the time required to do
@@ -327,9 +327,10 @@ allow parsing to continue the furthest.
 \end{description}
 
 We also strongly validate this hypothesis. We do this by comparing `normal' \mf
-with a simple variant \mfrev, which always selects the worst minimum cost repair
-sequence, modelling the worst case of previous approaches in the
-\citet{fischer79locally} family which non-deterministically select a single
+with a simple variant \mfrev which reverses the ranking process, always selecting
+from amongst the worst performing minimum cost repair
+sequence. \mfrev models the worst case of previous approaches in the
+\citet{fischer79locally} family, which non-deterministically select a single
 minimum cost repair sequence. \mfrev leads to \mfreverrorlocsratioovermf more
 errors being raised (i.e.~it substantially worsens the cascading error problem).
 
@@ -459,7 +460,7 @@ represent zero or more symbols; with the \emph{dot} ($\bullet$) representing
 \label{fig:exprgrammar}
 \end{figure}
 
-The CFG is first transformed into a \emph{stategraph}, which is a statemachine
+The CFG is first transformed into a \emph{stategraph}, a statemachine
 where each node contains one or more \emph{items} (describing the valid
 parse states at that point) and edges are labelled with terminals or
 nonterminals. Since even on a modern machine, a canonical
@@ -524,17 +525,25 @@ complete before moving to a new (`goto') state.}
 
 Error recovery algorithms are invoked by a parser when it has yet to finish but
 there is no apparent way to continue parsing (i.e.~when \textsf{action}$(s_n,
-t_0) = \textit{error}$). Error recovery algorithms thus start with a parsing
-stack and a sequence of remaining input: they can modify either or both of the
+t_0) = \textit{error}$). Error recovery algorithms are thus called with a parsing
+stack and sequence of remaining input (which, for simplicities sake, we represent
+as a list of tokens): they can modify either or both of the
 stack and the input in their quest to get parsing back on track. The differences
 between algorithms are thus in what modifications they can carry out
 (e.g.~altering the parse stack; deleting input; inserting input), and how they
-carry them out.
+carry such modifications out.
 
 The simplest grammar-neutral error recovery algorithms are called `panic mode'
-algorithms. There are a number of such algorithms with minor variations; in this section we use
-the algorithm from \citet[p.~348]{holub90compilerdesign}: it is simple but still
-somewhat effective. It works by taking the parsing stack and popping elements to
+algorithms. The precise origin of this family of algorithms seems lost in time;
+there are also more members of this family for LL parsing than there are for
+LR parsing. Indeed, for LR parsing, there appears to be only way of creating
+a grammar-neutral panic mode algorithm: we take our formulation from
+\citet[p.~348]{holub90compilerdesign}.\footnote{Note that step 2 in
+\citet{holub90compilerdesign} causes valid repairs to be missed: while it is
+safe to ignore the top element of the parsing stack on the first iteration of
+the algorithm, as soon as one token is skipped, one must check all elements of
+the parsing stack. Our description simply drops step 2 entirely.} It works by
+taking the parsing stack and popping elements to
 see if an earlier part of the stack is able to parse the next input symbol. If
 no element in the stack is capable of parsing the next input symbol, the input
 symbol is skipped, the stack restored, and the process repeated.
@@ -573,33 +582,33 @@ consider the grammar from Figure~\ref{fig:exprgrammar} and the input `\texttt{2
 + + 3}'. The parser encounters an error on the second `+' token, leaving it with
 a parsing stack of [0, 2, 7] and the input `\texttt{+ 3}' remaining. The error
 recovery algorithm now starts. It first tries \textsf{action}(7, `+') which
-(by definition, since it is the same expression which raised an error) returns
+(by definition, since it is the place the parser encountered an error) returns
 \textit{error}; it then pops the top element from the parsing stack and tries
 \textsf{action}(2, `+'), which returns \textit{shift}. This is enough for the
-error algorithm to complete, and parsing resumes with a stack [0, 2]. In this
-example, parsing then completes successfully.
+error algorithm to complete, and parsing resumes with a stack [0, 2].
 
 The fundamental problem with error recovery can be seen from the above example:
 the adjustment made to the parsing stack is not one that the user can
 replicate. Looked at another way, error recovery is \emph{Deus ex
-machina}: while the parser correctly identified the location of the error and
-successfully carried on parsing after it, there is no practical way to report
-what modifications were performed (few, if any, users can interpret parsing
-stacks for large grammars), nor what the user could do to emulate its recovery.
-Because of this (as we will see later in Section~\ref{results}), the recoveries
-found tend not to match what the user intended,
-leading to a cascade of parsing errors.
+machina}: while panic mode managed to recover from the error, there is no
+practical way to report the actions taken to achieve that error. In general,
+the only way to report the actions taken is to report the parsing stack
+before and after recovery: this is challenging to interpret for small grammars
+like that of Figure~\ref{fig:exprgrammar} and completely impractical for
+anything larger. There is an important corollary to this: since the recoveries
+made often don't match anything the user could have passed as input, the
+recoveries made are often of poor quality, leading to a cascade of further
+parsing errors (as we will see later in Section~\ref{results}).
 
 
 \section{\cpctplus}
 \label{corchueloplus}
 
-There have been many attempts to create error recovery algorithms that perform
-better than panic mode algorithms, such as that of Section~\ref{sec:panic mode}.
-The \citet{fischer79locally} family of error recovery algorithms contains several
-variations on improved error recovery algorithms -- far too many
-to cover in one paper. We therefore start
-with one of the more recent -- \citet{corchuelo02repairing}. We first
+There have been many attempts to create better LR error recovery algorithms than
+panic mode. Most numerous are those error recovery algorithms in what we call the
+\citet{fischer79locally} family. Indeed, there are far too many
+members of this family of algorithms to cover in one paper. We therefore start
+with one of the most recent -- \citet{corchuelo02repairing}. We first
 explain the original algorithm (Section~\ref{corchuelo:orig}), although we use
 different notation than the original, fill in several missing details, and
 provide a more formal definition. We then
@@ -745,9 +754,9 @@ and deletes cost 1, shifts 0.}
 \end{figure}
 
 As with the original, we explain the approach in two parts. First is a new reduction relation
-$\crarrow$ which defines when individual repairs are created
-(Figure~\ref{fig:corchuelo:reductions}). Second is an algorithm which
-determines when to use the $\crarrow$ relation (Figure~\ref{fig:corchuelo:algorithm}).
+$\crarrow$ which defines a configuration's neighbours. Second is an algorithm which
+makes use of the $\crarrow$ relation to generate neighbours, and determines when
+a successful configuration has been found or if error recovery has failed.
 As well as several changes for clarity, the biggest difference is that
 Figure~\ref{fig:corchuelo:algorithm} captures semi-formally what
 \citet{corchuelo02repairing} explain in prose (spread amongst
@@ -844,7 +853,7 @@ sequences because it does not perform the reductions/gotos necessary after
 the final \textit{insert} or \textit{delete} repairs to reach an accept state.
 \textsc{CR Shift 2} can find 4 minimum cost repair sequences
 (\subref{lst:crshift2:crshift2}). \textsc{CR Shift 3} can find a further 2
-minimum cost repair sequences (i.e.~6 in total)
+minimum cost repair sequences on top of these (i.e.~6 in total)
 (\subref{lst:crshift2:crshift3}).}
 \label{fig:crshift2:example}
 \end{figure}
@@ -949,15 +958,15 @@ opinion, justified.
 The algorithm as described to this point non-deterministically completes as soon
 as it has found a single minimum cost repair sequence.
 In this section we show that it is possible to extend such an algorithm to
-efficiently find the complete set of minimum cost repair sequences.
+efficiently find and report the complete set of minimum cost repair sequences.
 
 The basis of a solution is simple: when a repair sequence of cost $c$ is found to
 be successful, we discard all repair sequences with cost $> c$, and continue
 exploring configurations in cost $c$ (including, transitively, all neighbours that are
 also of cost $c$). Each successful configuration is recorded and, when all configurations
 in $c$ have been explored, the set of successful configurations is returned.
-This significantly slows down the search because $c$
-may have many remaining configurations in $c$, which may, transitively, have many neighbours.
+This significantly slows down the search because there may
+may be many remaining configurations in $c$, which may, transitively, have many neighbours.
 
 Our solution to this performance problem is to merge together \emph{compatible}
 configurations on-the-fly, preserving their distinct repair sequences while
@@ -996,7 +1005,7 @@ from \citet[p.~8]{corchuelo02repairing}: delete repairs are never followed by an
 insert (see Figure~\ref{fig:corchuelo:algorithm}) since [\textit{delete},
 \textit{insert x}] always leads to the same configuration as [\textit{insert x},
 \textit{delete}]. Although we get much of the same effect through
-by compatible configuration merging, we keep it as a separate optimisation because: it is
+compatible configuration merging, we keep it as a separate optimisation because: it is
 such a frequent case; our
 use of the todo list means that we would not catch every case; the
 duplicate repair sequences are uninteresting from a user perspective, so we
@@ -1012,11 +1021,15 @@ list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
 and thus allows list-like integer indexing as well as hash-based lookups.}. This has
 near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 filters out duplicates with near-identical performance to an unordered hashset.
-We hash configurations based on their parsing stack
-and remaining input (i.e.~we do not hash repair sequences). Configuration equality, however,
-is based on parsing stacks, remaining input, and repair sequences. This allows
-us to quickly find compatible nodes using hashing, but to check for exact
-duplicates using equality. Since we only record configurations
+We then make use of a simply property of hashsets: an object's hash behaviour
+need only be a non-strict subset of its equality behaviour. In other words,
+while we need to ensure that two objects that compare equal always map to the
+same hash, we can allow two objects that do not compare equal to map to the
+same hash. In our context, this allows us to quickly find potentially compatible
+nodes using hashing, checking for definitely compatible configurations
+using equality. We therefore hash configurations based solely on their parsing stack
+and remaining input whereas configuration equality is based on a configurations'
+parsing stacks, remaining input, and repair sequences.  Since we only record configurations
 which we have yet to search, we cannot detect all possible compatible merges.
 Nevertheless, this is still a powerful optimisation.
 An example of compatible configuration merging can be seen in
@@ -1117,16 +1130,16 @@ The penultimate step in our new algorithm allows us to somewhat compensate for t
 small value of $N_\textit{shifts}$. This value has to be a small integer (we
 use 3, the value suggested by \citet{corchuelo02repairing})
 because each additional token searched exponentially increases the
-search space. Thus the repair sequences we find may appear to be good within the
-range of $N_\textit{shifts}$, but are actually but poor beyond that range.
-Fortunately, we can use the
+search space. Thus while the repair sequences we find are all good
+within the range of $N_\textit{shifts}$, some, but not others, may perform
+poorly beyond that range. Fortunately, we can use the
 complete set of minimum cost repair sequences to lessen this weakness.
 After we have generated the set of configurations which represents the
 complete set of minimum cost repair sequences, we then rank the
 configurations by how far they allow parsing to continue, up to a limit of
 $N_\textit{try}$ tokens (which we somewhat arbitrarily set at 250). The reason
 why we rank the configurations, and not the repair sequences, is that we only
-need to rank one repair sequence for each merged configuration, a useful
+need to rank one repair sequence for each merged configuration, a small but useful
 optimisation. We then expand the top ranked configurations into repair
 sequences, remove shifts from the end of repair sequences, and
 remove any duplicate repair sequences. Figure~\ref{fig:cpctplus:full} shows a
@@ -1134,7 +1147,7 @@ visualisation of \cpctplus in action.
 
 Particularly on real-world grammars, selecting the top-ranked repair sequences
 substantially decreases cascading errors (see Figure~\ref{fig:ranking} for an example).
-It also does so for very little additional computational cost as the complete set of
+It also does so for very little additional computational cost, as the complete set of
 minimum cost repair sequences is much smaller than the number of configurations
 searched. However, it cannot entirely reduce the cascading error problem. Since,
 from our perspective, each member of the top-ranked set is equivalently good, we
@@ -1254,8 +1267,8 @@ duplicate those found by \textsc{KY Reduce}.}
 \end{figure}
 
 The \citet{kimyi10astar} algorithm itself comes in two main parts. First is a
-relation $\kyarrow$ which defines when repairs are created
-(Figure~\ref{fig:kimyi:rules}). Unlike the $\crarrow$ relation, these rules are
+relation $\kyarrow$ which defines which neighbours can be reached a
+configuration (Figure~\ref{fig:kimyi:rules}). Unlike the $\crarrow$ relation, these rules are
 from (\textit{parsing stack}, \textit{token list}, \textit{w}) to
 (\textit{parsing stack}, \textit{token list}, \textit{w}, \textit{repairs},
 \textit{heuristic}) tuples. Of these values, $w$ is the least intuitive:
@@ -1486,8 +1499,8 @@ At a high level -- and much of the low level -- our description of \mf is
 deliberately similar to \cpctplus, hopefully allowing the reader
 to both easily digest \mf and pick out the differences from \cpctplus.
 
-We introduce a new reduction relation $\mfarrow$, whose rules are shown in
-Figure~\ref{fig:mf:rules}. Their most obvious features are that the relation is
+We introduce a new reduction relation $\mfarrow$, defining a neighbour's configurations
+(Figure~\ref{fig:mf:rules}. Their most obvious features are that the relation is
 from \textit{(parsing stack, token list, repair sequence)} to \textit{(parsing
 stack, token list, repair sequence, heuristic)} tuples and that each rule
 uses a new A* heuristic \textsf{mf\_dist} (which takes into account reductions/gotos
@@ -1777,8 +1790,8 @@ action (as well as several reduce actions).
 \label{experiment}
 
 In order to understand the performance of error recovery algorithms we coducted
-a large experiment on real-world Java code using three algorithms: \citet{holub90compilerdesign},
-\cpctplus, and \mf. In this section we outline our methodology
+a large experiment on real-world Java code using three algorithms: panic mode
+(Section~\ref{sec:panic mode}), \cpctplus, and \mf. In this section we outline our methodology
 (Section~\ref{methodology}) and results (Section~\ref{results}). Our experiment
 is fully repeatable and downloadable from \url{https://archive.org/download/error_recovery_experiment/0.1/}
 
@@ -1795,19 +1808,26 @@ error recovery algorithms. We added a simple front-end which produces the output
 seen in e.g.~Figure~\ref{fig:javaerror}. We use lrpar for all experiments in
 this paper.
 
-A standard problem when evaluating error recovery algorithms has
-been obtaining sufficient example programs to test them on. Most papers we are
-aware of use around 200 inputs (e.g.~\cite{corchuelo02repairing}) or even a
-single input with minor variants (\citet{kimyi10astar}). \citet{cerecke03phd}
-was the first to use a large-scale test suite (approximately 60,000 Java
-source files). Fortunately, the situation has been made rather easier for us
-through the existence of the Blackbox project~\cite{brown14blackbox}. This
-is an opt-in data collection facility for the BlueJ editor, which records
-major editing events (e.g.~compiling a file) and sends them to a central
-repository. Crucially, one can see the source code associated with each event.
-What makes Blackbox most appealing as a
-data source is its scale and diversity: it has hundreds of thousands of users, and a
-huge collection of source code.
+There are two standard problems when evaluating error recovery algorithms: how
+to determine if a good job has been done on an individual example; and obtaining
+sufficient examples to get a wide perspective on an algorithm's performance. To
+some extent, any solutions to these problems are mutually exclusive: for
+real-world inputs, the only way to guarantee that a good job has been done is to
+manually evaluate it, which means that it is only practical to use a small set
+of input programs. Most papers we are aware of use at most 200 inputs
+(e.g.~\cite{corchuelo02repairing}), with one using a single input with minor
+variants (\citet{kimyi10astar}). \citet{cerecke03phd} was the first to use a
+large-scale corpus of approximately 60,000 Java source files. Early in the
+development of our methodology, we performed some rough experiments which
+suggested that statistics only start to stabilise once a corpus exceeds 10,000
+programs. We therefore prefer to use a much larger corpus than most previous
+studies. We are fortunate to have access to the Blackbox
+project~\cite{brown14blackbox}, an opt-in data collection facility for the BlueJ
+editor, which records major editing events (e.g.~compiling a file) and sends
+them to a central repository. Crucially, one can see the source code associated
+with each event. What makes Blackbox most appealing as a data source is its
+scale and diversity: it has hundreds of thousands of users, and a huge
+collection of source code.
 
 We first obtained a Java 1.5 Yacc grammar and updated it to support Java
 1.7.\footnote{Unfortunately, changes to the method calling syntax in Java 1.8
@@ -1829,6 +1849,21 @@ cannot distribute the source files directly; instead, we distribute the
 (inherently anonymised) identifiers necessary to extract the source
 files for those who register with Blackbox.
 
+The size of our corpus means that we cannot manually evaluate repairs for
+quality. Instead, to evaluate this paper's most important metric (the cascading
+error problem), we report the number of error locations found in the
+corpus for different algorithms. We know, by definition, that the corpus
+contains at least \corpussize manually created errors (i.e.~one per
+file). Since it is likely that some files have more than one manually created
+error, the minimum possible number of error locations is likely to be
+bigger than this, but we have no way of knowing the true number. However, we can
+compare different algorithms: the fewer error locations an algorithm
+reports, the fewer cascading errors it has caused. This comes with an
+important caveat: a nefarious error recovery algorithm could simply skip all
+input after the first error encountered, thus reporting `only' \corpussize
+error locations. We also report the proportion of input skipped, to give
+some assurance that this is an insignificant factor.
+
 In order to test hypothesis H1 we ran each error recovery algorithm against
 the entire Java corpus, collecting for each file: the time spent in recovery (in seconds);
 whether error recovery on the file was successful (true or false); the
@@ -1837,9 +1872,7 @@ error location (only if error recovery was successful on the file as a whole);
 and the number of lexemes skipped by error recovery (i.e.~how many \emph{delete}
 repairs were applied). Note that there are two ways of failing to repair all errors in a file:
 exceeding the timeout; or running out of plausible candidate repair sequences.
-Unlike \citet{corchuelo02repairing}, neither \cpctplus nor \mf fall back on panic mode
-as a backup recovery mechanism. We
-measure the time spent in error recovery with a monotonic wall-clock timer,
+We measure the time spent in error recovery with a monotonic wall-clock timer,
 covering all aspects of error recovery from when the main parser first invokes
 error recovery until an updated parsing stack and parsing index are returned
 along with minimum cost repair sequences. The timer is suspended when normal parsing
@@ -1921,10 +1954,13 @@ in the timeout cause a small, but pronounced, peak.}
 \end{figure}
 
 Figure~\ref{fig:results:summary} shows a summary of the results of our
-experiment. The overall conclusions are fairly clear: both \cpctplus and \mf are
-able to repair nearly all input files within the 0.5s timeout; but \citet{holub90compilerdesign}
-fails to succeed in over a quarter of cases. The fact
-that the median recovery time for \cpctplus and \mf is two orders of magnitude lower than the mean
+experiment. The overall conclusions are fairly clear. Both \cpctplus and \mf are
+able to repair nearly all input files within the 0.5s timeout; and while
+panic mode is able to repair virtually every file within the 0.5s timeout, it
+reports well over twice as many error locations as \cpctplus or \mf (i.e.~panic
+mode substantially worsens the cascading error problem).
+The fact that the median recovery time for \cpctplus and \mf is two orders of
+magnitude lower than the mean
 recovery time suggests that only a small number of outliers cause error recovery to
 take long enough to be perceptible to humans; this is confirmed by the
 histogram in Figure~\ref{fig:results:mf_histogram}. \mf's failure rate is only
@@ -1978,8 +2014,8 @@ disproportionately harder for the error recovery algorithm to recover from.
 \subsection{The impact of skipping input}
 
 As well as the much higher failure rate, the number of error locations reported
-by \citet{holub90compilerdesign} is well over twice that of \cpctplus and \mf.
-This led us to make an additional hypothesis:
+by panic mode is well over twice that of \cpctplus and \mf. This led us to make
+an additional hypothesis:
 
 \begin{description}
   \item[H3] The more of the user's input that is skipped, the greater the number
@@ -1992,7 +2028,7 @@ less likely one is to get back to a successful parse. We thus added the ability
 to record how much of the user's input is skipped as the result of \emph{delete}
 repairs during error recovery. The figures surprised us: \cpctplus and \mf skip
 very little of the user's input; \mfrev skips a little more; and
-\citet{holub90compilerdesign} skips an order of magnitude more. Although we do
+panic mode skips an order of magnitude more. Although we do
 not have enough data points to make a definitive statement, our data seems to
 validate Hypothesis H3.
 
@@ -2086,7 +2122,7 @@ the data \cite[p.~8]{santos18syntax}) whereas we attempt to fix errors which
 span multiple tokens. It is thus difficult to directly compare their results to
 ours. However, by the high bar they have set themselves, they are able to repair
 52\% of single-token errors (i.e.~about 30\% of all possible errors; for
-reference, we repair \mfsuccessrate). It seems likely that future machine
+reference, MF repairs \mfsuccessrate of files). It seems likely that future machine
 learning approaches will improve upon this figure, although the size of the
 problem space suggests that it will be hard to get close to 100\%{}. It seems plausible
 that a `perfect' system will mix both deterministic approaches (such as ours, which
@@ -2178,7 +2214,7 @@ the top ranked repair sequences match the manually written messages.
 
 Many compilers and editors have hand-written parsers with hand-written error
 recovery. Though generally ad-hoc in their approach, it is possible, with
-sufficient effort, to make them perform reasonably well. However, this comes at
+sufficient effort, to make them perform well. However, this comes at
 a cost. For example, the hand-written error recovery routines in the Eclipse IDE
 are approximately 5KLoC of code and are solely for use with Java code: \cpctplus
 and \mf are approximately 450LoC and 800LoC respectively and can be applied to
@@ -2221,20 +2257,19 @@ panic mode. Furthermore, extending such algorithms to produce the complete set o
 minimum cost repair sequences allows parsers to provide better feedback to
 users, as well as significantly reducing the cascading error problem.
 
-If time is scarce, we suggest implementing \cpctplus, since it avoids
-having to calculate and store distance tables. However, the extra effort
-involved in implementing \mf -- roughly 350LoC more than \cpctplus -- may
-be small enough to justify the performance improvement. In particular, users who need
-the best performance possible -- particularly if error recovery is used
-in an interactive environment -- may prefer \mf over \cpctplus.
+For batch compilers, \cpctplus is probably a good match: it is simple to
+implement (around 450LoC in our Rust system) and still has good performance. For
+interactive environments, the extra effort involved in implementing \mf --
+roughly 350LoC more than \cpctplus -- may be small enough to justify the
+performance improvement.
 
-Looking to the future, we (perhaps immodestly) suggest that \mf might be `good enough'
+Looking to the future, we (perhaps immodestly) suggest that \cpctplus and \mf might be `good enough'
 to serve as the main representative of the \citet{fischer79locally} family.
-However, we do not think that \mf on its own is the perfect solution. We suspect
+However, we do not think that either algorithm on their own is the perfect solution. We suspect
 that, in the future, multi-phase solutions will be developed. For example, one
 may use a machine-learning approach such as that of \citet{santos18syntax} as a
 first-step and, when it fails (which current evidence suggests it
-will do fairly often), fall back to \mf.
+will do fairly often), fall back to \cpctplus or \mf.
 
 \begin{acks}
 We are particularly grateful to the Blackbox developers for allowing us access
