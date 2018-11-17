@@ -1158,15 +1158,16 @@ the top-ranked set.
 
 The final part of \cpctplus relates to the use of $N_\textit{total}$ in
 \citet{corchuelo02repairing}. As with all members of the
-\citet{fischer79locally} family, \cpctplus is not only unbounded in time, but
-potentially unbounded in memory. $N_\textit{total}$ is an attempt to stop the
+\citet{fischer79locally} family, \cpctplus is not only unbounded in
+time~\cite[p.~14]{mckenzie95error}, but
+also unbounded in memory. $N_\textit{total}$ is an attempt to stop the
 algorithm from running unacceptably long by limiting how much input the
 algorithm will consider for modification. Unfortunately it is impossible to find
 a good value for this, as `too long' is entirely dependent on the grammar and
 erroneous input. This can be most easily seen on inputs with unbalanced brackets
 (e.g.~expressions such as `\texttt{x = f(();}'): each additional unmatched
 bracket exponentially increases the search space. On a modern machine
-with a Java grammar, the \cpctplus algorithm takes about 0.3s to find
+with a Java grammar, \cpctplus takes about 0.3s to find
 the complete set of minimum cost repair sequences for 3 unmatched brackets, 3s
 for 4 unmatched brackets, and 6 unmatched brackets caused our 32GiB test machine
 to run out of RAM. We believe that the only acceptable solution is a timeout: up
