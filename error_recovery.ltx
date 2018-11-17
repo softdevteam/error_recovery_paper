@@ -308,7 +308,8 @@ task.
 
 The complete set of minimum cost repair sequences makes it much more likely that
 the programmer will see a repair sequence that best matches their original
-intention (see Figure~\ref{fig:javaerror} for an example). It also opens up a
+intention (see Figure~\ref{fig:javaerror} for an example; Appendix~\ref{app:examples}
+contains further examples). It also opens up a
 new opportunity for error recovery algorithms. Previous error recovery
 algorithms find a single repair sequence, apply that to the input, and then
 continue parsing. While that repair sequence may have been a reasonable local
@@ -2284,7 +2285,10 @@ Bolz-Tereick, Sarah Mount, François Pottier, and Christian Urban for comments o
 
 \appendix
 
-\section{Curated examples (Java)}
+\section{Curated examples}
+\label{app:examples}
+
+\subsection{Java}
 
 \noindent Example 1 input:
 \lstinputlisting[numbers=left,language=Java,xleftmargin=2em]{examples/java_ex1.java}
@@ -2318,7 +2322,7 @@ Bolz-Tereick, Sarah Mount, François Pottier, and Christian Urban for comments o
 
 
 
-\section{Curated examples (Lua)}
+\subsection{Lua}
 
 \noindent Example 1 input:
 \lstinputlisting[numbers=left,xleftmargin=2em]{examples/lua_ex1.lua}
