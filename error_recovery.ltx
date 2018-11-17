@@ -2282,4 +2282,80 @@ Bolz-Tereick, Sarah Mount, François Pottier, and Christian Urban for comments o
 
 \bibliography{bib}
 
+\appendix
+
+\section{Curated examples (Java)}
+
+\noindent Example 1 input:
+\lstinputlisting[numbers=left,language=Java,xleftmargin=2em]{examples/java_ex1.java}
+
+\noindent Example 1 output:
+\lstinputlisting[xleftmargin=2em]{examples/java_ex1.out}
+
+\vspace{12pt}
+
+\noindent Example 2 input:
+\lstinputlisting[numbers=left,language=Java,xleftmargin=2em]{examples/java_ex2.java}
+
+\noindent Example 2 output:
+\lstinputlisting[xleftmargin=2em]{examples/java_ex2.out}
+
+\vspace{12pt}
+
+\noindent Example 3 (taken from \citet[p.~10]{deJonge12natural}) input:
+\lstinputlisting[numbers=left,language=Java,xleftmargin=2em]{examples/java_ex3.java}
+
+\noindent Example 3 output:
+\lstinputlisting[xleftmargin=2em]{examples/java_ex3.out}
+
+\vspace{12pt}
+
+\noindent Example 4 (taken from \citet[p.~16]{deJonge12natural}) input:
+\lstinputlisting[numbers=left,language=Java,xleftmargin=2em]{examples/java_ex4.java}
+
+\noindent Example 4 output:
+\lstinputlisting[xleftmargin=2em]{examples/java_ex4.out}
+
+
+
+\section{Curated examples (Lua)}
+
+\noindent Example 1 input:
+\lstinputlisting[numbers=left,xleftmargin=2em]{examples/lua_ex1.lua}
+
+\noindent Example 1 output:
+\lstinputlisting[xleftmargin=2em]{examples/lua_ex1.out}
+
+\vspace{12pt}
+
+\noindent Example 2 input:
+\lstinputlisting[numbers=left,xleftmargin=2em]{examples/lua_ex2.lua}
+
+\noindent Example 2 output:
+\lstinputlisting[xleftmargin=2em]{examples/lua_ex2.out}
+
+\vspace{12pt}
+
+\noindent Examples 3 and 4 (both derived from the Lua 5.3 reference manual) show
+that \cpctplus and \mf happily deal with an inherent ambiguity in Lua's grammar
+involving function calls and assignments. First, this example shows the
+`unambiguous' case (i.e.~if Lua forced users to use `;' everywhere, the grammar
+would have no ambiguities):
+
+\lstinputlisting[numbers=left,xleftmargin=2em]{examples/lua_ex3.lua}
+
+\noindent Example 3 output:
+\lstinputlisting[xleftmargin=2em]{examples/lua_ex3.out}
+
+\vspace{12pt}
+
+\noindent Example 4 shows what happens in the `ambiguous' case (which Lua's
+grammar resolves in favour of viewing the code below as a function call to
+\texttt{c}):
+
+\lstinputlisting[numbers=left,xleftmargin=2em]{examples/lua_ex4.lua}
+
+\noindent Example 3 output:
+\lstinputlisting[xleftmargin=2em]{examples/lua_ex4.out}
+
 \end{document}
