@@ -65,10 +65,11 @@ clean: clean-arxiv
 		error_recovery.dvi error_recovery.log error_recovery.ps error_recovery.pdf \
 		error_recovery.toc error_recovery.out error_recovery.snm error_recovery.nav \
 		error_recovery.vrb texput.log bib.bib
+	cd examples && ${MAKE} clean
 
 error_recovery.pdf: ${LATEX_FILES} ${DIAGRAMS} bib.bib
+	cd examples && ${MAKE} ${MFLAGS}
 	pdflatex error_recovery.ltx
 	bibtex error_recovery
 	pdflatex error_recovery.ltx
 	pdflatex error_recovery.ltx
-

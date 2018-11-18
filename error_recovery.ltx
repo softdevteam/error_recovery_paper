@@ -1863,8 +1863,9 @@ compare different algorithms: the fewer error locations an algorithm
 reports, the fewer cascading errors it has caused. This comes with an
 important caveat: a nefarious error recovery algorithm could simply skip all
 input after the first error encountered, thus reporting `only' \corpussize
-error locations. We also report the proportion of input skipped, to give
-some assurance that this is an insignificant factor.
+error locations. Since, for other reasons, we also record the proportion of input skipped,
+we can confirm that this is not a significant factor in any of the algorithms
+we report on.
 
 In order to test hypothesis H1 we ran each error recovery algorithm against
 the entire Java corpus, collecting for each file: the time spent in recovery (in seconds);
@@ -1930,7 +1931,9 @@ not. Cost size reports the mean cost (i.e.~the number of insert and delete
 repairs) of each error location repaired (this number is meaningless for \panic,
 which does not have a concept of costable repairs).
 The failure rate is the percentage of files which could not be fully
-repaired within the timeout. Lexemes skipped is the percentage of input
+repaired within the timeout (this number is semi-meaningless for \panic, which,
+at worst, is always able to find a repair at the EOF token). Lexemes skipped is
+the percentage of input
 skipped (because of a delete repair).
 The number of error locations shows how many separate points in files
 are reported as errors. Since fewer files in \mf timeout, it is able
