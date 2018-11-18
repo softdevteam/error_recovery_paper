@@ -2324,6 +2324,16 @@ Bolz-Tereick, Sarah Mount, François Pottier, and Christian Urban for comments o
 \lstinputlisting[xleftmargin=2em]{examples/java_ex4.out}
 
 
+\vspace{12pt}
+
+\noindent Example 5:
+\lstinputlisting[numbers=left,language=Java,xleftmargin=2em]{examples/java_ex5.java}
+
+\noindent Example 5 output, showing the timeout being exceeded and error recovery
+unable to complete:
+\lstinputlisting[xleftmargin=2em]{examples/java_ex5.out}
+
+
 
 \subsection{Lua}
 
@@ -2335,7 +2345,9 @@ Bolz-Tereick, Sarah Mount, François Pottier, and Christian Urban for comments o
 
 \vspace{12pt}
 
-\noindent Example 2 input:
+\noindent Example 2 input. Note that `\texttt{=}' in Lua is the assignment
+operator, which is not valid in conditionals; and that if/then/else blocks must
+be terminated by `\texttt{end}'.
 \lstinputlisting[numbers=left,xleftmargin=2em]{examples/lua_ex2.lua}
 
 \noindent Example 2 output:
@@ -2344,10 +2356,11 @@ Bolz-Tereick, Sarah Mount, François Pottier, and Christian Urban for comments o
 \vspace{12pt}
 
 \noindent Examples 3 and 4 (both derived from the Lua 5.3 reference manual) show
-that \cpctplus and \mf happily deal with an inherent ambiguity in Lua's grammar
-involving function calls and assignments. First, this example shows the
-`unambiguous' case (i.e.~if Lua forced users to use `;' everywhere, the grammar
-would have no ambiguities):
+that \cpctplus and \mf happily deal with an inherent ambiguity in Lua's Yacc
+grammar involving function calls and assignments (which, following the Lua
+specification, is resolved by Yacc in favour of function calls). First, this
+example shows the `unambiguous' case (i.e.~if Lua forced users to use `;'
+everywhere, the grammar would have no ambiguities):
 
 \lstinputlisting[numbers=left,xleftmargin=2em]{examples/lua_ex3.lua}
 
