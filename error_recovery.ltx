@@ -108,8 +108,8 @@
 
 
 \begin{abstract}
-Syntax errors are generally easy to fix for humans, but not for parsers in general,
-and LR parsers in particular. Traditional `panic mode' error recovery, though
+Syntax errors are generally easy to fix for humans, but not for parsers, in general,
+and LR parsers, in particular. Traditional `panic mode' error recovery, though
 easy to implement and applicable to any grammar,
 often leads to a cascading chain of
 errors that drown out the original. More advanced error recovery techniques
@@ -124,7 +124,8 @@ that our best performing algorithm is able to repair \mfsuccessrate files within
 a cut-off of 0.5s. Furthermore, we are also able to
 substantially reduce the cascading error problem, with our best performing
 algorithm reporting \mferrorlocs error locations in the corpus to the user, while the panic
-mode algorithm reports \panicerrorlocs error locations.
+mode algorithm reports \panicerrorlocs error locations: in other words, our
+algorithms reduce the cascading error problem by well over half.
 \end{abstract}
 
 \keywords{Parsing, error recovery, programming languages}
@@ -138,20 +139,20 @@ untold errors in our quest to perfect a program. Most troubling are semantic
 errors, where we intended the program to do one thing, but it does another. Less
 troubling, but often no less irritating, are syntax errors, which are
 (generally minor) deviances from the exacting syntax required by a compiler.
-So common are syntax errors that the parsers in modern compilers expect us to make several
+So common are syntax errors that parsers in modern compilers expect us to make several
 in a single input. Rather than stop on the first syntax error encountered, they attempt
 to \emph{recover} from it. This allows them to report, and us to fix, all our
 syntax errors in one go.
 
 When error recovery works well, it is a useful productivity gain. Unfortunately,
-current error recovery approaches are generally simplistic. The most common
+most current error recovery approaches are simplistic. The most common
 grammar-neutral approach to error recovery are those algorithms described as
 `panic mode' algorithms (e.g.~\cite[p.~348]{holub90compilerdesign}) which skip
 input until the parser finds something it is able to parse. A more
 grammar-specific variation of this idea is to skip input until a pre-determined
 synchronisation token (e.g. `;' in Java) is
 reached~\cite[p.~3]{degano95comparison}, or to try inserting a single
-synchronisation token. Unfortunately, such strategies are often unsuccessful,
+synchronisation token. Such strategies are often unsuccessful,
 leading to a
 cascade of spurious syntax errors (see
 Figure~\ref{fig:javaerror} for an example). Programmers quickly learn that
@@ -234,9 +235,10 @@ entirely (`\texttt{int x;}'), or insert a comma
 \label{fig:javaerror}
 \end{figure}
 
-A handful of parsers contain extensive hand-written error recovery algorithm
-which allow them to recover better from errors, but at considerable expense.
-For example, the Java error recovery approach in the Eclipse IDE is 5KLoC long,
+A handful of parsers contain hand-written error recovery algorithms
+for specific languages.
+These generally allow better recovery from errors, but are difficult and
+expensive to create. For example, the Java error recovery approach in the Eclipse IDE is 5KLoC long,
 making it only slightly smaller than a modern version of Berkeley Yacc --- a
 complete parsing system! Unsurprisingly, few real-world parsers contain
 effective hand-written error recovery algorithms.
@@ -256,13 +258,14 @@ recover. Algorithms in this family are much better at recovering from errors
 than naive approaches and can communicate the repairs they find in a way that
 humans can easily replicate. However, such algorithms
 have seen little practical use because their typical
-performance was seen as poor and their worst case unbounded \cite[p.~14]{mckenzie95error}.
+performance is seen as poor and their worst case unbounded \cite[p.~14]{mckenzie95error}.
 We add a further complaint to this mix: such approaches only report a single
 repair sequence to users. In general -- and especially in syntactically rich
 languages -- there are multiple reasonable repair sequences for a given error
 location, and the algorithm has no way of knowing which best matches the user's intentions.
 
-In this paper we introduce two generic error recovery algorithms that run fast
+In this paper we introduce two new error recovery algorithms (in the
+\citet{fischer79locally} mould) that run fast
 enough to be usable, are able to repair nearly all errors, and which report the
 complete set of repair sequences to users. The first algorithm, \cpctplus, takes
 the approach of \citet{corchuelo02repairing} as a base, correcting and
@@ -295,7 +298,7 @@ The only work we are aware of with a similar concept of `acceptable time'
 is~\citet{deJonge12natural}, who define it as the total time in spent in error
 recovery per file, with a threshold of 1s. Since many compilers are able to
 fully execute in less time than this, we felt that a tighter threshold is more
-appropriate: we used 0.5s since we think that even the most
+appropriate: we use 0.5s since we think that even the most
 demanding user will tolerate such a delay. We strongly validate this hypothesis
 with both \cpctplus (which successfully recovers \cpctplussuccessrate of files) and \mf (\mfsuccessrate). Relative
 to previous approaches, we are the clear beneficiaries of faster modern
@@ -344,7 +347,9 @@ of \citet{kimyi10astar} -- has problems which cause it to miss many
 minimum cost repair sequences (Section~\ref{kimyi}). However, we are able to use
 it as partial inspiration for an entirely new error recovery algorithm \mf
 (Section~\ref{mf}). We then validate \cpctplus and \mf on a corpus of \corpussize real,
-syntactically incorrect, Java programs (Section~\ref{experiment}).
+syntactically incorrect, Java programs (Section~\ref{experiment}). To
+emphasise that our algorithms are grammar-neutral, we show examples of
+error recovery on different grammars in Appendix~\ref{app:examples}.
 
 
 \section{Background}
@@ -357,9 +362,8 @@ appreciate that this is still an unfamiliar language to most readers: code examp
 are therefore given in Python which, we hope, is familiar to most.
 
 Although there are many flavours of parsing, the \citet{fischer79locally} family
-of error recovery algorithms are designed to be used with LR
-parsers~\cite{knuth65lllr}. As well as describing the largest practical set
-of unambiguous grammars, LR parsing remains one of the most widely used parsing
+of error recovery algorithms are designed to be used with LR($k$)
+parsers~\cite{knuth65lllr}. LR parsing remains one of the most widely used parsing
 approaches due to the ubiquity of Yacc~\cite{johnson75yacc} and its
 descendants (which include the Rust parsing tool we created for this paper).
 We use Yacc syntax throughout this paper so that
@@ -547,7 +551,8 @@ the parsing stack. Our description simply drops step 2 entirely.} It works by
 taking the parsing stack and popping elements to
 see if an earlier part of the stack is able to parse the next input symbol. If
 no element in the stack is capable of parsing the next input symbol, the input
-symbol is skipped, the stack restored, and the process repeated.
+symbol is skipped, the stack restored, and the process repeated. At worst,
+this algorithm guarantees to find a match at the EOF token.
 Figure~\ref{fig:holub:algorithm} shows a more formal version of this algorithm.
 
 \begin{figure}[tb]
@@ -591,9 +596,8 @@ error algorithm to complete, and parsing resumes with a stack [0, 2].
 The fundamental problem with error recovery can be seen from the above example:
 the adjustment made to the parsing stack is not one that the user can
 replicate. Looked at another way, error recovery is \emph{Deus ex
-machina}: while panic mode managed to recover from the error, there is no
-practical way to report the actions taken to achieve that error. In general,
-the only way to report the actions taken is to report the parsing stack
+machina}: while panic mode managed to recover from the error, the only
+general way to report what was done is to show the parsing stack
 before and after recovery: this is challenging to interpret for small grammars
 like that of Figure~\ref{fig:exprgrammar} and completely impractical for
 anything larger. There is an important corollary to this: since the recoveries
@@ -873,10 +877,10 @@ to be made, even if that progress does not require consuming any input.
 
 Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
 at a time. This causes them to skip intermediate
-configurations from which minimum cost repair sequences may be found
-(this problem, and the basis of a fix, derive from \cite[p.~12]{kimyi10astar},
-though their suggestion suffers from the same problem as \textsc{CR Shift 1}).
-The solution is simple: at most one shift can be generated at any one
+configurations from which minimum cost repair sequences may be found.
+The solution\footnote{The problem, and the basis of a fix, derive from
+\cite[p.~12]{kimyi10astar}, though their suggestion suffers from the same
+problem as \textsc{CR Shift 1}.} is simple: at most one shift can be generated at any one
 time. \textsc{CR Shift 3} in
 Figure \ref{fig:corchuelo:kimyi} (as well as incorporating the fix from
 \textsc{CR Shift 2}) generates at most one shift repair at a time. Relative to
@@ -1165,10 +1169,12 @@ also unbounded in memory. $N_\textit{total}$ is an attempt to stop the
 algorithm from running unacceptably long by limiting how much input the
 algorithm will consider for modification. Unfortunately it is impossible to find
 a good value for this, as `too long' is entirely dependent on the grammar and
-erroneous input. This can be most easily seen on inputs with unbalanced brackets
+erroneous input: Java's grammar, for example, is large with a commensurately
+large search space while Lua's grammar is small with a commensurately small
+search space. This can be most easily seen on inputs with unbalanced brackets
 (e.g.~expressions such as `\texttt{x = f(();}'): each additional unmatched
 bracket exponentially increases the search space. On a modern machine
-with a Java grammar, \cpctplus takes about 0.3s to find
+with a Java 7 grammar, \cpctplus takes about 0.3s to find
 the complete set of minimum cost repair sequences for 3 unmatched brackets, 3s
 for 4 unmatched brackets, and 6 unmatched brackets caused our 32GiB test machine
 to run out of RAM. We believe that the only acceptable solution is a timeout: up
@@ -1364,10 +1370,9 @@ minimum route through the stategraph to a state $s'$ (where $s$ and $s'$ may be
 the same state), where $s'$ has the terminal $t$ as an outgoing edge? In other
 words, this gives us the cost of inserting symbols to reach a state $s'$
 where $t$ is a valid next terminal. If no such route
-exists, \textsf{ky\_dist} returns $\infty$. The fixed-point algorithm in
-Figure~\ref{fig:kimyi:dist} shows how to calculate the table underlying
-\textsf{ky\_dist} (note that \citet{kimyi10astar} only provide an abstract
-specification of the algorithm). Note that we
+exists, \textsf{ky\_dist} returns $\infty$. \citet{kimyi10astar} provide a terse, abstract
+specification of the algorithm; we provide a fixed-point algorithm which
+calculates the underlying table. Note that we
 assume the existence of a function \textsf{min\_sentence\_cost(N)} which returns
 the length of the minimum sentence(s) which match the non-terminal $N$: this
 function is a relatively simple variation of the traditional nullable
@@ -1802,18 +1807,18 @@ is fully repeatable and downloadable from \url{https://archive.org/download/erro
 \label{methodology}
 
 In order to evaluate error recovery implementations, we need a concrete implementation. We
-implemented a new Yacc-compatible parsing library \emph{lrpar} in Rust. Including
-associated libraries for LR table generation and so on, lrpar is around
+implemented a new Yacc-compatible parsing system \emph{grmtools} in Rust. Including
+associated libraries for LR table generation and so on, grmtools is around
 11KLoC. Although intended as a production library, it has accidentally
 played a part as a flexible test bed for experimenting with, and understanding,
 error recovery algorithms. We added a simple front-end which produces the output
-seen in e.g.~Figure~\ref{fig:javaerror}. We use lrpar for all experiments in
+seen in e.g.~Figure~\ref{fig:javaerror}. We use grmtools for all experiments in
 this paper.
 
 There are two standard problems when evaluating error recovery algorithms: how
 to determine if a good job has been done on an individual example; and obtaining
 sufficient examples to get a wide perspective on an algorithm's performance. To
-some extent, any solutions to these problems are mutually exclusive: for
+some extent, solutions to these problems are mutually exclusive: for
 real-world inputs, the only way to guarantee that a good job has been done is to
 manually evaluate it, which means that it is only practical to use a small set
 of input programs. Most papers we are aware of use at most 200 inputs
@@ -1855,7 +1860,7 @@ The size of our corpus means that we cannot manually evaluate repairs for
 quality. Instead, to evaluate this paper's most important metric (the cascading
 error problem), we report the number of error locations found in the
 corpus for different algorithms. We know, by definition, that the corpus
-contains at least \corpussize manually created errors (i.e.~one per
+contains at least \corpussize manually created errors (i.e.~at least one per
 file). Since it is likely that some files have more than one manually created
 error, the minimum possible number of error locations is likely to be
 bigger than this, but we have no way of knowing the true number. However, we can
@@ -1904,7 +1909,7 @@ size: this value only makes sense if the file was successfully recovered from,
 so we do not sample from runs where error recovery failed.
 
 All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with 32GiB RAM running
-Debian 9. We used Rust nightly-2018-10-28 to compile lrpar (the
+Debian 9. We used Rust nightly-2018-10-28 to compile grmtools (the
 \texttt{Cargo.lock} file necessary to reproduce the build is included in our
 experimental repository).
 
@@ -1980,7 +1985,8 @@ already fairly low. These results strongly validate Hypothesis H1.
 \includegraphics[scale=.7]{mf_mfrev_error_locs_histogram_full.pdf}
 \includegraphics[scale=.7]{mf_mfrev_error_locs_histogram_zoomed.pdf}
 \caption{Histograms of the number of error locations for \mf and \mfrev (fewer
-is better). The top histogram shows the full spread of data (with 50 bins). Since outliers
+is better). Error bars represent 99\% confidence
+intervals. The top histogram shows the full spread of data (with 50 bins). Since outliers
 obscure the main body of data, the bottom histogram only shows data up to 50 error
 recovery locations (with 50 bins i.e.~1 bin per error location size). For both histograms, the
 $x$ axis shows the number of error locations in a file and the $y$ axis is a logarithmic
@@ -2007,7 +2013,7 @@ makes error recovery slightly worse in a number of files
 recovery in a small number of files a lot worse). This strongly validates
 Hypothesis H2.
 
-Interestingly, \mfrev has a higher mean cost of repair sequences relative to
+Interestingly, \mfrev has a noticeably higher mean cost of repair sequences relative to
 \cpctplus and \mf. In other words, \mfrev not only causes more error locations to be reported,
 but the repair sequences at the additional error locations have higher numbers
 of insert and delete repairs. This suggests that there is a double whammy from
