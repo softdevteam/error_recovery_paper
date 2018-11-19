@@ -16,7 +16,7 @@ clean:
 %.out: %.java ${NP} grammars
 	${NP} grammars/java7/java.l grammars/java7/java.y $< | sed -n '/Error/,$$p' > $@
 
-%.out: %.java ${NP} grammars
+%.out: %.lua ${NP} grammars
 	${NP} -r cpctplus grammars/lua5_3/lua5_3.l grammars/lua5_3/lua5_3.y $< | sed -n '/Error/,$$p' > $@
 
 ${NP}: grmtools
