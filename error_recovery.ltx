@@ -185,10 +185,10 @@ class C {
 \begin{minipage}[t]{0.45\textwidth}
 \vspace{-7pt}
 \begin{lstlisting}
-Error at line 2 col 9. Repairs found:
-  Delete "y"
-  Insert "COMMA"
-  Insert "EQ"
+Error at line 2 col 9. Repair sequences found:
+  1: Delete y
+  2: Insert ,
+  3: Insert =
 \end{lstlisting}
 \end{minipage}
 \end{tabular}
@@ -833,10 +833,10 @@ generates at most one shift, exploring all intermediate configurations.}
 \end{subfigure}
 &
 \begin{lstlisting}
-Delete "3", Delete "+"
-Delete "3", Shift "+", Insert "INT"
-Insert "PLUS", Shift "3", Shift "+", Insert "INT"
-Insert "MULT", Shift "3", Shift "+", Insert "INT"
+Delete 3, Delete +
+Delete 3, Shift +, Insert <Int>
+Insert +, Shift 3, Shift +, Insert <Int>
+Insert *, Shift 3, Shift +, Insert <Int>
 \end{lstlisting}
 &
 \begin{subfigure}{0.012\textwidth}
@@ -847,8 +847,8 @@ Insert "MULT", Shift "3", Shift "+", Insert "INT"
 &
 \begin{lstlisting}
 <! \vspace{-27pt} !>
-Insert "MULT", Shift "3", Delete "+"
-Insert "PLUS", Shift "3", Delete "+"
+Insert *, Shift 3, Delete +
+Insert +, Shift 3, Delete +
 \end{lstlisting}
 \end{tabular}
 \vspace{-8pt}
@@ -1107,8 +1107,8 @@ class C {
 \begin{minipage}[t]{0.45\textwidth}
 \vspace{-7pt}
 \begin{lstlisting}
-Error at line 3 col 7. Repairs found:
-  Insert "COMMA"
+Error at line 3 col 7. Repair sequences found:
+  1: Insert ,
 \end{lstlisting}
 \end{minipage}
 \end{tabular}
