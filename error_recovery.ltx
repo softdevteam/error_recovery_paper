@@ -312,7 +312,7 @@ task.
 The complete set of minimum cost repair sequences makes it much more likely that
 the programmer will see a repair sequence that best matches their original
 intention (see Figure~\ref{fig:javaerror} for an example; Appendix~\ref{app:examples}
-contains further examples). It also opens up a
+contains further examples in Java, Lua, and PHP). It also opens up a
 new opportunity for error recovery algorithms. Previous error recovery
 algorithms find a single repair sequence, apply that to the input, and then
 continue parsing. While that repair sequence may have been a reasonable local
@@ -2297,7 +2297,12 @@ Bolz-Tereick, Sarah Mount, François Pottier, and Christian Urban for comments o
 \section{Curated examples}
 \label{app:examples}
 
-\subsection{Java}
+In this section we show several examples of error recovery using \mf in
+different languages, to give some idea of what error recovery looks like in
+practise, and to emphasise that the algorithms in this paper are grammar
+neutral.
+
+\subsection{Java 7}
 
 \noindent Example 1 input:
 \lstinputlisting[numbers=left,language=Java,xleftmargin=2em]{examples/java_ex1.java}
@@ -2350,7 +2355,7 @@ unable to complete:
 
 
 
-\subsection{Lua}
+\subsection{Lua 5.3}
 
 \noindent Example 1 input:
 \lstinputlisting[numbers=left,xleftmargin=2em]{examples/lua_ex1.lua}
@@ -2404,7 +2409,8 @@ grammar resolves in favour of viewing the code below as a function call to
 \noindent Example 5 output:
 \lstinputlisting[xleftmargin=2em]{examples/lua_ex5.out}
 
-\subsection{PHP}
+
+\subsection{PHP 7.3}
 
 \noindent Example 1 input:
 \lstinputlisting[numbers=left,xleftmargin=2em]{examples/php_ex1.php}
