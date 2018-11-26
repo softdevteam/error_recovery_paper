@@ -450,7 +450,8 @@ $s$ & Term & Factor & Expr\\
 \end{subfigure}
 \end{minipage}
 \vspace{-5pt}
-\caption{An example grammar (top left), its corresponding stategraph (right), and statetable
+\caption{\krish{The left side of the stategraph overlays on the right side of 
+the statetable.} An example grammar (top left), its corresponding stategraph (right), and statetable
 (split into separate action and goto tables; bottom left). Productions in
 the grammar are labelled \texttt{(I)} to \texttt{(VI)}. In the stategraph: S($x$)
 means `shift to state $x$'; R($x$) means `reduce production $x$ from the
@@ -516,7 +517,8 @@ is the sequence of input tokens, and `$\$$' is the special End-Of-File (EOF) tok
        \wedge (\textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s')}
 \]
 \vspace{-15pt}
-\caption{Reduction rules for $\lrarrow$, which operate on $(\textit{parsing stack},
+\caption{\krish{I must admit I have never come across `shift` and `reduce` 
+operations as being called `Reduction rules` :)}Reduction rules for $\lrarrow$, which operate on $(\textit{parsing stack},
 \textit{token list})$ pairs. \textsc{LR Shift}
 advances the input by one token and grows the parsing stack, while
 \textsc{LR Reduce} unwinds (`reduces') the parsing stack when a production is
@@ -742,7 +744,7 @@ The algorithm maintains a todo list of lists: the first sub-list contains
 configurations of cost 0, the second sub-list configurations of cost 1, and
 so on. The todo list is initialised with the error parsing stack, remaining
 tokens, and an empty repair sequence (line 2). If there are todo items left, a
-lowest cost configuration $n$ is picked (line 4--8). If $n$ represents an accept state (line
+lowest cost configuration $n$ is picked (lines 4--8). If $n$ represents an accept state (line
 9) or if the last $N_\textit{shifts}$ repairs are shifts (line 10), then $n$
 represents a minimum cost repair sequence and the algorithm terminates
 successfully (line 11). If $n$ has already consumed $N_\textit{total}$ tokens,
@@ -758,7 +760,9 @@ and deletes cost 1, shifts 0.}
 \end{adjustbox}
 \end{figure}
 
-As with the original, we explain the approach in two parts. First is a new reduction relation
+As with the original, we explain the approach in two parts. 
+\krish{Figure~\ref{fig:corchuelo:reductions} is not being referenced anywhere. 
+Reference it here?}First is a new reduction relation
 $\crarrow$ which defines a configuration's neighbours. Second is an algorithm which
 makes use of the $\crarrow$ relation to generate neighbours, and determines when
 a successful configuration has been found or if error recovery has failed.
