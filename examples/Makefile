@@ -1,6 +1,6 @@
 .SUFFIXES: .out .java .lua
 
-GRMTOOLSV=419de8d3
+GRMTOOLSV=c1446004
 GRAMMARSV=0660c131
 
 EXAMPLES=java_ex1.out java_ex2.out java_ex3.out java_ex4.out java_ex5.out java_ex6.out \
@@ -15,13 +15,13 @@ clean:
 	rm -rf grammars grmtools ${EXAMPLES}
 
 %.out: %.java ${NP} grammars
-	${NP} grammars/java7/java.l grammars/java7/java.y $< | sed -n '/Error/,$$p' > $@
+	${NP} grammars/java7/java.l grammars/java7/java.y $< | sed -n '/Parsing error/,$$p' > $@
 
 %.out: %.lua ${NP} grammars
-	${NP} -r cpctplus grammars/lua5_3/lua5_3.l grammars/lua5_3/lua5_3.y $< | sed -n '/Error/,$$p' > $@
+	${NP} grammars/lua5_3/lua5_3.l grammars/lua5_3/lua5_3.y $< | sed -n '/Parsing error/,$$p' > $@
 
 %.out: %.php ${NP} grammars
-	${NP} -r cpctplus grammars/php7/php.l grammars/php7/php.y $< | sed -n '/Error/,$$p' > $@
+	${NP} grammars/php7/php.l grammars/php7/php.y $< | sed -n '/Parsing error/,$$p' > $@
 
 ${NP}: grmtools
 	cd grmtools && cargo build --release
