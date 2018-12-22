@@ -451,8 +451,7 @@ $s$ & Term & Factor & Expr\\
 \end{subfigure}
 \end{minipage}
 \vspace{-5pt}
-\caption{\krish{The left side of the stategraph overlays on the right side of 
-the statetable.} An example grammar (top left), its corresponding stategraph (right), and statetable
+\caption{An example grammar (top left), its corresponding stategraph (right), and statetable
 (split into separate action and goto tables; bottom left). Productions in
 the grammar are labelled \texttt{(I)} to \texttt{(VI)}. In the stategraph: S($x$)
 means `shift to state $x$'; R($x$) means `reduce production $x$ from the
@@ -518,8 +517,7 @@ is the sequence of input tokens, and `$\$$' is the special End-Of-File (EOF) tok
        \wedge (\textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s')}
 \]
 \vspace{-15pt}
-\caption{\krish{I must admit I have never come across `shift` and `reduce` 
-operations as being called `Reduction rules` :)}Reduction rules for $\lrarrow$, which operate on $(\textit{parsing stack},
+\caption{Reduction rules for $\lrarrow$, which operate on $(\textit{parsing stack},
 \textit{token list})$ pairs. \textsc{LR Shift}
 advances the input by one token and grows the parsing stack, while
 \textsc{LR Reduce} unwinds (`reduces') the parsing stack when a production is
@@ -761,12 +759,12 @@ and deletes cost 1, shifts 0.}
 \end{adjustbox}
 \end{figure}
 
-As with the original, we explain the approach in two parts. 
-\krish{Figure~\ref{fig:corchuelo:reductions} is not being referenced anywhere. 
-Reference it here?}First is a new reduction relation
-$\crarrow$ which defines a configuration's neighbours. Second is an algorithm which
+As with the original, we explain the approach in two parts.
+First is a new reduction relation $\crarrow$ which defines a configuration's
+neighbours (Figure~\ref{fig:corchuelo:reductions}). Second is an algorithm which
 makes use of the $\crarrow$ relation to generate neighbours, and determines when
-a successful configuration has been found or if error recovery has failed.
+a successful configuration has been found or if error recovery has failed
+(Figure~\ref{fig:corchuelo:algorithm}).
 As well as several changes for clarity, the biggest difference is that
 Figure~\ref{fig:corchuelo:algorithm} captures semi-formally what
 \citet{corchuelo02repairing} explain in prose (spread amongst
@@ -2293,7 +2291,8 @@ We are grateful to the Blackbox developers for allowing us access
 to their data, and particularly to Neil Brown for help in extracting a relevant
 corpus. We thank Edd Barrett for helping to set up our benchmarking
 machine and for comments on the paper. We also thank Carl Friedrich
-Bolz-Tereick, Sarah Mount, François Pottier, and Christian Urban for comments on the paper.
+Bolz-Tereick, Sarah Mount, François Pottier, Christian Urban,
+and Naveneetha Vasudevan for comments on the paper.
 \end{acks}
 
 \bibliography{bib}
