@@ -640,11 +640,17 @@ or \textit{shift} (`parse the token at the current offset'). The
 algorithm completes: successfully if it reaches an accept state or shifts
 `enough' tokens ($N_\textit{shifts}$, set at 3 in \citet{corchuelo02repairing});
 or unsuccessfully if it deletes and inserts `too many' tokens ($N_\textit{total}$, set at 10
-in \citet{corchuelo02repairing}). The algorithm keeps a queue of
+in \citet{corchuelo02repairing}). Repair sequences are reported back to users
+with trailing \emph{shift} repairs pruned i.e.~[\emph{insert x, shift y, delete
+z, shift a, shift b, shift c}] is reported as [\emph{insert x, shift y, delete
+z}].
+
+In order to find repair sequences, the algorithm keeps a queue of
 \emph{configurations}, each of which represents a different search state;
 configurations are searched for their neighbours until a successful configuration
 is found. The cost of a configuration is the cumulative cost of the repairs
-in its repair sequence.
+in its repair sequence. By definition, a configuration's neighbours have the
+same, or greater, cost to it.
 
 \begin{figure}[tb]
 \small
@@ -1181,10 +1187,12 @@ bracket exponentially increases the search space. On a modern machine
 with a Java 7 grammar, \cpctplus takes about 0.3s to find
 the complete set of minimum cost repair sequences for 3 unmatched brackets, 3s
 for 4 unmatched brackets, and 6 unmatched brackets caused our 32GiB test machine
-to run out of RAM. We believe that the only acceptable solution is a timeout: up
-to several seconds is safe in our experience. For the purposes of this paper
-this problem is solved for us, because we define a timeout of 0.5s to be the
-longest acceptable to users.
+to run out of RAM. Attempting to work around this problem by reducing $N_\textit{total}$
+leads to some simple, but spread-out syntax errors, no longer being repaired.
+The only sensible alternative is a timeout: up to several seconds is safe in our
+experience. For the purposes of this paper, we do not need to worry about
+finding a perfect value, as we defined a timeout of 0.5s to be the longest
+acceptable to users.
 
 
 \section{The Kim and Yi algorithm}
@@ -2153,7 +2161,11 @@ rare, there are some surprising edge cases. For example,
 the (incorrect) Java expression `\texttt{x = f(""a""b);}' leads to 23,067 minimum
 cost repair sequences being found, due to the large number of Java keywords that are
 valid in several parts of this expression leading to a combinatorial explosion: even the most
-diligent user is unlikely to find such a volume of information valuable. There is a
+diligent user is unlikely to find such a volume of information valuable. In
+a different vein, the success condition of `reached an accept' state is
+encountered rarely enough that users sometimes forget it exists at all: they
+can then be surprised by an apparently unexplained difference in the repair sequences reported for
+some syntax errors in the middle of a file versus it's end. There is a
 body of work which has tried to understand how best to structure compiler error
 messages (normally in the context of those learning to program). However, the
 results are hard to interpret: some studies find that more complex error
