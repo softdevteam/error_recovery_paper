@@ -2078,9 +2078,11 @@ induced by this non-determinism.
 Blackbox contains an astonishingly large amount of source code but has two
 inherent limitations. First, it only contains Java source code. This means that
 our main experiment is limited to one grammar: it is possible that our
-techniques do not generalise beyond the Java grammar, though \citet[p.~109]{cerecke03phd}
+techniques do not generalise beyond the Java grammar (though, as
+Appendix~\ref{app:examples} suggests, our techniques do appear to work well
+enough for other grammars). Although \citet[p.~109]{cerecke03phd}
 suggests that different grammars make relatively little difference
-to the performance of such error recovery algorithms. Unfortunately, we are not aware
+to the performance of such error recovery algorithms, we are not aware
 of an equivalent repository for other language's source code. One solution is
 to mutate correct source files (e.g.~randomly deleting tokens), thus
 obtaining incorrect inputs which we can later test: however, it is difficult
@@ -2089,8 +2091,8 @@ humans make syntax errors, particularly as some are language specific
 (though there is some early work in this area~\cite{dejonge12automated}).
 Second, Blackbox's data comes largely from students,
 who are more likely than average to be somewhat novice programmers. It is clear
-that novice programmers make some different syntax errors -- or, at least, make
-the same syntax errors more often -- relative to advanced programmers. An
+that novice programmers make some different syntax errors -- and, probably, make
+some syntax errors more often -- relative to advanced programmers. An
 extreme example is the furthest outlier elided from
 Figure~\ref{fig:results:mf_mfrev_histogram}: it contains the same highly erroneous
 input copy and pasted several times within the same file. It is
@@ -2248,10 +2250,7 @@ sufficient effort, to make them perform well. However, this comes at
 a cost. For example, the hand-written error recovery routines in the Eclipse IDE
 are approximately 5KLoC of code and are solely for use with Java code: \cpctplus
 and \mf are approximately 450LoC and 800LoC respectively and can be applied to
-any LR grammar. Furthermore, automated language-neutral approaches perform at
-least as well as this hand-written approach~\cite[p.~36]{deJonge12natural}. We
-are not aware of any hand-written approaches to error recovery which outperform
-automated approaches.
+any LR grammar.
 
 Although error recovery approaches have, historically, been mostly LR based,
 there are several non-LR approaches. A full overview is impractical, though a
