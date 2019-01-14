@@ -2072,12 +2072,12 @@ they could not be used easily in practice. Previous approaches in the
 \citet{fischer79locally} family make no mention of how error recovery should be
 used or, indeed, if it has any implications for users at all. Although several
 members of the \citet{fischer79locally} family were implemented in parsing tools
-of the day, to the best of our knowledge none of those implementations survive.
+of the day, to the best of our knowledge none of those implementations survived.
 
 We are therefore forced to treat the following as an open question: can one
-sensibly use error recovery in the \citet{fischer79locally} in practice? In
+sensibly use error recovery in the \citet{fischer79locally} family in practice? In
 particular, given that the most common way to use LR grammars
-is to execute action code as each production is reduced, what should action
+is to execute action code as each production is reduced, what should actions
 do in the face of parts of the input altered by error recovery? This latter
 question is vital for real-world systems, such as compilers, which often
 want to continue doing as much work as possible even in the face of syntax
@@ -2085,7 +2085,7 @@ errors (e.g.~running the type checker).
 
 In this section we briefly outline the approach taken in \emph{grmtools}, our
 Rust parsing tool. This section necessarily contains several Rust-specific
-parts. Thus while we cannot answer the question posed above in general, we can
+parts. Thus, while we cannot answer the question posed above in general, we can
 at least answer it for one particular language. Readers who prefer to avoid
 Rust-specific details may wish to move immediately to Section~\ref{sec:threats}.
 
@@ -2221,7 +2221,7 @@ Figure~\ref{fig:api:naive}. Each rule now returns a \texttt{Result} type. If an
 integer is inserted by error recovery, the \texttt{Factor} rule returns
 \texttt{Err(())} (line 18). All other rules simply percolate such errors upwards
 using the `\texttt{?}' operator (which, if the \texttt{Result}-returning
-expression it is attached to, evaluates to an \texttt{Err} immediately returns
+expression it is attached to evaluates to an \texttt{Err}, immediately returns
 that error; otherwise it unwraps the \texttt{Ok}). Note that other token types
 are unaffected: if error recovery inserts a bracket, for example, evaluation of
 the expression continues.}
@@ -2229,7 +2229,7 @@ the expression continues.}
 \end{adjustbox}
 \end{figure}
 
-In Yacc, actions can execute safe in the knowledge that each symbol in the
+In Yacc, actions can execute safely in the knowledge that each symbol in the
 production has `normal' data attached to it (either a rule's value or a string;
 Yacc's error recovery is implicitly expected to maintain this guarantee). In
 contrast, we are unable to provide such a guarantee: some tokens will be the
@@ -2241,7 +2241,15 @@ suitable value, so our naive calculator simply \texttt{panic}s (roughly
 equivalent to `raises an exception and then exits') if it encounters an inserted
 token (the \texttt{unwrap} in line 17).
 
-Our solution to this is somewhat language specific, but simple, and ergonomic
+Our solution \lukas{solution to what? As a reader I might think the solution to
+"what should the calculator do" is panic! So at this point I don't know what
+else we are trying to solve. It is also not very clear from the two Figures
+what the difference between panic and percolate the error upwards is and what
+advantage this gives the user. Probably a sentence like "this allows the
+grammar writer to handle insertions manually in the grammar, e.g.~by given it a
+default value, instead of panicing immediately" clears things up?} to this is
+somewhat language specific, but
+simple, and ergonomic
 (at least, for Rust): pseudo-variables which reference tokens have a type
 (slightly simplified) \texttt{Result<Lexeme, Lexeme>}. Rust's \texttt{Result}
 type\footnote{Equivalents are found in several other languages: Haskell's
