@@ -1897,7 +1897,7 @@ the entire Java corpus, collecting for each file: the time spent in recovery (in
 whether error recovery on the file was successful (true or false); the
 number of error locations; the cost of repair sequences at each
 error location (only if error recovery was successful on the file as a whole);
-and the number of lexemes skipped by error recovery (i.e.~how many \emph{delete}
+and the number of tokens skipped by error recovery (i.e.~how many \emph{delete}
 repairs were applied). Note that there are two ways of failing to repair all errors in a file:
 exceeding the timeout; or running out of plausible candidate repair sequences.
 We measure the time spent in error recovery with a monotonic wall-clock timer,
@@ -1940,7 +1940,7 @@ experimental repository).
 \begin{figure}[t]
 \begin{tabular}{lcccccc}
 \toprule
-  & Mean     & Median   & Cost      & Failure   & Lexemes      & Error \\
+  & Mean     & Median   & Cost      & Failure   & Tokens      & Error \\
   & time (s) & time (s) & size (\#) & rate (\%) & skipped (\%) & locations (\#) \\
 \midrule
 \input{table.tex}
@@ -1957,7 +1957,7 @@ repairs) of each error location repaired (this number is meaningless for \panic,
 which does not have a concept of costable repairs).
 The failure rate is the percentage of files which could not be fully
 repaired within the timeout (this number is semi-meaningless for \panic, which,
-at worst, is always able to find a repair at the EOF token). Lexemes skipped is
+at worst, is always able to find a repair at the EOF token). Tokens skipped is
 the percentage of input
 skipped (because of a delete repair).
 The number of error locations shows how many separate points in files
@@ -2131,7 +2131,7 @@ production in that rule must return values of that type. \texttt{\$\emph{n}}
 variables reference the \emph{nth} symbol in a production (numbered from one
 i.e. \texttt{\$1} references the first symbol). If that symbol is a reference to
 a rule, a value of that rule's Rust type will be stored in that variable. If
-that symbol is a lexeme then the user's input can be obtained by
+that symbol is a token then the user's input can be obtained by
 \texttt{\$lexer.lexeme\_str(\&\$1.unwrap())} (line 17). Note that while this
 grammar's actions work as expected for inputs such as `2 + 3 * 4', they will
 panic if too large a number is passed (lines 20--23), or if an integer is
@@ -2174,7 +2174,7 @@ type (in Figure~\ref{fig:api:naive}, each rule has the same action type of
 \texttt{u64}). However, if a pseudo-variable references a token $T$, then that
 pseudo-variable's static type is (slightly simplified) \texttt{Result<Lexeme,
 Lexeme>}. We will explain the reasons for this shortly, but at this stage it
-suffices to note that we can extract lexemes matching the user's input by
+suffices to note that we can extract tokens matching the user's input by
 calling \texttt{\$1.unwrap()}, and obtain the actual string the user passed by
 using the globally available \texttt{\$lexer.lexeme\_str} function.
 
@@ -2232,7 +2232,7 @@ the expression continues.}
 In Yacc, actions can execute safe in the knowledge that each symbol in the
 production has `normal' data attached to it (either a rule's value or a string;
 Yacc's error recovery is implicitly expected to maintain this guarantee). In
-contrast, we are unable to provide such a guarantee: some lexemes will be the
+contrast, we are unable to provide such a guarantee: some tokens will be the
 result of insert repairs and will have a type but no value. How can the
 programmer handle this in a sensible way? For example, given the input `2 +',
 \cpctplus and \mf find a single repair sequence \emph{[Insert Int]}. What should
@@ -2250,15 +2250,15 @@ type which references a success (\texttt{Ok($\ldots$)}) or error
 (\texttt{Err($\ldots$)}) type. In our case, both the \texttt{Ok} and
 \texttt{Err} cases reference the same types because it allows a fairly natural
 interaction with normal Rust idioms and operators. We use the \texttt{Ok} case
-to represent `normal' lexemes created form user input and the \texttt{Err} case
-to represent lexemes inserted by error recovery.
+to represent `normal' tokens created form user input and the \texttt{Err} case
+to represent tokens inserted by error recovery.
 
 The reason we encode things in this way is that it allows users to use a common
 Rust idiom: instead of returning a type \texttt{T} directly, each rule's action
 type can return \texttt{Result<T, ()>} (where `()' is Rust's unit type). When a
 rule cannot produce a value, for whatever reason, it simply returns
 \texttt{Err(())}. It is then, deliberately, fairly easy to use with the
-\texttt{Result<Lexeme, Lexeme>} type: for lexemes whose value we absolutely
+\texttt{Result<Lexeme, Lexeme>} type: for tokens whose value we absolutely
 require, we map the \texttt{Err(Lexeme)} case to \texttt{Err())} with the
 (standard, if mildly clunky) idiom `\texttt{\$n.map\_err(|\_| ())?}'. In essence,
 this first says `if \$n is an \texttt{Err(Lexeme)}, convert it to
