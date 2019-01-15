@@ -2072,7 +2072,8 @@ they could not be used easily in practice. Previous approaches in the
 \citet{fischer79locally} family make no mention of how error recovery should be
 used or, indeed, if it has any implications for users at all. Although several
 members of the \citet{fischer79locally} family were implemented in parsing tools
-of the day, to the best of our knowledge none of those implementations survived.
+of the day, to the best of our knowledge none of those implementations have
+survived.
 
 We are therefore forced to treat the following as an open question: can one
 sensibly use error recovery in the \citet{fischer79locally} family in practice? In
@@ -2230,7 +2231,8 @@ the expression continues.}
 \end{figure}
 
 In Yacc, actions can execute safely in the knowledge that each symbol in the
-production has `normal' data attached to it (either a rule's value or a string;
+production has `normal' data attached to it (either a rule's value or the string
+matching a token;
 Yacc's error recovery is implicitly expected to maintain this guarantee). In
 contrast, we are unable to provide such a guarantee: some tokens will be the
 result of insert repairs and will have a type but no value. How can the
@@ -2241,17 +2243,20 @@ suitable value, so our naive calculator simply \texttt{panic}s (roughly
 equivalent to `raises an exception and then exits') if it encounters an inserted
 token (the \texttt{unwrap} in line 17).
 
-Our solution \lukas{solution to what? As a reader I might think the solution to
-"what should the calculator do" is panic! So at this point I don't know what
-else we are trying to solve. It is also not very clear from the two Figures
-what the difference between panic and percolate the error upwards is and what
-advantage this gives the user. Probably a sentence like "this allows the
-grammar writer to handle insertions manually in the grammar, e.g.~by given it a
-default value, instead of panicing immediately" clears things up?} to this is
-somewhat language specific, but
-simple, and ergonomic
-(at least, for Rust): pseudo-variables which reference tokens have a type
-(slightly simplified) \texttt{Result<Lexeme, Lexeme>}. Rust's \texttt{Result}
+In general, simply exiting when such a situation is encountered is undesirable.
+One alternative might be to stop executing actions after a syntax error has
+been encountered. However, many syntax errors are sufficiently minor that we
+would like to continue executing actions (e.g.~a compiler might still run its
+type checker). Unfortunately, what constitutes a `minor' syntax error is
+inherently language specific. We therefore want a mechanism which allows the
+grammar author to make this decision while not overburdening them with
+boilerplate code.
+
+The outline of a solution is to allow users to differentiate between a
+pseudo-variable referencing a token derived from user input and a token created
+by error recovery. \emph{grmtools} does this in a way that is simple and
+ergonomic, at least for Rust. In essence, pseudo-variables that reference tokens have
+(slightly simplified) the Rust type \texttt{Result<Lexeme, Lexeme>}. Rust's \texttt{Result}
 type\footnote{Equivalents are found in several other languages: Haskell's
 \texttt{Either}; O'Caml's \texttt{result}; or Scala's \texttt{Either}.} is a sum
 type which references a success (\texttt{Ok($\ldots$)}) or error
@@ -2293,7 +2298,7 @@ sequences on different executions.
 
 \emph{grmtools} therefore provides an additional declaration
 \texttt{\%avoid\_insert} which takes a list of token names. Tokens in this list
-are tokens for which the user expects to require the value of, and which, if
+are this for which the user expects to require the value of, and which, if
 inserted by error recovery, would prevent actions from continuing execution. Of
 the tokens in our running grammar, only the \texttt{INT} token satisfies this
 criteria, so we simply add \texttt{\%avoid\_insert "INT"} to the grammar. We then
