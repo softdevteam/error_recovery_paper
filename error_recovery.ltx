@@ -102,7 +102,7 @@
   \country{United Kingdom}
 }
 \thanks{Authors' URLs: %
-    L.~Diekmann~\url{http://diekmann.co.uk/},
+    L.~Diekmann~\url{http://lukasdiekmann.com/},
     L.~Tratt~\url{http://tratt.net/laurie/}.
 }
 
@@ -120,7 +120,7 @@ recovery algorithms that fix all three problems. First, our algorithms are the f
 to report the complete set of possible repair sequences for a given location, allowing
 programmers to select the one that best fits their intention. Second, on a
 corpus of \corpussize real-world syntactically invalid Java programs, we show
-that our best performing algorithm is able to repair \mfsuccessrate files within
+that our best performing algorithm is able to repair \mfsuccessrate of files within
 a cut-off of 0.5s. Furthermore, we are also able to use the complete set of
 repair sequences to reduce the cascading error problem even further than
 previous approaches. Our best performing
@@ -301,7 +301,7 @@ Formally speaking, we first test the following hypothesis:
 \end{description}
 
 The only work we are aware of with a similar concept of `acceptable time'
-is~\citet{deJonge12natural}, who define it as the total time in spent in error
+is~\citet{deJonge12natural}, who define it as the total time spent in error
 recovery per file, with a threshold of 1s. Since many compilers are able to
 fully execute in less time than this, we felt that a tighter threshold is more
 appropriate: we use 0.5s since we think that even the most
@@ -547,7 +547,7 @@ carry such modifications out.
 The simplest grammar-neutral error recovery algorithms are called `panic mode'
 algorithms. The precise origin of this family of algorithms seems lost in time;
 there are also more members of this family for LL parsing than there are for
-LR parsing. Indeed, for LR parsing, there appears to be only way of creating
+LR parsing. Indeed, for LR parsing, there appears to be only one way of creating
 a grammar-neutral panic mode algorithm: we take our formulation from
 \citet[p.~348]{holub90compilerdesign}.\footnote{Note that step 2 in
 \citet{holub90compilerdesign} causes valid repairs to be missed: while it is
@@ -601,14 +601,14 @@ error algorithm to complete, and parsing resumes with a stack [0, 2].
 
 The fundamental problem with error recovery can be seen from the above example:
 the adjustment made to the parsing stack is not one that the user can
-replicate. Looked at another way, error recovery is \emph{Deus ex
+replicate. Looked at another way, error recovery is \lukas{the/a?} \emph{Deus ex
 machina}: while panic mode managed to recover from the error, the only
 general way to report what was done is to show the parsing stack
 before and after recovery: this is challenging to interpret for small grammars
 like that of Figure~\ref{fig:exprgrammar} and completely impractical for
 anything larger. There is an important corollary to this: since the recoveries
-made often don't match anything the user could have passed as input, the
-recoveries made are often of poor quality, leading to a cascade of further
+made often don't match anything the user could have passed as input, they
+are often of poor quality, leading to a cascade of further
 parsing errors (as we will see later in Section~\ref{results}).
 
 
@@ -621,7 +621,7 @@ panic mode. Most numerous are those error recovery algorithms in what we call th
 members of this family of algorithms to cover in one paper. We therefore start
 with one of the most recent -- \citet{corchuelo02repairing}. We first
 explain the original algorithm (Section~\ref{corchuelo:orig}), although we use
-different notation than the original, fill in several missing details, and
+different a notation than the original, fill in several missing details, and
 provide a more formal definition. We then
 make two correctness fixes to ensure that the algorithm always
 finds minimum cost repair sequences (Section~\ref{corchuelo:kimyi}). Since the original description
@@ -985,7 +985,7 @@ exploring configurations in cost $c$ (including, transitively, all neighbours th
 also of cost $c$). Each successful configuration is recorded and, when all configurations
 in $c$ have been explored, the set of successful configurations is returned.
 This significantly slows down the search because there may
-may be many remaining configurations in $c$, which may, transitively, have many neighbours.
+be many remaining configurations in $c$, which may, transitively, have many neighbours.
 
 Our solution to this performance problem is to merge together \emph{compatible}
 configurations on-the-fly, preserving their distinct repair sequences while
@@ -1295,7 +1295,7 @@ duplicate those found by \textsc{KY Reduce}.}
 \end{figure}
 
 The \citet{kimyi10astar} algorithm itself comes in two main parts. First is a
-relation $\kyarrow$ which defines which neighbours can be reached a
+relation $\kyarrow$ which defines which neighbours can be reached \lukas{from?} a
 configuration (Figure~\ref{fig:kimyi:rules}). Unlike the $\crarrow$ relation, these rules are
 from (\textit{parsing stack}, \textit{token list}, \textit{w}) to
 (\textit{parsing stack}, \textit{token list}, \textit{w}, \textit{repairs},
@@ -1527,7 +1527,7 @@ deliberately similar to \cpctplus, hopefully allowing the reader
 to both easily digest \mf and pick out the differences from \cpctplus.
 
 We introduce a new reduction relation $\mfarrow$, defining a neighbour's configurations
-(Figure~\ref{fig:mf:rules}. Their most obvious features are that the relation is
+(Figure~\ref{fig:mf:rules}). Their\lukas{what's their? a new reduction relation?} most obvious features are that the relation is
 from \textit{(parsing stack, token list, repair sequence)} to \textit{(parsing
 stack, token list, repair sequence, heuristic)} tuples and that each rule
 uses a new A* heuristic \textsf{mf\_dist} (which takes into account reductions/gotos
@@ -1996,7 +1996,7 @@ take long enough to be perceptible to humans; this is confirmed by the
 histogram in Figure~\ref{fig:results:mf_histogram}. \mf's failure rate is only
 \mfcpctplusfailurerateratio that of \cpctplus's, though in absolute terms
 both are already extremely low. \mf also has noticeably better median and
-mean repair times (the latter, in our opinion, more important, since users
+mean repair times (the latter, in our opinion, being more important, since users
 are more sensitive to worst case than best case performance) though,
 again, in absolute terms both are
 already fairly low. These results strongly validate Hypothesis H1.
@@ -2298,7 +2298,7 @@ sequences on different executions.
 
 \emph{grmtools} therefore provides an additional declaration
 \texttt{\%avoid\_insert} which takes a list of token names. Tokens in this list
-are this for which the user expects to require the value of, and which, if
+are those for which the user expects to require the value of, and which, if
 inserted by error recovery, would prevent actions from continuing execution. Of
 the tokens in our running grammar, only the \texttt{INT} token satisfies this
 criteria, so we simply add \texttt{\%avoid\_insert "INT"} to the grammar. We then
@@ -2383,7 +2383,7 @@ which our ranking of repair sequences in Section~\ref{rankingrepairs} partly
 addresses). Perhaps the most common -- and without doubt the most frustrating
 -- example of this is missing a `\texttt{\}}' character within the method of a
 Java-like language. Some approaches are able to backtrack from the source of
-the error in order to try and more appropriate repairs. However, there are
+the error in order to try and \lukas{find} more appropriate repairs. However, there are
 two problems with this: first, the cost of maintaining the necessary state to
 backtrack slows down normal parsing (e.g.~\cite{deJonge12natural} only store the
 relevant state at each line encountered to reduce this cost), whereas we add no
@@ -2423,7 +2423,7 @@ diligent user is unlikely to find such a volume of information valuable. In
 a different vein, the success condition of `reached an accept' state is
 encountered rarely enough that users sometimes forget it exists at all: they
 can then be surprised by an apparently unexplained difference in the repair sequences reported for
-some syntax errors in the middle of a file versus it's end. There is a
+some syntax errors in the middle of a file versus its end. There is a
 body of work which has tried to understand how best to structure compiler error
 messages (normally in the context of those learning to program). However, the
 results are hard to interpret: some studies find that more complex error
@@ -2501,7 +2501,7 @@ Many compilers and editors have hand-written parsers with hand-written error
 recovery. Though generally ad-hoc in their approach, it is possible, with
 sufficient effort, to make them perform well. However, this comes at
 a cost. For example, the hand-written error recovery routines in the Eclipse IDE
-are approximately 5KLoC of code and are solely for use with Java code: \cpctplus
+are approximately 5KLoC and are solely for use with Java code: \cpctplus
 and \mf are approximately 450LoC and 800LoC respectively and can be applied to
 any LR grammar.
 
