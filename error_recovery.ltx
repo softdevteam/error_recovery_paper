@@ -2507,11 +2507,21 @@ any LR grammar.
 
 Although error recovery approaches have, historically, been mostly LR based,
 there are several non-LR approaches. A full overview is impractical, though a
-couple of pointers are useful. When LL approaches encounter an error, they
-generally skip input until a token in the follow set is encountered (an early
-example is~\citet{turner77error}). Error recovery in PEGs is slightly more
+few pointers are useful. When LL approaches encounter an error, they generally
+skip input until a token in the follow set is encountered (an early example
+is~\citet{turner77error}). Although this outperforms the simple panic mode of
+Section~\ref{sec:panic mode}, it will in general clearly skip more input than
+\cpctplus or \mf which is undesirable. LL parsers do, however, make it
+somewhat easier to express grammar-specific error recovery rules.
+The most advanced approach in this vein that we are aware of is that of
+IntelliJ's Grammar-Kit, which allows user to annotate their grammars for error
+recovery. Perhaps the most interesting annotation is that certain rules can be
+considered as fully matched even if only a prefix is matched (e.g.~a partially
+completed function is parsed as if it was complete). It might be possible to add
+similar ideas to a successor of \cpctplus or \mf, though this is slightly more
+awkward to express in an LR approach. Error recovery in PEGs is slightly more
 awkward, partly because there is not always a clearly defined point at which an
-error is determined. Perhaps because of this, recent approaches to PEG error
+error is determined to have occurred. Perhaps because of this, recent approaches to PEG error
 recovery have tended to require additional annotations to the grammar in order
 to achieve good quality recovery (see e.g.~\cite{medeiros18syntax}).
 
