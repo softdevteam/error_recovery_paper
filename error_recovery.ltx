@@ -601,7 +601,7 @@ error algorithm to complete, and parsing resumes with a stack [0, 2].
 
 The fundamental problem with error recovery can be seen from the above example:
 the adjustment made to the parsing stack is not one that the user can
-replicate. Looked at another way, error recovery is \lukas{the/a?} \emph{Deus ex
+replicate. Looked at another way, error recovery is a \emph{Deus ex
 machina}: while panic mode managed to recover from the error, the only
 general way to report what was done is to show the parsing stack
 before and after recovery: this is challenging to interpret for small grammars
@@ -621,7 +621,7 @@ panic mode. Most numerous are those error recovery algorithms in what we call th
 members of this family of algorithms to cover in one paper. We therefore start
 with one of the most recent -- \citet{corchuelo02repairing}. We first
 explain the original algorithm (Section~\ref{corchuelo:orig}), although we use
-different a notation than the original, fill in several missing details, and
+different notation than the original, fill in several missing details, and
 provide a more formal definition. We then
 make two correctness fixes to ensure that the algorithm always
 finds minimum cost repair sequences (Section~\ref{corchuelo:kimyi}). Since the original description
@@ -1295,7 +1295,7 @@ duplicate those found by \textsc{KY Reduce}.}
 \end{figure}
 
 The \citet{kimyi10astar} algorithm itself comes in two main parts. First is a
-relation $\kyarrow$ which defines which neighbours can be reached \lukas{from?} a
+relation $\kyarrow$ which defines which neighbours can be reached from a
 configuration (Figure~\ref{fig:kimyi:rules}). Unlike the $\crarrow$ relation, these rules are
 from (\textit{parsing stack}, \textit{token list}, \textit{w}) to
 (\textit{parsing stack}, \textit{token list}, \textit{w}, \textit{repairs},
@@ -1527,7 +1527,7 @@ deliberately similar to \cpctplus, hopefully allowing the reader
 to both easily digest \mf and pick out the differences from \cpctplus.
 
 We introduce a new reduction relation $\mfarrow$, defining a neighbour's configurations
-(Figure~\ref{fig:mf:rules}). Their\lukas{what's their? a new reduction relation?} most obvious features are that the relation is
+(Figure~\ref{fig:mf:rules}). The most obvious feature of these rules are that the relation is
 from \textit{(parsing stack, token list, repair sequence)} to \textit{(parsing
 stack, token list, repair sequence, heuristic)} tuples and that each rule
 uses a new A* heuristic \textsf{mf\_dist} (which takes into account reductions/gotos
@@ -2383,7 +2383,7 @@ which our ranking of repair sequences in Section~\ref{rankingrepairs} partly
 addresses). Perhaps the most common -- and without doubt the most frustrating
 -- example of this is missing a `\texttt{\}}' character within the method of a
 Java-like language. Some approaches are able to backtrack from the source of
-the error in order to try and \lukas{find} more appropriate repairs. However, there are
+the error in order to try and find more appropriate repairs. However, there are
 two problems with this: first, the cost of maintaining the necessary state to
 backtrack slows down normal parsing (e.g.~\cite{deJonge12natural} only store the
 relevant state at each line encountered to reduce this cost), whereas we add no
