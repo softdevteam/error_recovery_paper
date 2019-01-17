@@ -2264,11 +2264,15 @@ type which references a success (\texttt{Ok($\ldots$)}) or error
 \texttt{Err} cases reference the same types because it allows a fairly natural
 interaction with normal Rust idioms and operators. We use the \texttt{Ok} case
 to represent `normal' tokens created form user input and the \texttt{Err} case
-to represent tokens inserted by error recovery.
+to represent tokens inserted by error recovery. The reason we encode things in
+this way is that it allows users to use familiar Rust idioms when choosing what
+to do when inserted tokens are encountered: the \texttt{Result} type has a
+variety of useful helper functions which are widely known by Rust programmers.
 
-The reason we encode things in this way is that it allows users to use a common
-Rust idiom: instead of returning a type \texttt{T} directly, each rule's action
-type can return \texttt{Result<T, ()>} (where `()' is Rust's unit type). When a
+For example, one reasonable choice is to stop
+executing meaningful action code, but to continue parsing, when an inserted
+token is encountered. This can be achieved by altering rules from returning a
+type \texttt{T} to returning \texttt{Result<T, ()>} (where `()' is Rust's unit type). When a
 rule cannot produce a value, for whatever reason, it simply returns
 \texttt{Err(())}. It is then, deliberately, fairly easy to use with the
 \texttt{Result<Lexeme, Lexeme>} type: for tokens whose value we absolutely
@@ -2277,26 +2281,26 @@ require, we map the \texttt{Err(Lexeme)} case to \texttt{Err())} with the
 this first says `if \$n is an \texttt{Err(Lexeme)}, convert it to
 \texttt{Err(())}' (with \texttt{map\_err}) and then `if we have
 \texttt{Err(...)} percolate it upwards, otherwise unwrap the \texttt{Ok} case'
-(the `\texttt{?}' operator). This is normal, idiomatic Rust code: while we might
-prefer it to be slightly less verbose, it is easily understood by Rust
+(the `\texttt{?}' operator). While we might prefer the code to be slightly
+less verbose, it is easily understood by Rust
 programmers and achieves the desired result. Figure~\ref{fig:api:resulttype}
-shows a version of the grammar making use of this idiom. As it shows, it adds
-only a fairly small amount of complexity to action code.
+shows a version of the grammar making use of this idiom. As it shows,
+relatively little extra code is required over the naive approach.
 
 
 \subsection{Preferring repair sequences that are easy for actions to deal with}
 
 Insert repairs are often awkward for actions to deal with. In most cases, there
 is simply no alternative than to force actions to deal with this possibility,
-hence the solution proposed in the previous subsection. However, in situations
-with multiple repair sequences, not all of them trigger the awkward case. For
+hence the solution proposed in the previous subsection. However, multiple
+repair sequences sometimes give us a way of avoiding this awkwardness. For
 example, consider the input `2 + + 3', which has two repair sequences
 \emph{[Delete +, Insert Int]}: it is clearly easier for action code if we apply
 the delete repair sequence instead of the insert repair sequence. However, as
-presented thus far, we will non-deterministically select one of these repair
-sequences on different executions.
+presented thus far, these repair sequences are ranked equally and one
+non-deterministically selected to apply to the input.
 
-\emph{grmtools} therefore provides an additional declaration
+\emph{grmtools} therefore provides an optional declaration
 \texttt{\%avoid\_insert} which takes a list of token names. Tokens in this list
 are those for which the user expects to require the value of, and which, if
 inserted by error recovery, would prevent actions from continuing execution. Of
