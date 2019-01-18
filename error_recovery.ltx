@@ -2295,9 +2295,9 @@ is simply no alternative than to force actions to deal with this possibility,
 hence the solution proposed in the previous subsection. However, multiple
 repair sequences sometimes give us a way of avoiding this awkwardness. For
 example, consider the input `2 + + 3', which has two repair sequences
-\emph{[Delete +, Insert Int]}: it is clearly easier for action code\lukas{to do what?} if we apply
-the delete repair sequence instead of the insert repair sequence. However, as
-presented thus far, these repair sequences are ranked equally and one is
+\emph{[Delete +], [Insert Int]}: evaluation of the expression can continue
+if the former repair sequence is used, but not if the latter is used. However, as
+presented thus far, these repair sequences are ranked equally and one
 non-deterministically selected to apply to the input.
 
 \emph{grmtools} therefore provides an optional declaration
