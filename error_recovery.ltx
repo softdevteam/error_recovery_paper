@@ -285,10 +285,10 @@ half as many error locations to the user as a traditional panic mode algorithm:
 in other words, they substantially reduce the cascading error problem. Finally,
 we show -- for, as far as we know, the first time -- that advanced error
 recovery can be fairly easily added to a Yacc-esque system, allowing users
-to concisely make fine-grained decisions about what to do with the results
-of error recovery (Section~\ref{sec:api}). We believe that this shows that algorithms
-such as those presented in this paper are ready for wider usage, either on their
-own, or as part of a multi-phase recovery system.
+to concisely make fine-grained decisions about what to do when error
+recovery has altered an input (Section~\ref{sec:api}). We believe that this
+shows that algorithms such as those presented in this paper are ready for wider
+usage, either on their own, or as part of a multi-phase recovery system.
 
 
 \subsection{Defining the problem}
@@ -324,8 +324,8 @@ algorithms find a single repair sequence, apply that to the input, and then
 continue parsing. While that repair sequence may have been a reasonable local
 choice, it may cause cascading errors later. Since we have the complete set of
 minimum cost repair sequences available, we can instead choose a repair
-sequence that we can show causes fewer cascading errors. We do this by
-ranking repair sequences by how far they allow parsing to continue successfully
+sequence that we can show causes fewer cascading errors. We thus
+rank repair sequences by how far they allow parsing to continue successfully
 (up to a threshold --- parsing the whole file would, in general, be too costly),
 and choose from the subset that gets furthest (note that the time required to do
 this is included in the 0.5s timeout). We thus also test a second hypothesis:
@@ -342,7 +342,7 @@ from amongst the worst performing minimum cost repair
 sequence. \mfrev models the worst case of previous approaches in the
 \citet{fischer79locally} family, which non-deterministically select a single
 minimum cost repair sequence. \mfrev leads to \mfreverrorlocsratioovermf more
-errors being raised (i.e.~it substantially worsens the cascading error problem).
+errors being reported (i.e.~it substantially worsens the cascading error problem).
 
 This paper is structured as follows.
 We first use one of the more recent algorithms in this family -- that of
@@ -388,7 +388,7 @@ Lex which performs this task.} Strictly speaking, parsing is the act of
 determining whether a stream of tokens is correct with respect to the underlying
 grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
 to specify `semantic actions' which are executed when a production in the grammar is
-successfully matched. In this paper, we assume that the semantic actions build
+successfully matched. Except where stated otherwise, we assume that the semantic actions build
 a \emph{parse tree}, ordering the tokens into a tree of nonterminal nodes
 (which can have children) and terminal nodes (which cannot have children)
 relative to the underlying grammar.
@@ -547,7 +547,7 @@ carry such modifications out.
 The simplest grammar-neutral error recovery algorithms are called `panic mode'
 algorithms. The precise origin of this family of algorithms seems lost in time;
 there are also more members of this family for LL parsing than there are for
-LR parsing. Indeed, for LR parsing, there appears to be only one way of creating
+LR parsing. Indeed, for LR parsing, there is only one fundamental one way of creating
 a grammar-neutral panic mode algorithm: we take our formulation from
 \citet[p.~348]{holub90compilerdesign}.\footnote{Note that step 2 in
 \citet{holub90compilerdesign} causes valid repairs to be missed: while it is
@@ -848,9 +848,9 @@ generates at most one shift, exploring all intermediate configurations.}
 &
 \begin{lstlisting}
 Delete 3, Delete +
-Delete 3, Shift +, Insert <Int>
-Insert +, Shift 3, Shift +, Insert <Int>
-Insert *, Shift 3, Shift +, Insert <Int>
+Delete 3, Shift +, Insert Int
+Insert +, Shift 3, Shift +, Insert Int
+Insert *, Shift 3, Shift +, Insert Int
 \end{lstlisting}
 &
 \begin{subfigure}{0.012\textwidth}
@@ -911,7 +911,7 @@ Figure~\ref{fig:crshift2:example} shows an example input where \textsc{CR Shift
 \label{corchuelo:implementation}
 
 The definitions we have given thus far do not obviously lead to
-an efficient implementation and \citet{corchuelo02repairing} give few useful
+an efficient implementation and \citet{corchuelo02repairing} gives few useful
 hints. We found that two techniques were both
 effective at improving performance while being simple to implement.
 
@@ -953,7 +953,7 @@ efficient when allocating and freeing objects of the same size.
 However, it is quite possible that a different representation would be
 better for a garbage collected language.
 
-One seemingly obvious further improvement is to parallelise the search. However,
+One seemingly obvious further improvement is to split the search into parallel threads. However,
 we found that the nature of the problem means that parallelisation is more
 tricky, and less productive, than might be expected. There are two related
 problems: we cannot tell in advance if a given
@@ -998,7 +998,7 @@ parsing stacks are identical,
 \item  and their repair sequences are compatible.
 \end{enumerate}
 
-Two repair sequences are compatible:
+\noindent Two repair sequences are compatible:
 
 \begin{enumerate}
    \item if they both end in the same number ($n \ge 0$) of shifts,
@@ -1152,7 +1152,7 @@ use 3, the value suggested by \citet{corchuelo02repairing})
 because each additional token searched exponentially increases the
 search space. Thus while the repair sequences we find are all good
 within the range of $N_\textit{shifts}$, some, but not others, may perform
-poorly beyond that range. Fortunately, we can use the
+poorly beyond that range. We use the
 complete set of minimum cost repair sequences to lessen this weakness.
 After we have generated the set of configurations which represents the
 complete set of minimum cost repair sequences, we then rank the
@@ -1162,7 +1162,7 @@ why we rank the configurations, and not the repair sequences, is that we only
 need to rank one repair sequence for each merged configuration, a small but useful
 optimisation. We then expand the top ranked configurations into repair
 sequences and remove shifts from the end of those repair sequences. Since the
-earlier merging of compatible configurations is imprecise (missing compatible
+earlier merging of compatible configurations is imprecise (it misses
 configurations that have already been processed), there can be some remaining
 duplicate repair sequences: we thus perform a final purge of duplicate repair
 sequences. Figure~\ref{fig:cpctplus:full} shows a visualisation of \cpctplus in
@@ -1198,9 +1198,8 @@ for 4 unmatched brackets, and 6 unmatched brackets caused our 32GiB test machine
 to run out of RAM. Attempting to work around this problem by reducing $N_\textit{total}$
 leads to some simple, but spread-out syntax errors, no longer being repaired.
 The only sensible alternative is a timeout: up to several seconds is safe in our
-experience. For the purposes of this paper, we do not need to worry about
-finding a perfect value, as we defined a timeout of 0.5s to be the longest
-acceptable to users.
+experience. We thus remove $N_\textit{total}$ from \cpctplus and rely
+entirely on a timeout which, in this paper, is defined to be 0.5s.
 
 
 \section{The Kim and Yi algorithm}
@@ -1305,7 +1304,7 @@ take into account reductions/gotos or deletions,
 heuristic values are only valid for sequences of \textsc{KY Insert} and \textsc{KY Shift}.
 The initial configuration sets $w = \bot$. Since \textsc{KY Insert} is the only
 rule which uses the heuristic, it sets $w = \top$. Only \textsc{KY Shift} can
-turn $w = \top$ into $\bot$.
+turn $\top$ into $\bot$.
 
 \begin{figure}[t]
 \begin{adjustbox}{valign=t,minipage=.63\textwidth}
@@ -1820,7 +1819,10 @@ In order to understand the performance of error recovery algorithms we coducted
 a large experiment on real-world Java code using three algorithms: panic mode
 (Section~\ref{sec:panic mode}), \cpctplus, and \mf. In this section we outline our methodology
 (Section~\ref{methodology}) and results (Section~\ref{results}). Our experiment
-is fully repeatable and downloadable from \url{https://archive.org/download/error_recovery_experiment/0.1/}
+is fully repeatable and downloadable from
+\url{https://archive.org/download/error_recovery_experiment/0.2/}. The results
+from our particular run of the experiment can also be downloaded from the same
+location.
 
 
 \subsection{Methodology}
@@ -1828,11 +1830,11 @@ is fully repeatable and downloadable from \url{https://archive.org/download/erro
 
 In order to evaluate error recovery implementations, we need a concrete implementation. We
 implemented a new Yacc-compatible parsing system \emph{grmtools} in Rust. Including
-associated libraries for LR table generation and so on, grmtools is around
+associated libraries for LR table generation and so on, \emph{grmtools} is around
 11KLoC. Although intended as a production library, it has accidentally
 played a part as a flexible test bed for experimenting with, and understanding,
 error recovery algorithms. We added a simple front-end which produces the output
-seen in e.g.~Figure~\ref{fig:javaerror}. We use grmtools for all experiments in
+seen in e.g.~Figure~\ref{fig:javaerror}. We use \emph{grmtools} for all experiments in
 this paper.
 
 There are two standard problems when evaluating error recovery algorithms: how
@@ -1841,13 +1843,13 @@ sufficient examples to get a wide perspective on an algorithm's performance. To
 some extent, solutions to these problems are mutually exclusive: for
 real-world inputs, the only way to guarantee that a good job has been done is to
 manually evaluate it, which means that it is only practical to use a small set
-of input programs. Most papers we are aware of use at most 200 inputs
-(e.g.~\cite{corchuelo02repairing}), with one using a single input with minor
+of input programs. Most papers we are aware of use at most 200 source files
+(e.g.~\cite{corchuelo02repairing}), with one using a single source file with minor
 variants (\citet{kimyi10astar}). \citet{cerecke03phd} was the first to use a
 large-scale corpus of approximately 60,000 Java source files. Early in the
 development of our methodology, we performed some rough experiments which
 suggested that statistics only start to stabilise once a corpus exceeds 10,000
-programs. We therefore prefer to use a much larger corpus than most previous
+source files. We therefore prefer to use a much larger corpus than most previous
 studies. We are fortunate to have access to the Blackbox
 project~\cite{brown14blackbox}, an opt-in data collection facility for the BlueJ
 editor, which records major editing events (e.g.~compiling a file) and sends
@@ -1863,7 +1865,7 @@ such as Yacc, requiring substantial changes to the current Java Yacc grammar. We
 consider the work involved beyond that useful for this paper.} We then
 randomly selected source files from Blackbox's database (following the lead of
 \citet{santos18syntax}, we selected data from Blackbox's beginning until the end
-of 2017-12-31). We then ran such inputs through our Java 1.7 lexer. We immediately
+of 2017-12-31). We then ran such source files through our Java 1.7 lexer. We immediately
 rejected files which didn't lex, since such files cannot be considered
 for parsing.\footnote{Happily, this also excludes outputs which can't
 possibly be Java source code. Some odd things are pasted into text
@@ -1928,8 +1930,9 @@ that file). The only subtlety is when bootstrapping the mean cost
 size: this value only makes sense if the file was successfully recovered from,
 so we do not sample from runs where error recovery failed.
 
-All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with 32GiB RAM running
-Debian 9. We used Rust nightly-2018-10-28 to compile grmtools (the
+All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with
+32GiB RAM running Debian 9, taking approximately 10 days to complete. We used
+Rust 1.31.0 to compile \emph{grmtools} (the
 \texttt{Cargo.lock} file necessary to reproduce the build is included in our
 experimental repository).
 
@@ -1963,7 +1966,7 @@ skipped (because of a delete repair).
 The number of error locations shows how many separate points in files
 are reported as errors. Since fewer files in \mf timeout, it is able
 to continue repairing errors more often, hence the slightly higher
-number of error locations. However \mfrev (which always selects
+number of error locations relative to \cpctplus. However \mfrev (which always selects
 from the minimum cost repair sequences that allow parsing to continue the least far)
 is much more prone to cascading errors, reporting
 \mfreverrorlocsratioovermf more error locations than \mf to users.}
@@ -2010,7 +2013,7 @@ intervals. The top histogram shows the full spread of data (with 50 bins). Since
 obscure the main body of data, the bottom histogram only shows data up to 50 error
 recovery locations (with 50 bins i.e.~1 bin per error location size). For both histograms, the
 $x$ axis shows the number of error locations in a file and the $y$ axis is a logarithmic
-scale for the number of files. Error bars represent 99\% confidence intervals.
+scale for the number of files.
 As the bottom histogram clearly shows, the entire distribution is skewed
 slightly rightwards by \mfrev, showing that \mfrev makes error recovery
 slightly worse in a number of files (rather than making error recovery in a small
@@ -2082,7 +2085,7 @@ is to execute action code as each production is reduced, what should actions
 do in the face of parts of the input altered by error recovery? This latter
 question is vital for real-world systems, such as compilers, which often
 want to continue doing as much work as possible even in the face of syntax
-errors (e.g.~running the type checker).
+errors (e.g.~running a type checker).
 
 In this section we briefly outline the approach taken in \emph{grmtools}, our
 Rust parsing tool. This section necessarily contains several Rust-specific
@@ -2144,7 +2147,7 @@ avoid both problems.}
 
 Figure~\ref{fig:api:naive} shows a naive \emph{grmtools} version of the grammar
 from Figure~\ref{fig:exprgrammar}. The most obvious difference in
-Figure~\ref{fig:api:naive} is that it can calculate numeric results as parsing
+Figure~\ref{fig:api:naive} is that it can evaluate numeric results as parsing
 occurs (i.e.~given the input $2 + 3 * 4$ it returns $14$). Each production has
 an \emph{action}, which is arbitrary Rust code that is executed when that
 production is reduced. At a basic level, we have simply replaced Yacc's C actions with
@@ -2292,8 +2295,8 @@ relatively little extra code is required over the naive approach.
 
 Insert repairs are often awkward for actions to deal with. In most cases, there
 is simply no alternative than to force actions to deal with this possibility,
-hence the solution proposed in the previous subsection. However, multiple
-repair sequences sometimes give us a way of avoiding this awkwardness. For
+hence the solution proposed in the previous subsection. However, the complete
+set of repair sequences sometimes give us a way of avoiding this awkwardness. For
 example, consider the input `2 + + 3', which has two repair sequences
 \emph{[Delete +], [Insert Int]}: evaluation of the expression can continue
 if the former repair sequence is used, but not if the latter is used. However, as
@@ -2337,7 +2340,7 @@ inherent limitations. First, it only contains Java source code. This means that
 our main experiment is limited to one grammar: it is possible that our
 techniques do not generalise beyond the Java grammar (though, as
 Appendix~\ref{app:examples} suggests, our techniques do appear to work well
-enough for other grammars). Although \citet[p.~109]{cerecke03phd}
+on other grammars). Although \citet[p.~109]{cerecke03phd}
 suggests that different grammars make relatively little difference
 to the performance of such error recovery algorithms, we are not aware
 of an equivalent repository for other language's source code. One solution is
