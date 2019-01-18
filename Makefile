@@ -38,7 +38,35 @@ ARXIV_FILES=graph.pdf \
 		bib.bib \
 		error_recovery.bbl \
 		experimentstats.tex \
-		table.tex
+		table.tex \
+		examples/java_ex1.java \
+		examples/java_ex1.out \
+		examples/java_ex2.java \
+		examples/java_ex2.out \
+		examples/java_ex3.java \
+		examples/java_ex3.out \
+		examples/java_ex4.java \
+		examples/java_ex4.out \
+		examples/java_ex5.java \
+		examples/java_ex5.out \
+		examples/java_ex6.java \
+		examples/java_ex6.out \
+		examples/lua_ex1.lua \
+		examples/lua_ex1.out \
+		examples/lua_ex2.lua \
+		examples/lua_ex2.out \
+		examples/lua_ex3.lua \
+		examples/lua_ex3.out \
+		examples/lua_ex4.lua \
+		examples/lua_ex4.out \
+		examples/lua_ex5.lua \
+		examples/lua_ex5.out \
+		examples/php_ex1.php \
+		examples/php_ex1.out \
+		examples/php_ex2.php \
+		examples/php_ex2.out \
+		examples/php_ex3.php \
+		examples/php_ex3.out
 
 ARXIV_BASE=arxiv
 ${ARXIV_BASE}: error_recovery.pdf acmart
