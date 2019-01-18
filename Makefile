@@ -32,7 +32,8 @@ softdevbib:
 ARXIV_FILES=graph.pdf \
 		cpctplus.pdf \
 		mf_histogram.pdf \
-		mf_mfrev_error_locs_histogram.pdf \
+		mf_mfrev_error_locs_histogram_full.pdf \
+		mf_mfrev_error_locs_histogram_zoomed.pdf \
 		softdev.sty \
 		bib.bib \
 		error_recovery.bbl \
