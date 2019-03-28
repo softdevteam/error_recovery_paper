@@ -2162,14 +2162,15 @@ rule $R$ has an associated Rust \emph{action type} (between `\texttt{->}' and
 type (an approach shared with other modern parsers such as
 ANTLR~\cite{parr13definitive}). This is in contrast to traditional Yacc where
 productions must return a C \texttt{union} specified with the \texttt{\%union}
-directive. This is easy (albeit dangerous) for programmers to use, as values can
-be extracted from a C \texttt{union} without static checks. However, a Rust
-\texttt{enum} (the rough equivalent of C's \texttt{union}) requires explicit
-(and generally somewhat lengthy) pattern matching to be added before values can
-be extracted. Since a rule's values are percolated to other rules via actions,
-such pattern matching quickly becomes tedious and obfuscatory, as well as
-delaying some typing aspects to run-time. Having a separate action type per rule
-gives a natural, and fully statically typable, way of avoiding this problem.
+directive. This is easy, albeit dangerous, for programmers to use, as values can
+be extracted from a C \texttt{union} without static checks. It is possible
+to use Rust \texttt{enum}s to achieve a similar effect. However, we soon found
+this unpleasant to use: explicit, often lengthy, pattern matching has to be
+added before values can be extracted; the necessary pattern matching often
+percolates to other rules, causing significant readability problems; and many
+type errors are only discovered, albeit in a safe way, at run-time. Having a
+separate action type per rule gives a natural, and fully statically typable,
+way of avoiding these problems.
 
 The second major difference is in the contents of the \texttt{\$\emph{n}}
 pseudo-variables and how user input is extracted from them. If a pseudo-variable
@@ -2251,14 +2252,14 @@ One alternative might be to stop executing actions after a syntax error has
 been encountered. However, many syntax errors are sufficiently minor that we
 would like to continue executing actions (e.g.~a compiler might still run its
 type checker). Unfortunately, what constitutes a `minor' syntax error is
-inherently language specific. We therefore want a mechanism which allows the
+inherently situation specific. We therefore want a mechanism which allows the
 grammar author to make this decision while not overburdening them with
 boilerplate code.
 
-The outline of a solution is to allow users to differentiate between a
-pseudo-variable referencing a token derived from user input and a token created
+The outline of a solution is to allow users a mechanism to differentiate between
+tokens derived from user input and tokens created
 by error recovery. \emph{grmtools} does this in a way that is simple and
-ergonomic, at least for Rust. In essence, pseudo-variables that reference tokens have
+ergonomic --- at least for Rust. In essence, pseudo-variables that reference tokens have
 (slightly simplified) the Rust type \texttt{Result<Lexeme, Lexeme>}. Rust's \texttt{Result}
 type\footnote{Equivalents are found in several other languages: Haskell's
 \texttt{Either}; O'Caml's \texttt{result}; or Scala's \texttt{Either}.} is a sum
@@ -2304,10 +2305,11 @@ presented thus far, these repair sequences are ranked equally and one
 non-deterministically selected to apply to the input.
 
 \emph{grmtools} therefore provides an optional declaration
-\texttt{\%avoid\_insert} which takes a list of token names. Tokens in this list
-are those for which the user expects to require the value of, and which, if
-inserted by error recovery, would prevent actions from continuing execution. Of
-the tokens in our running grammar, only the \texttt{INT} token satisfies this
+\texttt{\%avoid\_insert} which takes a list of token names. These tokens
+should be those which, if inserted by error recovery, are likely to prevent
+actions from continuing execution. In practise, this is synonymous with those
+tokens whose values (and not just their types) are important. Of the tokens in
+our running example, only the \texttt{INT} token satisfies this
 criteria, so we simply add \texttt{\%avoid\_insert "INT"} to the grammar. We then
 make a simple change to the repair sequence ranking of
 Section~\ref{rankingrepairs} such that the final list of repair sequences is
