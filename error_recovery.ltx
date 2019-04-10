@@ -147,7 +147,7 @@ syntax errors in one go.
 
 When error recovery works well, it is a useful productivity gain. Unfortunately,
 most current error recovery approaches are simplistic. The most common
-grammar-neutral approach to error recovery are those algorithms described as
+grammar-neutral approach to error recovery ar 
 `panic mode' algorithms (e.g.~\cite[p.~348]{holub90compilerdesign}) which skip
 input until the parser finds something it is able to parse. A more
 grammar-specific variation of this idea is to skip input until a pre-determined
@@ -364,7 +364,7 @@ We assume a high-level understanding of the mechanics of parsing in this paper,
 but in this section we provide a handful of definitions, and a brief refresher
 of relevant low-level details, needed to understand the rest of this paper.
 Although the parsing tool we created for this paper is written in Rust, we
-appreciate that this is still an unfamiliar language to most readers: code examples
+appreciate that this is still an unfamiliar language to most readers: algorithms
 are therefore given in Python which, we hope, is familiar to most.
 
 Although there are many flavours of parsing, the \citet{fischer79locally} family
@@ -537,7 +537,7 @@ complete before moving to a new (`goto') state.}
 Error recovery algorithms are invoked by a parser when it has yet to finish but
 there is no apparent way to continue parsing (i.e.~when \textsf{action}$(s_n,
 t_0) = \textit{error}$). Error recovery algorithms are thus called with a parsing
-stack and sequence of remaining input (which, for simplicities sake, we represent
+stack and a sequence of remaining input (which, for simplicities sake, we represent
 as a list of tokens): they can modify either or both of the
 stack and the input in their quest to get parsing back on track. The differences
 between algorithms are thus in what modifications they can carry out
@@ -1238,7 +1238,7 @@ we first start with a brief overview of it. The A* algorithm finds minimum cost 
 a graph, where each edge has an associated cost $c$. The current lowest
 cost to reach a node $n$ from the start node is represented by $d(n)$. A
 heuristic $h(n)$ returns an estimate of the additional cost needed to reach a success node from
-$n$. The heuristic must be `admissible': it must
+$n$. The heuristic must be \emph{admissible}: it must
 never overestimate the cost to reach a success node (or else non-minimum
 cost routes to success nodes may be found first); however, it may safely
 underestimate (i.e.~the simplest admissible heuristic is $h(n) = 0$). A priority queue is
