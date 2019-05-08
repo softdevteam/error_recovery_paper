@@ -2518,7 +2518,7 @@ there are several non-LR approaches. A full overview is impractical, though a
 few pointers are useful. When LL approaches encounter an error, they generally
 skip input until a token in the follow set is encountered (an early example
 is~\citet{turner77error}). Although this outperforms the simple panic mode of
-Section~\ref{sec:panic mode}, it will in general clearly skip more input than
+Section~\ref{sec:panic mode}, it will, in general, clearly skip more input than
 \cpctplus or \mf which is undesirable. LL parsers do, however, make it
 somewhat easier to express grammar-specific error recovery rules.
 The most advanced approach in this vein that we are aware of is that of
@@ -2526,12 +2526,22 @@ IntelliJ's Grammar-Kit, which allows user to annotate their grammars for error
 recovery. Perhaps the most interesting annotation is that certain rules can be
 considered as fully matched even if only a prefix is matched (e.g.~a partially
 completed function is parsed as if it was complete). It might be possible to add
-similar ideas to a successor of \cpctplus or \mf, though this is slightly more
-awkward to express in an LR approach. Error recovery in PEGs is more
-challenging, partly because there is not always a clearly defined point at which an
-error is determined to have occurred. Perhaps because of this, recent approaches to PEG error
-recovery have tended to require additional annotations to the grammar in order
-to achieve good quality recovery (see e.g.~\cite{medeiros18syntax}).
+similar ideas to a successor of \cpctplus or \mf, though this is more
+awkward to express in an LR approach. Error recovery for PEG grammars is much more
+challenging, because the non-LL parts of the grammar mean that there is not
+always a clearly defined point at which an error is determined to have
+occurred. PEG error recovery has thus traditionally required extensive manual
+annotations in order to achieve good quality recovery. \citet{medeiros19syntax}
+is the most advanced work we are aware of that tackles the problem of lessening
+manual annotations for PEG error recovery. However, this is no easy task and
+the two algorithms presented have different trade-offs: the \emph{Standard}
+algorithm provides good quality error recovery but at the significant expense
+of sometimes altering the input language accepted; the \emph{Conservative}
+algorithm provides poorer quality error recovery but does not affect the
+language accepted. The Conservative algorithm, in particular, often skips large
+portions of the input, sometimes up to the EOF token.  Although a direct
+comparison is difficult, it seems fairly clear that the Conservative algorithm
+skips a much larger portion of input than even panic mode in an LR parser.
 
 While the programming language world has largely forgotten the approach of
 \citet{aho72minimum}, there are a number of successor works, most recently that
