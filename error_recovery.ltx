@@ -2533,15 +2533,19 @@ always a clearly defined point at which an error is determined to have
 occurred. PEG error recovery has thus traditionally required extensive manual
 annotations in order to achieve good quality recovery. \citet{medeiros19syntax}
 is the most advanced work we are aware of that tackles the problem of lessening
-manual annotations for PEG error recovery. However, this is no easy task and
-the two algorithms presented have different trade-offs: the \emph{Standard}
-algorithm provides good quality error recovery but at the significant expense
-of sometimes altering the input language accepted; the \emph{Conservative}
-algorithm provides poorer quality error recovery but does not affect the
-language accepted. The Conservative algorithm, in particular, often skips large
-portions of the input, sometimes up to the EOF token.  Although a direct
-comparison is difficult, it seems fairly clear that the Conservative algorithm
-skips a much larger portion of input than even panic mode in an LR parser.
+the need for manual annotations for PEG error recovery. It does this by
+automatically adding many (though not necessarily all) of the annotations
+needed for good error recovery. However, deciding when to add, and when not to
+add, annotations is a difficult task and the two algorithms presented have
+different trade-offs: the \emph{Standard} algorithm adds more annotations,
+leading to better quality error recovery, but at the significant expense of
+sometimes altering the input language accepted; the \emph{Conservative}
+algorithm adds fewer annotations, leaving to poorer quality error recovery, but
+does not affect the language accepted. The quality of error recovery of the
+Conservative algorithm is heavily dependent on the input grammar: it works
+well on some (e.g.~Pascal) but less well on others (e.g.~Java). In cases
+where it performs less well, it can lead to parsers which skip large portions
+(sometimes the remainder) of the input.
 
 While the programming language world has largely forgotten the approach of
 \citet{aho72minimum}, there are a number of successor works, most recently that
@@ -2586,7 +2590,7 @@ We are grateful to the Blackbox developers for allowing us access
 to their data, and particularly to Neil Brown for help in extracting a relevant
 corpus. We thank Edd Barrett for helping to set up our benchmarking
 machine and for comments on the paper. We also thank Carl Friedrich
-Bolz-Tereick, Sarah Mount, François Pottier, Christian Urban,
+Bolz-Tereick, Sérgio Queiroz de Medeiros, Sarah Mount, François Pottier, Christian Urban,
 and Naveneetha Vasudevan for comments on the paper.
 This research was funded by the EPSRC Lecture (EP/L02344X/1) fellowship.
 \end{acks}
