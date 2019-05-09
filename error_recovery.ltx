@@ -2538,11 +2538,11 @@ automatically adding many (though not necessarily all) of the annotations
 needed for good error recovery. However, deciding when to add, and when not to
 add, annotations is a difficult task and the two algorithms presented have
 different trade-offs: the \emph{Standard} algorithm adds more annotations,
-leading to better quality error recovery, but at the significant expense of
-sometimes altering the input language accepted; the \emph{Conservative}
+leading to better quality error recovery, but is more likely to change
+the input language accepted; the \emph{Conservative}
 algorithm adds fewer annotations, leaving to poorer quality error recovery, but
-does not affect the language accepted. The quality of error recovery of the
-Conservative algorithm is heavily dependent on the input grammar: it works
+is less likely to affect the language accepted. The quality of error recovery of the
+Conservative algorithm, in particular, is heavily dependent on the input grammar: it works
 well on some (e.g.~Pascal) but less well on others (e.g.~Java). In cases
 where it performs less well, it can lead to parsers which skip large portions
 (sometimes the remainder) of the input.
