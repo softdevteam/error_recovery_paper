@@ -2388,9 +2388,9 @@ of the error. Thus even when they successfully recover from an error, the repair
 sequence reported may be very different from the fix the user considers
 appropriate (note that this is distinct from the cascading error problem,
 which our ranking of repair sequences in Section~\ref{rankingrepairs} partly
-addresses). Perhaps the most common -- and without doubt the most frustrating
--- example of this is missing a `\texttt{\}}' character within the method of a
-Java-like language. Some approaches are able to backtrack from the source of
+addresses). perhaps the most common -- and without doubt the most frustrating
+-- example of this are missing `\texttt{\}}' characters in
+C/Java-like languages. Some approaches are able to backtrack from the source of
 the error in order to try and find more appropriate repairs. However, there are
 two problems with this: first, the cost of maintaining the necessary state to
 backtrack slows down normal parsing (e.g.~\cite{deJonge12natural} only store the
@@ -2419,6 +2419,38 @@ has a high chance of finding a good-enough recovery) with
 probabilistic approaches (which have a moderate chance of finding a perfect
 recovery). There may be several shades of grey, leading to a system
 with multiple error recovery sub-approaches (in similar fashion to \citet{deJonge12natural}).
+
+As \mfrev shows, cascading errors can be a significant problem in error
+recovery in the \citet{fischer79locally} family, because one can choose an
+inappropriate repair sequence. The noncorrecting error recovery approach
+proposed by~\citet{richter85noncorrecting} explicitly addresses this weakness,
+eschewing repairs entirely. When a syntax error is discovered, noncorrecting
+error recovery attempts to discover all further syntax errors by checking
+whether the input after the point of an error is a valid suffix in the
+language. This is achieved by creating a recogniser that can identify all valid
+suffixes at any given point in the grammar (using a generalised parsing
+algorithm that can cope with ambiguities e.g.~Earley's
+algorithm~\cite{earley73efficient}). The beauty of this approach is that
+discarding the erroneous prefix means that the recogniser accepts any valid
+suffixes in the language: any errors identified in the suffix parse are, by
+definition, genuine syntax errors. However, because the suffix parser in
+essence starts with a clean slate unaffected by the input before a syntax
+error, it misses some genuine syntax errors that would not have been valid
+suffixes at that point in the user's input had the original syntax error not
+been present. In other words, while false syntax errors are never reported,
+genuine syntax errors might not be reported (though note that algorithms in
+the~\citet{fischer79locally} family make no guarantees about false or genuine
+errors). There seem to be two main reasons why noncorrecting error recovery has
+not been adopted. First, building an appropriate recogniser is surprisingly
+tricky and we are not currently aware of one that can handle the full class of
+LR grammars (though the full class of LL grammars has been
+tackled~\cite{deudekom93initial}), though we doubt that this problem is
+insoluble. Second, as soon as a syntax error is encountered, semantic actions
+are not executed. This means that the ability to continue with non-parsing
+activities in the face of syntax errors (such as the approach described in
+Section~\ref{sec:api}) is lost. An intriguing future possibility might be to
+use noncorrecting error recovery to find (most/many) syntax errors and then
+find repairs which move the parse in that direction.
 
 Although one of our paper's aims is to find the complete set of minimum cost repair sequences,
 it is unclear how best to present them to users, leading to questions such as:
@@ -2489,7 +2521,7 @@ sensitive~\cite{eijck__lets_accept_rejects}. Other possibilities are to
 intermingle parsing and lexing (see e.g.~\citet{wyk07context}) or to allow
 `fuzzy' or partial matching of tokens (see~\citet[p.~8]{vanter00displaying}).
 
-A very different approach is that taken by \citet{pottier16reachability}: rather
+A different approach to error recovery is that taken by \citet{pottier16reachability}: rather
 than try and recover from errors directly, it reports precisely and accurately
 how the user's input caused the parser to reach an error state (e.g.~``I
 read an open bracket followed by an expression, so I was expecting a close
