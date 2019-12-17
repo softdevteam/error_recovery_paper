@@ -1,5 +1,7 @@
-\documentclass[acmsmall,small,screen]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
-%\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
+\documentclass[a4paper,UKenglish,cleveref,autoref,thm-restate]{lipics-v2019}
+%for anonymising the authors (e.g. for double-blind review), add "anonymous"
+%\nolinenumbers %uncomment to disable line numbering
+%\hideLIPIcs  %uncomment to remove references to LIPIcs series (logo, DOI, ...), e.g. when preparing a pre-final version to be uploaded to arXiv or another public repository
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -8,6 +10,7 @@
 \usepackage{booktabs}
 \usepackage{listings}
 \usepackage{multicol}
+\usepackage{natbib}
 \usepackage[autolanguage]{numprint}
 \usepackage{proof}
 \usepackage{softdev}
@@ -22,15 +25,6 @@
 \SetAlCapNameFnt{\small}
 \SetAlCapHSkip{0pt}
 \IncMargin{-\parindent}
-
-\acmJournal{PACMPL}
-\acmVolume{1}
-\acmNumber{CONF} % CONF = POPL or ICFP or OOPSLA
-\acmArticle{1}
-\acmYear{2018}
-\acmMonth{1}
-\acmDOI{} % \acmDOI{10.1145/nnnnnnn.nnnnnnn}
-\startPage{1}
 
 \lstset{
     basicstyle=\ttfamily\scriptsize,
@@ -59,17 +53,6 @@
   }%
 }
 
-\setcopyright{none}
-
-\bibliographystyle{ACM-Reference-Format}
-\citestyle{acmauthoryear}
-
-% DOI
-%\acmDOI{0000001.0000001}
-
-% Paper history
-%\received{February 2007}
-
 \newcommand{\cpctplus}{\textrm{\textit{CPCT}}$^+$\xspace}
 \newcommand{\crarrow}{\rightarrow_{\textrm{\tiny CR}}}
 \newcommand{\crarrowstar}{\rightarrow_{\textrm{\tiny CR}}^*}
@@ -84,28 +67,18 @@
 
 \include{experimentstats}
 
-% Document starts
-\begin{document}
-% Title portion. Note the short title for running heads
 \title{Don't Panic! Better, Fewer, Syntax Errors for LR Parsers}
 
-\author{Lukas Diekmann}
-\affiliation{%
-  \department{Software Development Team}
-  \institution{King's College London}
-  \country{United Kingdom}}
-\author{Laurence Tratt}
-\orcid{0000-0002-5258-3805}
-\affiliation{%
-  \department{Software Development Team}
-  \institution{King's College London}
-  \country{United Kingdom}
-}
-\thanks{Authors' URLs: %
-    L.~Diekmann~\url{http://lukasdiekmann.com/},
-    L.~Tratt~\url{http://tratt.net/laurie/}.
-}
+\author{Lukas Diekmann}{Software Development Team, King's College London, United Kingdom \and \url{https://lukasdiekmann.com/}}{lukas.diekmann@gmail.com}{}{}
+\author{Laurence Tratt}{Software Development Team, King's College London, United Kingdom \and \url{https://tratt.net/laurie/}}{laurie@tratt.net}{https://orcid.org/0000-0002-5258-3805}{}
+\authorrunning{L.\,Diekmann and L.\,Tratt}
+\Copyright{Lukas Diekmann and Laurence Tratt}
+\keywords{Parsing, error recovery, programming languages}
 
+% Document starts
+\begin{document}
+
+\maketitle
 
 \begin{abstract}
 Syntax errors are generally easy to fix for humans, but not for parsers, in general,
@@ -128,10 +101,6 @@ algorithm reports \mferrorlocs error locations in the corpus to the user, while 
 mode algorithm reports \panicerrorlocs error locations: in other words, our
 algorithms reduce the cascading error problem by well over half.
 \end{abstract}
-
-\keywords{Parsing, error recovery, programming languages}
-
-\maketitle
 
 \section{Introduction}
 
@@ -2615,7 +2584,7 @@ may use a machine-learning approach such as that of \citet{santos18syntax} as a
 first-step and, when it fails (which current evidence suggests it
 will do fairly often), fall back to \cpctplus or \mf.
 
-\begin{acks}
+\textbf{Acknowledgements:}
 We are grateful to the Blackbox developers for allowing us access
 to their data, and particularly to Neil Brown for help in extracting a relevant
 corpus. We thank Edd Barrett for helping to set up our benchmarking
@@ -2623,8 +2592,8 @@ machine and for comments on the paper. We also thank Carl Friedrich
 Bolz-Tereick, Sérgio Queiroz de Medeiros, Sarah Mount, François Pottier, Christian Urban,
 and Naveneetha Vasudevan for comments on the paper.
 This research was funded by the EPSRC Lecture (EP/L02344X/1) fellowship.
-\end{acks}
 
+\bibliographystyle{plain}
 \bibliography{bib}
 
 \appendix

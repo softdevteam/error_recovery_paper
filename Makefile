@@ -28,7 +28,6 @@ softdevbib:
 
 
 # Package up the paper for arxiv.org.
-# Note that acmart.cls is included in tex live 2016, but it is too old.
 ARXIV_FILES=graph.pdf \
 		cpctplus.pdf \
 		mf_histogram.pdf \
@@ -69,24 +68,15 @@ ARXIV_FILES=graph.pdf \
 		examples/php_ex3.out
 
 ARXIV_BASE=arxiv
-${ARXIV_BASE}: error_recovery.pdf acmart
+${ARXIV_BASE}: error_recovery.pdf
 	mkdir $@
 	rsync -Rav ${ARXIV_FILES} $@
 	cp error_recovery.ltx $@/error_recovery.tex
-	cp acmart.cls $@
-	cp acmart/acmart.dtx $@
-	cp acmart/acmart.ins $@
 	zip -r $@.zip ${ARXIV_BASE}
-
-ACMART_VERSION=904956ed0f4545da4fbb7f2401318917a348ba75
-acmart:
-	git clone https://github.com/borisveytsman/acmart
-	cd acmart && git checkout ${ACMART_VERSION}
 
 clean-arxiv:
 	rm -rf arxiv
 	rm -rf arxiv.zip
-	rm -rf acmart
 
 clean: clean-arxiv
 	rm -rf ${DIAGRAMS} ${DIAGRAMS:S/.pdf/.eps/}
