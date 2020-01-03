@@ -54,6 +54,7 @@
 }
 
 \newcommand{\cpctplus}{\textrm{\textit{CPCT}}$^+$\xspace}
+\newcommand{\cpctplusrev}{\textrm{\textit{CPCT$^+_\textrm{rev}$}}\xspace}
 \newcommand{\crarrow}{\rightarrow_{\textrm{\tiny CR}}}
 \newcommand{\crarrowstar}{\rightarrow_{\textrm{\tiny CR}}^*}
 \newcommand{\kyarrow}{\rightarrow_{\textrm{\tiny KY}}}
@@ -64,6 +65,11 @@
 \newcommand{\mfarrow}{\rightarrow_{\textrm{\tiny MF}}}
 \newcommand{\mfarrowstar}{\rightarrow_{\textrm{\tiny MF}}^*}
 \newcommand{\panic}{\textrm{\textit{Panic}}\xspace}
+
+\newcommand{\aho}{Aho and Peterson\xspace}
+\newcommand{\corchuelo}{Corchuelo \emph{et al.}\xspace}
+\newcommand{\fischer}{Fischer \emph{et al.}\xspace}
+\newcommand{\holub}{Holub\xspace}
 
 \include{experimentstats}
 
@@ -88,18 +94,18 @@ often leads to a cascading chain of
 errors that drown out the original. More advanced error recovery techniques
 suffer less from this problem but have seen little practical use because
 their typical performance was seen as poor, their worst case unbounded, and the
-repairs they reported arbitrary. In this paper we show two generic error
-recovery algorithms that fix all three problems. First, our algorithms are the first
-to report the complete set of possible repair sequences for a given location, allowing
+repairs they reported arbitrary. In this paper we introduce an algorithm
+and implementation that addresses these issues. First, we
+report the complete set of minimum cost repair sequences for a given location, allowing
 programmers to select the one that best fits their intention. Second, on a
-corpus of \corpussize real-world syntactically invalid Java programs, we show
-that our best performing algorithm is able to repair \mfsuccessrate of files within
-a cut-off of 0.5s. Furthermore, we are also able to use the complete set of
-repair sequences to reduce the cascading error problem even further than
-previous approaches. Our best performing
-algorithm reports \mferrorlocs error locations in the corpus to the user, while the panic
-mode algorithm reports \panicerrorlocs error locations: in other words, our
-algorithms reduce the cascading error problem by well over half.
+corpus of \corpussize real-world syntactically invalid Java programs, we are
+able to repair \mfsuccessrate of files within
+a cut-off of 0.5s. Finally, we use the existence of the complete set of
+minimum cost repair sequences to reduce one of the most frustrating consequences of
+error reporting: the cascading error problem. Across our corpus, we report
+\mferrorlocs error locations to the user, while the panic
+mode algorithm reports \panicerrorlocs error locations: in other words, we
+reduce the cascading error problem by well over half.
 \end{abstract}
 
 \section{Introduction}
@@ -194,10 +200,10 @@ dealing with it. \texttt{javac} (\subref{lst:javaerror:javac}) spots the error
 when it encounters `\texttt{y}'. Its error recovery heuristic then
 repairs the input by inserting a semicolon before `\texttt{y}' (i.e.~making
 the input equivalent to `\texttt{int x; y;}'). This causes a (spurious) cascading
-parsing error, since `\texttt{y}' on its own is not a valid statement. The two new error
-recovery algorithms (\cpctplus and \mf) we introduce in this paper both
-produce the output shown in (\subref{lst:javaerror:mf}): after spotting an error
-when parsing encounters `\texttt{y}', they then use the Java grammar to find the
+parsing error, since `\texttt{y}' on its own is not a valid statement. The \cpctplus
+error recovery algorithm we introduce in this paper produces
+the output shown in (\subref{lst:javaerror:mf}): after spotting an error
+when parsing encounters `\texttt{y}', it uses the Java grammar to find the
 complete set of minimum cost repair sequences (unlike previous approaches which
 non-deterministically find one minimum cost repair sequence). In this case three
 repair sequences are reported to the user: one can delete `\texttt{y}'
@@ -218,12 +224,12 @@ Most of us are so used to these trade-offs (cheap generic algorithms and poor
 recovery vs.~expensive hand-written algorithms and reasonable recovery) that we
 assume them to be inevitable. However, there is a long line of work on
 more advanced generic error recovery algorithms. Probably the earliest such algorithm
-is \citet{aho72minimum}, which, upon encountering an error, creates on-the-fly an
+is \aho~\cite{aho72minimum}, which, upon encountering an error, creates on-the-fly an
 alternative (possibly ambiguous) grammar which allows the parser to recover.
-However, this algorithm has fallen out of favour in programming language
-circles, we suspect for two reasons: its implementation complexity; and the difficulty of
+This algorithm has fallen out of favour in programming language
+circles, probably because of its implementation complexity and the difficulty of
 explaining to users what recovery has been used. A simpler family of algorithms, which
-trace their roots to \citet{fischer79locally}, instead try to find a single minimum cost
+trace their roots to \fischer~\cite{fischer79locally}, instead try to find a single minimum cost
 \emph{repair sequence} of token insertions and deletions which allow the parser to
 recover. Algorithms in this family are much better at recovering from errors
 than naive approaches and can communicate the repairs they find in a way that
@@ -235,28 +241,24 @@ repair sequence to users. In general -- and especially in syntactically rich
 languages -- there are multiple reasonable repair sequences for a given error
 location, and the algorithm has no way of knowing which best matches the user's intentions.
 
-In this paper we introduce two new error recovery algorithms, both in the
-\citet{fischer79locally} family, that run fast
-enough to be usable, are able to repair nearly all errors, and which report the
-complete set of minimum cost repair sequences to users. The first algorithm, \cpctplus, takes
-the approach of \citet{corchuelo02repairing} as a base, correcting and
-substantially extending it. The second algorithm, \mf, takes partial inspiration
-from the flawed algorithm of \citet{kimyi10astar} but is essentially a new
-algorithm. Both algorithms have been designed to be as simple as possible, so
-that they are realistic targets for tool builders: \cpctplus is the simpler of
-the two, though \mf is still less than 1,000 lines of Rust code.
+In this paper we introduce a new error recovery algorithm in the \fischer
+family, \cpctplus. This takes the approach of \corchuelo~\cite{corchuelo02repairing}
+as a base, corrects it, and then substantially expands it. \cpctplus is simple
+to implement (under 500 lines of Rust code), is able to repair
+nearly all errors in reasonable time, and reports the
+complete set of minimum cost repair sequences to users.
 
-We then validate \cpctplus and \mf on a corpus of \corpussize real,
+We validate \cpctplus on a corpus of \corpussize real,
 syntactically incorrect, Java programs (Section~\ref{experiment}). \cpctplus is
-able to recover \cpctplussuccessrate of files within a 0.5s timeout, and \mf is
-able to recover \mfsuccessrate. Significantly, both algorithms report well under
+able to recover \cpctplussuccessrate of files within a 0.5s timeout and does
+so while reporting well under
 half as many error locations to the user as a traditional panic mode algorithm:
-in other words, they substantially reduce the cascading error problem. Finally,
+in other \cpctplus substantially reduces the cascading error problem. Finally,
 we show -- for, as far as we know, the first time -- that advanced error
 recovery can be fairly easily added to a Yacc-esque system, allowing users
 to concisely make fine-grained decisions about what to do when error
 recovery has altered an input (Section~\ref{sec:api}). We believe that this
-shows that algorithms such as those presented in this paper are ready for wider
+shows that algorithms such as \cpctplus are ready for wider
 usage, either on their own, or as part of a multi-phase recovery system.
 
 
@@ -270,14 +272,13 @@ Formally speaking, we first test the following hypothesis:
 \end{description}
 
 The only work we are aware of with a similar concept of `acceptable time'
-is~\citet{deJonge12natural}, who define it as the total time spent in error
+is~\cite{deJonge12natural}, who define it as the total time spent in error
 recovery per file, with a threshold of 1s. Since many compilers are able to
 fully execute in less time than this, we felt that a tighter threshold is more
 appropriate: we use 0.5s since we think that even the most
-demanding user will tolerate such a delay. We strongly validate this hypothesis
-with both \cpctplus (which successfully recovers \cpctplussuccessrate of files) and \mf (\mfsuccessrate). Relative
-to previous approaches, we are the clear beneficiaries of faster modern
-hardware, which undoubtedly make it easier to validate this hypothesis.
+demanding user will tolerate such a delay. We strongly validate this hypothesis.
+Relative to previous approaches, we are the clear beneficiaries of faster, modern
+hardware, which undoubtedly makes it easier to validate this hypothesis.
 However, it it is important to note that we have
 stated a much stronger hypothesis than previous approaches: where
 they have aimed to find only a single minimum cost repair sequence, we
@@ -292,8 +293,8 @@ new opportunity for error recovery algorithms. Previous error recovery
 algorithms find a single repair sequence, apply that to the input, and then
 continue parsing. While that repair sequence may have been a reasonable local
 choice, it may cause cascading errors later. Since we have the complete set of
-minimum cost repair sequences available, we can instead choose a repair
-sequence that we can show causes fewer cascading errors. We thus
+minimum cost repair sequences available, we can select from them a repair sequence
+which causes fewer cascading errors. We thus
 rank repair sequences by how far they allow parsing to continue successfully
 (up to a threshold --- parsing the whole file would, in general, be too costly),
 and choose from the subset that gets furthest (note that the time required to do
@@ -305,23 +306,18 @@ the complete set of minimum cost repair sequences and choosing from those which
 allow parsing to continue the furthest.
 \end{description}
 
-We also strongly validate this hypothesis. We do this by comparing `normal' \mf
-with a simple variant \mfrev which reverses the ranking process, always selecting
+We also strongly validate this hypothesis. We do this by comparing `normal' \cpctplus
+with a simple variant \cpctplusrev which reverses the ranking process, always selecting
 from amongst the worst performing minimum cost repair
-sequence. \mfrev models the worst case of previous approaches in the
-\citet{fischer79locally} family, which non-deterministically select a single
-minimum cost repair sequence. \mfrev leads to \mfreverrorlocsratioovermf more
+sequence. \cpctplusrev models the worst case of previous approaches in the
+\fischer family, which non-deterministically select a single
+minimum cost repair sequence. \cpctplusrev leads to \mfreverrorlocsratioovermf more
 errors being reported (i.e.~it substantially worsens the cascading error problem).
 
-This paper is structured as follows.
-We first use one of the more recent algorithms in this family -- that of
-\citet{corchuelo02repairing} -- as a base, correcting and substantially extending it
-to form a new algorithm \cpctplus (Section~\ref{corchueloplus}). We
-then show that an even newer algorithm which promises better performance -- that
-of \citet{kimyi10astar} -- has problems which cause it to miss many
-minimum cost repair sequences (Section~\ref{kimyi}). However, we are able to use
-it as partial inspiration for an entirely new error recovery algorithm \mf
-(Section~\ref{mf}). We then validate \cpctplus and \mf on a corpus of \corpussize real,
+This paper is structured as follows. We describe the \corchuelo algorithm
+(Section~\ref{cpct}), filling in missing details from the original description
+and correcting its definition. We then expand the algorithm into \cpctplus
+(Section~\ref{cpctplus}). We then validate \cpctplus on a corpus of \corpussize real,
 syntactically incorrect, Java programs (Section~\ref{experiment}). To
 emphasise that our algorithms are grammar-neutral, we show examples of
 error recovery on different grammars in Appendix~\ref{app:examples}.
@@ -336,7 +332,7 @@ Although the parsing tool we created for this paper is written in Rust, we
 appreciate that this is still an unfamiliar language to most readers: algorithms
 are therefore given in Python which, we hope, is familiar to most.
 
-Although there are many flavours of parsing, the \citet{fischer79locally} family
+Although there are many flavours of parsing, the \fischer family
 of error recovery algorithms are designed to be used with LR($k$)
 parsers~\cite{knuth65lllr}. LR parsing remains one of the most widely used parsing
 approaches due to the ubiquity of Yacc~\cite{johnson75yacc} and its
@@ -379,8 +375,8 @@ Factor: "(" Expr ")"     // (V)
 \end{lstlisting}
 \end{subfigure}
 \begin{subfigure}{1.0\textwidth}
-\vspace{10pt}
 \scriptsize
+\vspace{10pt}
 \begin{tabular}{c c c c c c c}
 \toprule
       & \multicolumn{6}{c}{Actions}\\
@@ -446,13 +442,12 @@ parse states at that point) and edges are labelled with terminals or
 nonterminals. Since even on a modern machine, a canonical
 (i.e.~unmerged) LR stategraph for a real-world grammar takes several seconds to
 build, and a surprising amount of memory to store, we use the state merging
-algorithm of \citet{pager77practical} to merge together compatible
-states.\footnote{Unfortunately \citet{pager77practical} can over-merge states when conflict
+algorithm of \cite{pager77practical} to merge together compatible
+states.\footnote{Unfortunately \cite{pager77practical} can over-merge states when conflict
 resolution is used \cite[p.~3]{denny10ielr} (i.e.~when Yacc uses its
 precedence rules to turn an ambiguous input into an unambiguous LR parser).
-Since our error recovery approach is intended to be independent of the merging
-approach, it should be possible to use the more sophisticated state merging
-approach of \cite{denny10ielr} without problems.} The
+Since our error recovery approach operates purely on the statetable,
+it should work correctly with other merging approaches such as that of~\cite{denny10ielr}.} The
 effect of this is significant, reducing the Java grammar we use later from
 8908 to 1148 states. The stategraph is then transformed into a
 \emph{statetable} with one row per state. Each row has a possibly empty \emph{action} (shift, reduce,
@@ -508,7 +503,7 @@ there is no apparent way to continue parsing (i.e.~when \textsf{action}$(s_n,
 t_0) = \textit{error}$). Error recovery algorithms are thus called with a parsing
 stack and a sequence of remaining input (which, for simplicities sake, we represent
 as a list of tokens): they can modify either or both of the
-stack and the input in their quest to get parsing back on track. The differences
+parsing stack and the input in their quest to get parsing back on track. The differences
 between algorithms are thus in what modifications they can carry out
 (e.g.~altering the parse stack; deleting input; inserting input), and how they
 carry such modifications out.
@@ -518,8 +513,8 @@ algorithms. The precise origin of this family of algorithms seems lost in time;
 there are also more members of this family for LL parsing than there are for
 LR parsing. Indeed, for LR parsing, there is only one fundamental way of creating
 a grammar-neutral panic mode algorithm: we take our formulation from
-\citet[p.~348]{holub90compilerdesign}.\footnote{Note that step 2 in
-\citet{holub90compilerdesign} causes valid repairs to be missed: while it is
+\holub~\cite[p.~348]{holub90compilerdesign}.\footnote{Note that step 2 in
+\holub causes valid repairs to be missed: while it is
 safe to ignore the top element of the parsing stack on the first iteration of
 the algorithm, as soon as one token is skipped, one must check all elements of
 the parsing stack. Our description simply drops step 2 entirely.} It works by
@@ -546,8 +541,8 @@ def holub(pstack, toks):
 \end{adjustbox}
 \begin{adjustbox}{valign=t,minipage=.47\textwidth}
 \vspace*{-10pt}
-\caption{Our version of the \citet{holub90compilerdesign} algorithm. The error
-recovery algorithm takes in a (\emph{parsing stack}, \emph{token list})
+\caption{Our version of the \holub~\cite{holub90compilerdesign} algorithm. This
+panic mode algorithm takes in a (\emph{parsing stack}, \emph{token list})
 pair and returns: a (\emph{parsing stack}, \emph{token list}) pair if
 it managed to recover; or \texttt{None} if it failed to recover.
 The algorithm tries to find an element in the stack that has a non-error action
@@ -581,14 +576,14 @@ are often of poor quality, leading to a cascade of further
 parsing errors (as we will see later in Section~\ref{results}).
 
 
-\section{\cpctplus}
-\label{corchueloplus}
+\section{\corchuelo}
+\label{corchuelo}
 
 There have been many attempts to create better LR error recovery algorithms than
 panic mode. Most numerous are those error recovery algorithms in what we call the
-\citet{fischer79locally} family. Indeed, there are far too many
+\fischer family. Indeed, there are far too many
 members of this family of algorithms to cover in one paper. We therefore start
-with one of the most recent -- \citet{corchuelo02repairing}. We first
+with one of the more recent -- \corchuelo~\cite{corchuelo02repairing}. We first
 explain the original algorithm (Section~\ref{corchuelo:orig}), although we use
 different notation than the original, fill in several missing details, and
 provide a more formal definition. We then
@@ -596,25 +591,20 @@ make two correctness fixes to ensure that the algorithm always
 finds minimum cost repair sequences (Section~\ref{corchuelo:kimyi}). Since the original description
 gives few details as to how the algorithm might best be implemented, we then
 explain the steps we took to make a performant implementation
-(Section~\ref{corchuelo:implementation}). We then show how the algorithm can
-be extended to efficiently find the complete set of minimum cost repair sequences
-(Section~\ref{corchuelo:allminimumcost}). This allows
-us to make an algorithm less susceptible to the cascading error problem
-(Section~\ref{cpctplus}): we refer to this final algorithm
-as \cpctplus.
+(Section~\ref{corchuelo:implementation}).
 
 
 \subsection{The original algorithm}
 \label{corchuelo:orig}
 
-Intuitively, the \citet{corchuelo02repairing} algorithm starts at the error state and tries
+Intuitively, the \corchuelo algorithm starts at the error state and tries
 to find a minimum cost repair sequence consisting of: \textit{insert T}
 (`insert a token of type T'), \textit{delete} (`delete the token at the current offset'),
 or \textit{shift} (`parse the token at the current offset'). The
 algorithm completes: successfully if it reaches an accept state or shifts
-`enough' tokens ($N_\textit{shifts}$, set at 3 in \citet{corchuelo02repairing});
+`enough' tokens ($N_\textit{shifts}$, set at 3 in \corchuelo);
 or unsuccessfully if it deletes and inserts `too many' tokens ($N_\textit{total}$, set at 10
-in \citet{corchuelo02repairing}). Repair sequences are reported back to users
+in \corchuelo). Repair sequences are reported back to users
 with trailing \emph{shift} repairs pruned i.e.~[\emph{insert x, shift y, delete
 z, shift a, shift b, shift c}] is reported as [\emph{insert x, shift y, delete
 z}].
@@ -713,7 +703,7 @@ def all_cr_star(pstack, toks):
 \end{adjustbox}
 \begin{adjustbox}{valign=t,minipage=.47\textwidth}
 \vspace*{-10pt}
-\caption{Our version of the \citet{corchuelo02repairing} algorithm. The main function
+\caption{Our version of the \corchuelo algorithm. The main function
 \texttt{corchueloetal} takes in a (\emph{parsing stack}, \emph{token list})
 pair and returns: a (\emph{parsing stack}, \emph{token list}, \emph{repair
 sequence}) triple where \emph{repair sequence} is guaranteed to be a minimum
@@ -747,10 +737,10 @@ a successful configuration has been found or if error recovery has failed
 (Figure~\ref{fig:corchuelo:algorithm}).
 As well as several changes for clarity, the biggest difference is that
 Figure~\ref{fig:corchuelo:algorithm} captures semi-formally what
-\citet{corchuelo02repairing} explain in prose (spread amongst
+\corchuelo explain in prose (spread amongst
 several topics over several pages): perhaps inevitably
 we have had to fill in several missing details. For example,
-\citet{corchuelo02repairing} do not define what the cost of repairs is: for
+\corchuelo do not define what the cost of repairs is: for
 simplicities sake, we define the cost of \textit{insert} and \textit{delete} as
 1, and \textit{shift} as 0.\footnote{It is trivial to extend this to variable
 token costs if desired, and our implementation supports this. However, it is
@@ -839,10 +829,9 @@ Insert +, Shift 3, Delete +
 Figure~\ref{fig:exprgrammar}, \textsc{CR Shift 1} is unable to find any repair
 sequences because it does not perform the reductions/gotos necessary after
 the final \textit{insert} or \textit{delete} repairs to reach an accept state.
-\textsc{CR Shift 2} can find 4 minimum cost repair sequences
-(\subref{lst:crshift2:crshift2}). \textsc{CR Shift 3} can find a further 2
-minimum cost repair sequences on top of these (i.e.~6 in total)
-(\subref{lst:crshift2:crshift3}).}
+(\subref{lst:crshift2:crshift2}) \textsc{CR Shift 2} can find 4 minimum cost repair sequences.
+(\subref{lst:crshift2:crshift3}) \textsc{CR Shift 3} can find a further 2
+minimum cost repair sequences on top those found by \textsc{CR Shift 2} (i.e.~6 in total).}
 \label{fig:crshift2:example}
 \end{figure}
 
@@ -868,7 +857,7 @@ time. \textsc{CR Shift 3} in
 Figure \ref{fig:corchuelo:kimyi} (as well as incorporating the fix from
 \textsc{CR Shift 2}) generates at most one shift repair at a time. Relative to
 \textsc{CR Shift 1}, it is simpler, though it also inevitably slows down the
-search, as more configurations are tried.
+search, as more configurations are generated.
 
 The problems with \textsc{CR Shift 1}, in particular, can be severe.
 Figure~\ref{fig:crshift2:example} shows an example input where \textsc{CR Shift
@@ -880,15 +869,15 @@ Figure~\ref{fig:crshift2:example} shows an example input where \textsc{CR Shift
 \label{corchuelo:implementation}
 
 The definitions we have given thus far do not obviously lead to
-an efficient implementation and \citet{corchuelo02repairing} gives few useful
+an efficient implementation and \corchuelo give few useful
 hints. We found that two techniques were both
 effective at improving performance while being simple to implement.
 
-First, although \citet{corchuelo02repairing} do not refer to it as such,
+First, although \corchuelo do not refer to it as such,
 it was clear to us that the most natural way to model the search is as an instance of
 Dijkstra's algorithm. However, rather than use a general queue data-structure (probably based on a
 tree) to discover which element to search next, we use a similar queue data-structure to
-\citet[p.~25]{cerecke03phd}. This consists of one sub-list per cost (i.e.~ the
+\cite[p.~25]{cerecke03phd}. This consists of one sub-list per cost (i.e.~ the
 first sub-list contains configurations
 of cost 0, the second sub-list configurations of cost 1 and so on).
 Since we always know what cost we are currently investigating,
@@ -918,9 +907,10 @@ Although this does mean that neighbouring configurations are scattered throughou
 memory, the memory sharing involved seems to more than compensate for
 poor cache behaviour; it also seems to be a good
 fit with modern \texttt{malloc} implementations, which are particularly
-efficient when allocating and freeing objects of the same size.
-However, it is quite possible that a different representation would be
-better for a garbage collected language.
+efficient when allocating and freeing objects of the same size. While we
+suspect this representation is always likely to be a reasonable choice, it is
+difficult to generalise from our experience whether it will always be the best
+in other contexts, in particular for garbage collected languages.
 
 One seemingly obvious further improvement is to split the search into parallel threads. However,
 we found that the nature of the problem means that parallelisation is more
@@ -931,7 +921,7 @@ configurations are, in general, searched for successors extremely quickly. Thus
 if we attempt to seed threads with initial sets of configurations, some threads
 quickly run out of work whilst others have ever growing queues. If,
 alternatively, we have a single global queue then significant amounts of time
-are spent adding or removing configurations in a thread-safe manner. This
+can be spent adding or removing configurations in a thread-safe manner. This
 suggests that the right approach is likely to be a combination of the two
 approaches: threads would have a local queue which, if it gets too full,
 would be partly emptied into a global queue, from which otherwise idle threads
@@ -940,22 +930,50 @@ fast enough that the additional complexity of such an approach is not, in our
 opinion, justified.
 
 
-\subsection{Finding all minimum cost repair sequences}
+\section{\cpctplus}
+\label{corchueloplus}
+
+In this section, we extend the \corchuelo algorithm to become what we call
+\cpctplus. First we extend the algorithm to find
+the complete set of minimum cost repair sequences
+(Section~\ref{corchuelo:allminimumcost}). Since this significantly slows down
+the search, we introduce a significant optimisation in the form
+of merging compatible configurations (Section~\ref{merging}). The complete set of
+minimum cost repair sequences allows us to make an
+algorithm less susceptible to the cascading error problem
+(Section~\ref{cpctplus}): we refer to this final algorithm as \cpctplus.
+
+
+\subsection{Finding the complete set of minimum cost repair sequences}
 \label{corchuelo:allminimumcost}
 
-The algorithm as described to this point non-deterministically completes as soon
-as it has found a single minimum cost repair sequence.
-In this section we show that it is possible to extend such an algorithm to
-efficiently find and report the complete set of minimum cost repair sequences.
+The basic \corchuelo algorithm non-deterministically completes as soon
+as it has found a single minimum cost repair sequence. This is confusing
+in two different ways: the successful repair sequence found can change from run
+to run; and the successful repair sequence might not match the user's intention.
 
-The basis of a solution is simple: when a repair sequence of cost $c$ is found to
+We therefore introduce the idea of the complete set of repair sequences: that
+is all equivalently good repair sequences. Although we will refine the concept
+of `equivalently good' in Section~\ref{rankingrepairs}, at this stage we
+consider all successful repair sequences with the minimum cost $c$ to be
+equivalently good. In other words, as soon as we find the first successful repair
+sequence, its cost $c$ defines the minimum cost.
+
+An algorithm to generate this set is then simple:
+when a repair sequence of cost $c$ is found to
 be successful, we discard all repair sequences with cost $> c$, and continue
 exploring configurations in cost $c$ (including, transitively, all neighbours that are
-also of cost $c$). Each successful configuration is recorded and, when all configurations
+also of cost $c$; those with cost $> c$ are immediately discarded). Each
+successful configuration is recorded and, when all configurations
 in $c$ have been explored, the set of successful configurations is returned.
-This significantly slows down the search because there may
-be many remaining configurations in $c$, which may, transitively, have many neighbours.
 
+
+\subsection{Merging compatible configurations}
+\label{merging}
+
+Relative to finding a single solution, finding the complete set of repair
+sequences can be extremely extremely expensive because there may
+be many remaining configurations in $c$, which may, transitively, have many neighbours.
 Our solution to this performance problem is to merge together \emph{compatible}
 configurations on-the-fly, preserving their distinct repair sequences while
 still reducing the search space. Two configurations are compatible if:
@@ -975,7 +993,7 @@ parsing stacks are identical,
 ends in a delete.
 \end{enumerate}
 
-The first condition is a direct consequence of the fact that a configuration
+\noindent The first of these conditions is a direct consequence of the fact that a configuration
 is deemed successful if it ends in $N_\textit{shifts}$ shift
 repairs. When we merge configurations, one part of the merge is `dominant'
 (i.e.~checked for $N_\textit{shifts}$) and the other `subsumed'. Thus we have to
@@ -989,7 +1007,7 @@ parts may have lead to success. It is therefore only safe to merge repair sequen
 which end in the same number of shifts.
 
 The second condition relates to the weak form of compatible merging inherited
-from \citet[p.~8]{corchuelo02repairing}: delete repairs are never followed by an
+from \cite[p.~8]{corchuelo02repairing}: delete repairs are never followed by an
 insert (see Figure~\ref{fig:corchuelo:algorithm}) since [\textit{delete},
 \textit{insert x}] always leads to the same configuration as [\textit{insert x},
 \textit{delete}]. Although we get much of the same effect through
@@ -1017,11 +1035,7 @@ same hash. In our context, this allows us to quickly find potentially compatible
 nodes using hashing, checking for definitely compatible configurations
 using equality. We therefore hash configurations based solely on their parsing stack
 and remaining input whereas configuration equality is based on a configurations'
-parsing stacks, remaining input, and repair sequences.  Since we only record configurations
-which we have yet to search, we cannot detect all possible compatible merges.
-Nevertheless, this is still a powerful optimisation.
-An example of compatible configuration merging can be seen in
-Figure~\ref{fig:cpctplus:full}.
+parsing stacks, remaining input, and repair sequences.
 
 Conceptually, merging two configurations together is simple: each configuration
 needs to store a set of repair sequences, each of which is updated as further
@@ -1041,16 +1055,14 @@ downside to this scheme is that expanding configurations into repair sequences r
 recursively expanding both the normal parent pointer tree of the first
 element as well as the merged parent pointer trees of the second element.
 
+Compatible configuration merging is a powerful optimisation even though
+it can only merge configurations in the todo list (i.e.~we cannot detect
+all possible compatible merges). An example of compatible configuration merging
+can be seen in Figure~\ref{fig:cpctplus:full}.
 
-\subsection{Putting together the \cpctplus algorithm}
-\label{cpctplus}
+
+\subsection{Ranking repair sequences}
 \label{rankingrepairs}
-
-The \textsc{CR Shift 3} rule and our ability to find the complete
-set of minimum cost repair sequences are two of the key ingredients
-in our new error recovery algorithm. In this subsection
-we make two further additions to the algorithm, calling the result \cpctplus (in
-homage to \citet{corchuelo02repairing}).
 
 \begin{figure}[t]
 \includegraphics[width=1.0\textwidth]{cpctplus}
@@ -1115,18 +1127,23 @@ in (\subref{lst:ranking:output}). javac in contrast attempts to insert
 \label{fig:ranking}
 \end{figure}
 
-The penultimate step in our new algorithm allows us to somewhat compensate for the
-small value of $N_\textit{shifts}$. This value has to be a small integer (we
-use 3, the value suggested by \citet{corchuelo02repairing})
-because each additional token searched exponentially increases the
-search space. Thus while the repair sequences we find are all good
-within the range of $N_\textit{shifts}$, some, but not others, may perform
-poorly beyond that range. We use the
-complete set of minimum cost repair sequences to lessen this weakness.
-After we have generated the set of configurations which represents the
-complete set of minimum cost repair sequences, we then rank the
-configurations by how far they allow parsing to continue, up to a limit of
-$N_\textit{try}$ tokens (which we somewhat arbitrarily set at 250). The reason
+In nearly all cases, members of the complete set of minimum cost repair
+sequences end with $N_\textit{shifts}$ (the only exception being if an error
+location is found less than $N_\textit{shifts}$ from the end of an input). Thus
+while the repair sequences we find are all equivalently good within the range
+of $N_\textit{shifts}$, some, but not others, may perform poorly beyond that
+range. This problem is exacerbated by the fact that $N_\textit{shifts}$ has
+to be a fairly small integer (we use 3, the value suggested by \corchuelo)
+since because each additional token searched exponentially increases the
+search space. From a user perspective this can mean that some members
+of the complete set of minimum cost repair sequences can appear to be of much
+lower quality than others.
+
+In order to lessen this problem, we rank configurations which represent the
+complete set of minimum cost repair sequences by how far they allow parsing to continue, up to a limit of
+$N_\textit{try}$ tokens (which we somewhat arbitrarily set at 250). Taking
+the furthest-parse point as our top rank, we then discard all configurations
+which parsed less input than this. The reason
 why we rank the configurations, and not the repair sequences, is that we only
 need to rank one repair sequence for each merged configuration, a small but useful
 optimisation. We then expand the top ranked configurations into repair
@@ -1148,9 +1165,12 @@ parsing to continue. This can mean that we select a repair sequence which
 performs less well beyond $N_\textit{try}$ tokens than other repair sequences in
 the top-ranked set.
 
+
+\subsection{Timeout}
+
 The final part of \cpctplus relates to the use of $N_\textit{total}$ in
-\citet{corchuelo02repairing}. As with all members of the
-\citet{fischer79locally} family, \cpctplus is not only unbounded in
+\corchuelo. As with all members of the
+\fischer family, \cpctplus is not only unbounded in
 time~\cite[p.~14]{mckenzie95error}, but
 also unbounded in memory. $N_\textit{total}$ is an attempt to stop the
 algorithm from running unacceptably long by limiting how much input the
@@ -1158,638 +1178,31 @@ algorithm will consider for modification. Unfortunately it is impossible to find
 a good value for this, as `too long' is entirely dependent on the grammar and
 erroneous input: Java's grammar, for example, is large with a commensurately
 large search space while Lua's grammar is small with a commensurately small
-search space. This can be most easily seen on inputs with unbalanced brackets
+search space.
+
+This problem can be easily seen on inputs with unbalanced brackets
 (e.g.~expressions such as `\texttt{x = f(();}'): each additional unmatched
 bracket exponentially increases the search space. On a modern machine
 with a Java 7 grammar, \cpctplus takes about 0.3s to find
 the complete set of minimum cost repair sequences for 3 unmatched brackets, 3s
 for 4 unmatched brackets, and 6 unmatched brackets caused our 32GiB test machine
-to run out of RAM. Attempting to work around this problem by reducing $N_\textit{total}$
+to run out of RAM.
+
+Attempting to work around this problem by reducing $N_\textit{total}$
 leads to some simple, but spread-out syntax errors, no longer being repaired.
 The only sensible alternative is a timeout: up to several seconds is safe in our
 experience. We thus remove $N_\textit{total}$ from \cpctplus and rely
 entirely on a timeout which, in this paper, is defined to be 0.5s.
 
 
-\section{The Kim and Yi algorithm}
-\label{kimyi}
-
-While performance problems such as those with unmatched brackets
-are fairly rare, it would be better if they did not occur at
-all. \citet{kimyi10astar} propose a new error recovery algorithm -- which is in the
-\citet{fischer79locally} family, but by far its most radical member --  which
-claims to hugely reduce such performance problems. This work has not,
-to the best of our knowledge, received prior attention in the community, despite
-this promise. In this section we provide a brief overview of this work: we
-give enough information to understand details relevant to this paper but
-we elide several details which an
-implementation would need to consider. We also adjust the algorithm's style to
-match this paper's and correct several minor mistakes.
-
-We then show that the algorithm contains three serious flaws
-which cause it to miss minimum cost repair sequences
-(Section~\ref{kimyi:flaws}). We are unable to fix all of these flaws, but parts of the
-approach serve as inspiration for our new \mf error recovery algorithm.
-
-
-\subsection{An overview of the algorithm}
-\label{kimyi:overview}
-
-The \citet{kimyi10astar} algorithm takes \citet{corchuelo02repairing} as a base,
-adding two significant novelties: it uses the A*
-algorithm~\cite{hart68astar} to delay, and thus often to avoid, unpromising
-configurations; and it can insert non-terminals, avoiding many inserts
-of terminals entirely. This allows examples with
-thousands of unmatched brackets to be repaired in a few seconds.
-
-Since the A* algorithm is not a particularly common one in parsers,
-we first start with a brief overview of it. The A* algorithm finds minimum cost paths through
-a graph, where each edge has an associated cost $c$. The current lowest
-cost to reach a node $n$ from the start node is represented by $d(n)$. A
-heuristic $h(n)$ returns an estimate of the additional cost needed to reach a success node from
-$n$. The heuristic must be \emph{admissible}: it must
-never overestimate the cost to reach a success node (or else non-minimum
-cost routes to success nodes may be found first); however, it may safely
-underestimate (i.e.~the simplest admissible heuristic is $h(n) = 0$). A priority queue is
-used to order nodes by their $d(n) + h(n)$. On
-each iteration the node in the queue with the lowest $d(n) + h(n)$ is selected,
-its neighbours explored and each entered into the priority queue. The search
-terminates when the first success node is found.
-
-\begin{figure}
-\small
-\[
-\infer[\textsc{KY Insert}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n], w) \kyarrow ([s_0 \ldots s_n, s'],
-       [t_0 \ldots t_n], \top, [\textit{insert}~t], d)}
-      {s_n \xrightarrow{\text{~~t~~}} s' \wedge t \ne \${} \wedge d = \textsf{ky\_dist}(s', t_0) < \infty)}
-\]
-\vspace{-3pt}
-\[
-\infer[\textsc{KY Reduce}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n], \bot) \kyarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'],
-       [t_0 \ldots t_n], \bot, [\textit{insert}~\beta_0 \ldots \textit{insert}~\beta_n], 0)}
-      {[N: \alpha \bullet \beta_0 \ldots \beta_n] \in \textsf{core}(s_n)
-       \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'}
-\]
-\vspace{-4pt}
-\[
-\infer[\textsc{KY Delete}]
-      {(S, [t_0, t_1 \ldots t_n], \bot) \kyarrow (S, [t_1 \ldots t_n], \bot, [\textit{delete}], 0)}
-      {t_0 \ne \$}
-\]
-\vspace{-3pt}
-\[
-\hspace{-12pt}
-\infer[\textsc{KY Shift}]
-      {(S, [t_0 \ldots t_n], w) \kyarrow (S', [t_1 \ldots t_n], \bot, [\textit{shift}], 0)}
-      {(S, [t_0 \ldots t_n]) \lrarrowstar (S', [t_1 \ldots t_n])}
-\]
-\vspace{-12pt}
-\caption{The repair-creating rules for \citet{kimyi10astar} operate from (\textit{parsing
-stack}, \textit{token list}, \textit{w}) to (\textit{parsing stack},
-\textit{token list}, \textit{w}, \textit{repairs}, \textit{heuristic}) tuples.
-\textsc{KY Insert} finds terminals in the stategraph
-($\xrightarrow{\text{~~t~~}}$) which lead to a state with a finite distance to
-the next input token as \textit{insert} repairs. \textsc{KY Reduce} finds items
-in the core (or `kernel') state which would lead to a reduction if the
-sequence of symbols (terminals and non-terminals) $\beta_0 \ldots \beta_n$ were
-to be found; it then optimistically creates insert repairs for each, and
-performs the corresponding reduction. \textsc{KY Delete} is virtually identical
-to \textsc{CR Delete}. \textsc{KY Shift} is similar to \textsc{CR Shift 3} but
-has to shift a single symbol to avoid creating repairs which
-duplicate those found by \textsc{KY Reduce}.}
-\label{fig:kimyi:rules}
-\end{figure}
-
-The \citet{kimyi10astar} algorithm itself comes in two main parts. First is a
-relation $\kyarrow$ which defines which neighbours can be reached from a
-configuration (Figure~\ref{fig:kimyi:rules}). Unlike the $\crarrow$ relation, these rules are
-from (\textit{parsing stack}, \textit{token list}, \textit{w}) to
-(\textit{parsing stack}, \textit{token list}, \textit{w}, \textit{repairs},
-\textit{heuristic}) tuples. Of these values, $w$ is the least intuitive:
-since, as we will shortly see, the A* heuristic used in this approach does not
-take into account reductions/gotos or deletions,
-heuristic values are only valid for sequences of \textsc{KY Insert} and \textsc{KY Shift}.
-The initial configuration sets $w = \bot$. Since \textsc{KY Insert} is the only
-rule which uses the heuristic, it sets $w = \top$. Only \textsc{KY Shift} can
-turn $\top$ into $\bot$.
-
-\begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=.63\textwidth}
-\begin{lstlisting}[numbers=left,language=Python]
-def mk_ky_table(sgraph, terms, eof_idx):
-  table = [<!$\infty$!>] * sgraph.len_states * len(terms)
-  table[sgraph.accept_state * len(terms) \
-        + eof_idx] = 0
-  while True:
-    chgd = False
-    for i in range(sgraph.len_states):
-      for sym, end_st in sgraph.edges(i):
-        if isinstance(sym, Nonterminal):
-          d = min_sentence_cost(sym.nt_idx)
-        else:
-          assert isinstance(sym, Terminal)
-          off = i * len(terms) + sym.term_idx
-          if table[off] != 0:
-            table[off] = 0
-            chgd = True
-          d = 1
-        for j in range(len(terms)):
-          this_off = i * len(terms) + j
-          end_off = end_st * len(terms) + j
-          if table[end_off] != <!$\infty$!>:
-            other_cost = table[end_off] + d
-            if other_cost < table[this_off]:
-              table[this_off] = other_cost
-              chgd = True
-    if not chgd:
-      break
-\end{lstlisting}
-\end{adjustbox}%
-\small
-\begin{adjustbox}{valign=t,minipage=.35\textwidth}
-\vspace{5pt}
-\begin{tabular}{rcccccc}
-\toprule
-      & \multicolumn{6}{c}{$t$} \\
-        \cmidrule(lr){2-7}
-$s$ & INT & \texttt{+} & \texttt{*} & \texttt{(} & \texttt{)} & \$ \\
-\midrule
-0 & 0 & 1 & 1 & 0 & 2 & 1 \\
-1 & 0 & 1 & 1 & 0 & 1 & $\infty$ \\
-2 & 1 & 0 & 2 & 1 & 3 & $\infty$ \\
-3 & 1 & 3 & 0 & 1 & 3 & $\infty$ \\
-4 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
-5 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & 0 \\
-6 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & 0 & $\infty$ \\
-7 & 0 & 1 & 1 & 0 & 2 & $\infty$ \\
-8 & 0 & 2 & 1 & 0 & 2 & $\infty$ \\
-9 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
-10 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
-11 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\
-\bottomrule
-\end{tabular}
-\end{adjustbox}
-\vspace{-5pt}
-\caption{A fixed-point algorithm for the \textit{ky\_dist} distance table (left)
-and a distance table for the grammar from Figure~\ref{fig:exprgrammar} (right).
-The algorithm takes in the stategraph, an ordered list of
-terminals, and the index of the `\$' terminal (line 1), and returns a table with
-one column per terminal and one row per state. Each entry starts
-at $\infty$ (line 2) except for the `\$' terminal in the accept state (i.e.~the only state with
-an \textit{accept} action) which is set
-to 0 (lines 3, 4): entries monotonically reduce to a minimum of 0. For each
-state $i$ in the stategraph (line 7), the algorithm explores its outgoing edges
-(via the \texttt{edges} function (line 8)), each of which is labelled with a
-symbol \texttt{sym} and points to another state with index \texttt{end\_st}. If
-the edge's symbol is a terminal then by definition the cost of reaching that
-terminal from state $i$ is 0 (lines 13-16). We then calculate the cost of the
-edge: if the label's symbol is a nonterminal, we return the cost of the minimum
-sentence matching that nonterminal (line 10); if a terminal we return a cost of 1 (line 17).
-If the cost of $t$ in \texttt{end\_st} plus the distance to \texttt{end\_st} is
-lower than the cost of $t$ in $i$ then we update the latter (lines 19--25).}
-\label{fig:kimyi:dist}
-\end{figure}
-
-The A* heuristic used is \textsf{ky\_dist(s, t)} which is best
-summarised as follows: if we are in parsing state $s$, what is the cost of the
-minimum route through the stategraph to a state $s'$ (where $s$ and $s'$ may be
-the same state), where $s'$ has the terminal $t$ as an outgoing edge? In other
-words, this gives us the cost of inserting symbols to reach a state $s'$
-where $t$ is a valid next terminal. If no such route
-exists, \textsf{ky\_dist} returns $\infty$. \citet{kimyi10astar} provide a terse, abstract
-specification of the algorithm; we provide a fixed-point algorithm which
-calculates the underlying table. Note that we
-assume the existence of a function \textsf{min\_sentence\_cost(N)} which returns
-the length of the minimum sentence(s) which match the non-terminal $N$: this
-function is a relatively simple variation of the traditional nullable
-computation used in parsing.
-
-
-\subsection{Problems with the algorithm}
-\label{kimyi:flaws}
-
-The combination of the $\kyarrow$ rules (in particular \textsc{KY Reduce}'s
-ability to insert nonterminals) and the \textsf{ky\_dist} function lead to dramatic
-performance improvements as reported by \citet{kimyi10astar}. Unfortunately the
-algorithm contains three flaws which lead it to produce incorrect
-results.
-
-The first flaw is that the \textsf{ky\_dist} heuristic only tells us the cost of
-inserting tokens to reach a state with the desired outgoing edge. A simple example of this can be seen for the grammar
-from Figure~\ref{fig:exprgrammar} and its distance table in Figure~\ref{fig:kimyi:dist}:
-\textsf{ky\_dist(3, `+')} returns 3, which can be achieved by inserting
-`\texttt{*}', `\texttt{(}', and `\texttt{INT}', leaving the parser in state 2.
-However, from state 3, we can also reach state 2 without inserting any symbols
-at all through a reduction to state 0 and a corresponding goto state 2.
-The second flaw results from trying to fix the
-first: the $w$ part of the $\kyarrow$ relation is a hack to ensure that
-\textsc{KY Reduce} and \textsc{KY Delete} do not interfere when the heuristic is $> 0$.
-However, the hack has unfortunate effects, sometimes trapping the search in
-parsing states from which it cannot escape, and sometimes stopping it from
-searching states which would produce a lower cost repair sequence.
-For example, given the grammar \texttt{S: T 'b' 'c'; T: 'a';} and the input `c',
-\citet{kimyi10astar} can find no repairs (whereas \cpctplus finds [\textit{insert a}, \textit{insert b}]).
-Given the grammar \texttt{S: 'a' 'b' 'd' | 'a' 'b' 'c'
-'a' 'a' 'd';} and the input `a c d', the algorithm incorrectly returns the repair sequence
-[\textit{insert b}, \textit{shift}, \textit{insert a}, \textit{insert a}]
-(whereas \cpctplus finds the minimum cost repair sequence
-[\textit{insert b}, \textit{delete}]).
-The third and final flaw is that optimistically inserting the remainder of a
-production in \textsc{KY Reduce} prevents the terminals involved from being shifted if the user's
-input happens to overlap with them: since it is more expensive to insert $a$
-than to shift $a$, this can cause the search to generate non-minimum cost repair
-sequences.
-
-The third flaw is easily fixed by disallowing the search from optimistically
-inserting the remainder of a production. The first two flaws can then be fixed
-by revisiting an old friend: if we apply the same change to
-\textsc{KY Shift} as we did to \textsc{CR Shift} (see
-Figure~\ref{fig:corchuelo:kimyi}), the problem disappears, because
-the altered \textsc{KY Shift} can perform reductions/gotos without having to
-consume input. Unfortunately applying the \textsc{CR Shift 3} fix
-to \textsc{KY Shift} turns the \citet{kimyi10astar} algorithm into a slower
-version of \citet{corchuelo02repairing}, since reductions/gotos are now duplicated
-between \textsc{KY Reduce} and \textsc{KY Shift}. Removing \textsc{KY Reduce}
-turns the algorithm into an almost literal copy of \citet{corchuelo02repairing},
-with the mostly minor difference that \textsc{CR Insert} operates on the
-statetable and \textsc{KY Insert} on the stategraph.\footnote{Though note that
-for parsers which allow conflict resolution, such as Yacc, this means that
-\textsc{KY Insert} can produce results which can't be parsed by the
-statetable~\cite[p.~53, 54]{cerecke03phd}.} We have been
-unable to find fixes to the algorithm that maintain its claimed performance
-properties.
-
-
-\section{\mf}
-\label{mf}
-
-In this section we present a new recovery algorithm \mf. As with \cpctplus,
-\mf finds the complete set of minimum cost repair sequences, although it does so
-using the A* algorithm. While
-\cpctplus and \mf find precisely the same repair sequences, \mf does so
-slightly quicker. However, \mf requires more up-front calculations that require slightly
-more implementation effort: \mf is approximately 800LoC whereas \cpctplus
-is approximately 450LoC.
-
-We first provide an overview of the algorithm
-(Section~\ref{mf:overview}) before describing in detail the steps needed to
-calculate the new \texttt{mf\_dist} heuristic (Section~\ref{mf:mf_dist}).
-
-
-\subsection{An overview of \mf}
-\label{mf:overview}
-
-\begin{figure}[t]
-\small
-\[
-\infer[\textsc{MF Insert}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n], [r_0 \ldots r_n])
-       \mfarrow ([s_0 \ldots s_n, s'], [t_0 \ldots t_n], [r_0 \ldots r_n, \textit{insert}~t], d)}
-      {\textsf{action}(s_n, t) = \textit{shift}~s' \wedge t \ne \${}
-       \wedge d = \textsf{mf\_dist}([r_0 \ldots r_n, \textit{insert}~t], s', [t_0 \ldots t_n]) < \infty}
-\]
-\vspace{-3pt}
-\[
-\infer[\textsc{MF Reduce}]
-      {([s_0 \ldots s_n], [t_0 \ldots t_n], [r_0 \ldots r_n])
-       \mfarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'],
-       [t_0 \ldots t_n], [r_0 \ldots r_n], d)}
-      {N: \alpha \in \textsf{core\_reduces}(s_n)
-       \wedge \textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s'
-       \wedge d = \textsf{mf\_dist}([r_0 \ldots r_n], s', [t_0 \ldots t_n]) < \infty}
-\]
-\vspace{-4pt}
-\[
-\infer[\textsc{MF Delete}]
-      {([s_0 \ldots s_n], [t_0, t_1 \ldots t_n], [r_0 \ldots r_n])
-       \mfarrow
-       ([s_0 \ldots s_n], [t_1 \ldots t_n], [r_0 \ldots r_n, \textit{delete}], d)}
-      {t_0 \ne \$
-       \wedge d = \textsf{mf\_dist}([r_0 \ldots r_n, \textit{delete}], s_n, [t_1 \ldots t_n]) < \infty}
-\]
-\vspace{-3pt}
-\[
-\hspace{-12pt}
-\infer[\textsc{MF Shift}]
-      {([s_0 \ldots s_n], [t_0, t_1 \ldots t_n], [r_0 \ldots r_n])
-       \mfarrow
-       ([s_0 \ldots s_n, s'], [t_1 \ldots t_n], [r_0 \ldots r_n, \textit{shift}], d)}
-      {\textsf{action}(s_n, t_0) = \textit{shift}~s'
-       \wedge d = \textsf{mf\_dist}([r_0 \ldots r_n, \textit{shift}], s', [t_1 \ldots t_n]) < \infty}
-\]
-\vspace{-12pt}
-\caption{The repair-creating rules for \mf from (\textit{parsing stack},
-\textit{token list}, \textit{repair sequence}) configurations to (\textit{parsing stack},
-\textit{token list}, \textit{repair sequence}, \textit{heuristic}) tuples.
-\textit{mf\_dist} is the \mf A*
-heuristic: unlike \citet{kimyi10astar}, every rule makes use of the \textit{mf\_dist} heuristic.
-\textit{core\_reduces}($s_n$) returns the set of non-terminals which can be
-reduced in state $s_n$.}
-\label{fig:mf:rules}
-\end{figure}
-
-At a high level -- and much of the low level -- our description of \mf is
-deliberately similar to \cpctplus, hopefully allowing the reader
-to both easily digest \mf and pick out the differences from \cpctplus.
-
-We introduce a new reduction relation $\mfarrow$, defining a neighbour's configurations
-(Figure~\ref{fig:mf:rules}). The most obvious feature of these rules are that the relation is
-from \textit{(parsing stack, token list, repair sequence)} to \textit{(parsing
-stack, token list, repair sequence, heuristic)} tuples and that each rule
-uses a new A* heuristic \textsf{mf\_dist} (which takes into account reductions/gotos
-and deletions; see Section~\ref{mf:mf_dist}). Less obviously, the rules do not
-use the $\lrarrow$ relation: \textsc{MF Shift} and \textsc{MF Reduce} subsume
-the functionality of \textsc{LR Shift} and \textsc{LR Reduce} (making this aspect of \mf
-closer in spirit to \citet{mckenzie95error} than either \citet{corchuelo02repairing}
-or \citet{kimyi10astar}).
-
-\begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=.55\textwidth}
-\begin{lstlisting}[numbers=left,language=Python]
-def mf(pstack, toks):<!\Suppressnumber!>
-    ...<!\Reactivatenumber{14}!>
-    for nbr in all_mf_star(n.0, n.1, n.2):
-      if len(n[2]) > 0 and n[2][-1] == <!{\textrm{\textit{delete}}}!> \
-         and nbr[2][-1] == <!{\textrm{\textit{insert}}}!>:
-        continue
-      cst = cur_cst + rprs_cst(nbr[2]) + nbr[3]
-      for _ in range(len(todo), cst):
-        todo.push([])
-      todo[cst].append((nbr[0], nbr[1], \
-                        n[2] + nbr[2]))
-  return None
-\end{lstlisting}
-\end{adjustbox}%
-\begin{adjustbox}{valign=t,minipage=.45\textwidth}
-\begin{lstlisting}[numbers=left,firstnumber=24,language=Python]
-def all_mf_star(pstack, toks, rprs):
-  # Exhaustively apply the <!{$\mfarrowstar$}!> relation to
-  # (pstack, toks, rprs) and return the
-  # resulting list of (pstack, toks, rprs,
-  # heuristic) tuples.
-\end{lstlisting}
-\end{adjustbox}
-\vspace*{-8pt}
-\caption{The main \mf algorithm. Lines 2--13 are identical to those of
-Figure~\ref{fig:corchuelo:algorithm} (with the exception that \mf does
-not return when the first success configuration is found, but stores it until
-the current cost \texttt{cur\_cst} is fully evaluated; at that point it returns all
-the success configurations found). The main difference between \cpctplus
-and \mf is the use of the A* heuristic, which allows configurations to be deferred
-beyond their actual cost. In other words a configuration with cost $c$ and a heuristic $h$ is
-placed in $\texttt{todo}[c + h]$ (lines 18, 21, 22).}
-\label{fig:mf:algorithm}
-\end{figure}
-
-The main part of the \mf algorithm is deliberately similar to that of \cpctplus
-(compare Figure~\ref{fig:corchuelo:algorithm} and Figure~\ref{fig:mf:algorithm}). Because
-\textsf{mf\_dist} is both admissible (i.e.~it never overestimates the distance to a
-success configuration) and consistent (i.e.~the total estimated cost to reach a success
-configuration is monotonically non-decreasing) we know that neighbouring configurations will
-always be the same, or greater, cost as the current configuration. This allows us to
-reuse the todo data-structure from \cpctplus as-is. Finally, compatible
-configuration merging, repair sequence simplification, and so on are kept
-unchanged from \cpctplus.
-
-
-\subsection{The \texttt{mf\_dist} heuristic}
-\label{mf:mf_dist}
-
-\textsf{mf\_dist} comes in static and dynamic parts: the former handles insertion
-sequences and reduc\-tions/gotos; and the latter handles deletions (which
-require examining the user's input). The static part
-extends the distance table algorithm used in \citet{kimyi10astar} while the dynamic part
-is entirely new. In this subsection we explain both parts.
-
-\begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=.55\textwidth}
-\begin{lstlisting}[numbers=left,language=Python]
-def mk_mf_table(sgraph, stable, terms, eof_idx):
-  table = [<!$\infty$!>] * len(sgraph) * len(terms)
-  table[sgraph.accept_state * len(terms) \
-        + eof_idx] = 0
-  while True:
-    chgd = False
-    for i in range(sgraph.len_states):
-      for sym, end_st in sgraph.edges(i):<!\Suppressnumber!>
-        ...<!\Reactivatenumber{26}!>
-        for st_idx in goto_states(sgraph, \
-                                  stable, i):
-          for j in range(len(terms)):
-            this_off = i * len(terms) + j
-            end_off = st_idx * len(terms) + j
-            if table[end_off] != <!$\infty$!> and \
-               table[end_off] < table[this_off]:
-              table[this_off] = table[end_off]
-              chgd = True
-    if not chgd:
-      break
-\end{lstlisting}
-\end{adjustbox}
-\begin{adjustbox}{valign=t,minipage=.44\textwidth}
-\begin{lstlisting}[numbers=left,firstnumber=37,language=Python]
-def goto_states(sgraph, stable, st_idx):
-  gs = set()
-  for nonterm, prod, dot in \
-      sgraph.core_state(st_idx):
-    if dot < len(prod.syms):
-      continue
-    prev = set([st_idx])
-    for _ in len(prod.syms):
-      next = set()
-      for i in prev:
-        next.union(sgraph.rev_edges(i))
-      prev = next
-    for i in prev:
-      goto_st = stable.goto(i, nonterm)
-      if goto_st is not None:
-        gs.add(goto_st_idx)
-\end{lstlisting}
-\end{adjustbox}
-\caption{A fixed-point algorithm for the static component of the
-\textit{mf\_dist} function, returning a distance table which takes into account
-reductions/gotos. \texttt{goto\_states} returns the set of state indexes which a state
-\textit{st\_idx} may end up in after all possible reductions/gotos have
-occurred. To calculate this, all core items of a state with a dot at the end are
-considered (lines 39--42). We then recursively iterate backwards over the stategraph
-(using \texttt{rev\_edges(i)} which returns all the states which have an
-edge pointing to state \texttt{i}), exploring all possible reduction routes that
-could be encountered dynamically (lines 43--48). The intuition behind this is that an
-item $[N: \alpha \bullet]$ will cause $|\alpha|$ items to be popped from the
-parsing stack; we thus iterate backwards $|\alpha|$ times over the stategraph
-(line 44), recording at each point the states we can reach (lines 46--47).
-We then take the resulting set and map each element to the state it will goto
-(lines 49--52). Lines 9--25 of \texttt{mk\_mf\_table} are identical to
-that of the \texttt{mk\_ky\_table} function (see Figure~\ref{fig:kimyi:dist}) (i.e.~they
-follow insertion sequences). We then take into account the goto states as
-part of the distance calculation (lines 26--34).}
-\label{fig:mf:dist:static}
-\end{figure}
-
-\begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=0.38\textwidth}
-\small
-\begin{tabular}{rcccccc}
-\toprule
-      & \multicolumn{6}{c}{$t$} \\
-        \cmidrule(lr){2-7}
-$s$ & INT & \texttt{+} & \texttt{*} & \texttt{(} & \texttt{)} & \$ \\
-\midrule
-0 & 0 & 1 & 1 & 0 & 1 & 1 \\
-1 & 0 & 1 & 1 & 0 & 1 & 1 \\
-2 & 1 & 0 & 1 & 1 & 0 & 0 \\
-3 & 1 & 0 & 0 & 1 & 0 & 0 \\
-4 & 1 & 0 & 0 & 1 & 0 & 0 \\
-5 & $\infty$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ & 0 \\
-6 & 2 & 1 & 1 & 2 & 0 & 1 \\
-7 & 0 & 1 & 1 & 0 & 1 & 1 \\
-8 & 0 & 1 & 1 & 0 & 1 & 1 \\
-9 & 1 & 0 & 0 & 1 & 0 & 0 \\
-10 & 2 & 1 & 1 & 2 & 0 & 0 \\
-11 & 1 & 0 & 1 & 1 & 0 & 0 \\
-\bottomrule
-\end{tabular}
-\end{adjustbox}
-\begin{adjustbox}{valign=t,minipage=0.60\textwidth}
-\vspace{-13pt}
-\caption{The \textit{mf\_dist} distance table for the grammar from
-Figure~\ref{fig:exprgrammar}. Relative to the \textit{ky\_dist} distance
-table (Figure~\ref{fig:kimyi:dist}), many fewer entries are
-$\infty$, because reductions/gotos are taken into account. For example, consider state
-3, terminal `\texttt{+}': in \textit{ky\_dist}'s distance table this has a cost of 3;
-in \textit{mf\_dist}'s distance table the cost is 0. The reason for this can be
-clearly seen from the stategraph in Figure~\ref{fig:stategraphtable}: in state
-3, the terminal `\texttt{+}' causes a reduction to state 0, and then a goto to
-state 2. State 2 has an outgoing edge labelled with \texttt{+} and hence a
-distance of 0 to it. Notice also that every state now has a non-$\infty$ distance to the `\$'
-terminal, since every (reachable) state must be able to reach the accept state.}
-\label{fig:mf:dist:example}
-\end{adjustbox}
-\end{figure}
-
-The A* heuristic of \citet{kimyi10astar} builds a distance table of
-states and terminals: \textsf{ky\_dist(s, t)} then returns the cumulative cost of
-the sequence of token insertions from state $s$ such that a state $s'$ can be
-found which has an outgoing edge labelled with $t$. This is a useful base,
-but we also need to take into account reductions/gotos to stop any search which
-uses the heuristic from getting trapped (Section~\ref{kimyi:flaws}). Fortunately,
-it is relatively easy to statically
-underapproximate the effect of reductions/gotos. The basic
-idea is simple: as well as taking into account the cost of a sequence of token
-insertions in a distance, we also take into account all possible reduction
-paths. Note that reductions/gotos and token insertions can be intertwined
-(i.e.~a valid way of
-reaching $s'$ might be a reduction, a token insertion, another reduction and so
-on). Fortunately, not only is this a natural candidate for a fixed-point
-algorithm, but we are able to follow the same structure as that used to
-calculate the distance table for \textsf{ky\_dist}. Figure~\ref{fig:mf:dist:static}
-shows the static part of \textsf{mf\_dist} and Figure~\ref{fig:mf:dist:example}
-shows an example distance table.
-
-\begin{figure}[t]
-\begin{adjustbox}{valign=t,minipage=.38\textwidth}
-\begin{lstlisting}[numbers=left,language=Python]
-def mf_dist(rprs, s, toks):
-  if ends_in_N_shifts(rprs):
-    return 0
-  ld = <!$\infty$!>
-  dc = 0
-  while dc < ld:
-    d = mf_dist_table(s, toks[0])
-    if d < <!$\infty$!> and dc + d < ld:
-      ld = dc + d
-    dc += 1
-    if len(toks) == 1:
-      break
-    toks = toks[1:]
-  if ld == <!$\infty$!>:
-    return None
-  else:
-    return ld
-\end{lstlisting}
-\end{adjustbox}%
-\begin{adjustbox}{valign=t,minipage=.60\textwidth}
-\vspace{-9.5pt}
-\caption{\textit{mf\_dist} returns the cost to a success
-configuration, taking into account reductions and deletions. It takes as input a
-sequence of repairs \textit{rprs}, a state \textit{s}, and the remaining tokens
-from the user's input \textit{toks} and returns an integer distance or
-\texttt{None} if no route can be found. The function starts with a special case:
-if the repair sequence ends in $N_\textit{shifts}$ shifts then the distance to a
-success configuration is by definition 0 (lines 2--3). Otherwise, the current
-least distance to a success configuration is set to $\infty$ (line 4; this value
-monotonically decreases as the main loop executes) and the current cost of
-deleting tokens to 0 (line 5). We then continually iterate over the user's input
-until either there is no input left (lines 11-12) or the cost of deleting tokens
-exceeds the current least distance (line 6). On each iteration of the loop, we
-lookup the static distance to the next token in the user's input (line 7). If
-the distance is less than $\infty$ and the cumulative deletion cost plus the static
-distance is less than the current least distance, then we update the latter
-(lines 8--9). Otherwise, we increment the deletion cost (line 10) and `delete'
-the next token (line 13).}
-\label{fig:dyndist:dyndist}
-\end{adjustbox}
-\end{figure}
-
-The dynamic part of \textsf{mf\_dist} is shown in
-Figure~\ref{fig:dyndist:dyndist}. This makes use of the static table created by
-\texttt{mk\_mf\_table} and also takes into account the cost of deleting user
-input. The intuition is that we need to check whether the cost to a success
-configuration would be reduced if one or more tokens
-from the user's input were to be deleted. For example,
-consider the input `\texttt{(1()}'. Parsing this against the grammar from Figure
-\ref{fig:stategraphtable} causes an error in state 4 before the second
-`\texttt{(}' token; after applying \textsc{MF Reduce} we end up in state 6.
-Looking up the next token `\texttt{(}' in the distance table returns a cost of
-2. However, the next token costs 1 to delete, while the distance to
-the subsequent token `\texttt{)}' is 0. Thus the combination of the deletion
-cost (1) and the cost to reach the second token from the current state (0) is
-lower than the cost to reach the first token (2). \textsf{mf\_dist} must thus
-return a cost of 1 in order that the heuristic remains admissible.
-
-The remaining subtlety of \textsf{mf\_dist} comes from checking that we don't
-accidentally defer success configurations. While configurations that reach an
-accept state have a distance of 0 in the distance table by definition,
-configurations that may end with $N_\textit{shifts}$ shifts have to be checked manually.
-\textsf{mf\_dist} therefore has to consider the repair sequence of
-the new configuration being created: if it ends with $N_\textit{shifts}$ shifts,
-then a distance of 0 is returned to ensure that the configuration
-is checked for success at the current cost.
-
-
-\subsection{Skipping intermediate reduction/gotos}
-
-Although not easily expressed in the reduction rules of Figure~\ref{fig:mf:rules},
-\textsc{MF Reduce} can be further optimised. In its original form, \textsc{MF Reduce}
-causes each reduction/goto to produce a new configuration whose neighbours are
-then explored as normal. However, this is not always necessary.
-As can be seen from \textsc{LR Reduce}, reduction/gotos are taken based on the
-next token in the user's input: a sequence of configurations [\textit{reduce},
-\textit{delete}, \textit{reduce}], for example, is nonsensical, as the
-next token in the user's input cannot suddenly change in the middle of a
-sequence of reduction/gotos.
-
-Our implementation of \textsc{MF Reduce} therefore skips configurations whose
-goto state both: only contains reductions; and
-where all reductions reference the same production. For example, if, for the
-grammar of Figure~\ref{fig:stategraphtable} we reduce/goto state 10 (which
-contains two reduction actions, both referencing the same production), we
-skip it and immediately perform the next reduction/goto. Conversely, if we
-reduce/goto state 3, we must create a configuration, since it contains a shift
-action (as well as several reduce actions).
-
-
 \section{Experiment}
 \label{experiment}
 
-In order to understand the performance of error recovery algorithms we coducted
-a large experiment on real-world Java code using three algorithms: panic mode
-(Section~\ref{sec:panic mode}), \cpctplus, and \mf. In this section we outline our methodology
+In order to understand the performance of \cpctplus, we conducted a large
+experiment on real-world Java code. In this section we outline our methodology
 (Section~\ref{methodology}) and results (Section~\ref{results}). Our experiment
 is fully repeatable and downloadable from
-\url{https://archive.org/download/error_recovery_experiment/0.2/}. The results
+\url{https://archive.org/download/error_recovery_experiment/0.3/}. The results
 from our particular run of the experiment can also be downloaded from the same
 location.
 
@@ -1800,9 +1213,9 @@ location.
 In order to evaluate error recovery implementations, we need a concrete implementation. We
 implemented a new Yacc-compatible parsing system \emph{grmtools} in Rust. Including
 associated libraries for LR table generation and so on, \emph{grmtools} is around
-11KLoC. Although intended as a production library, it has accidentally
+13KLoC. Although intended as a production library, it has accidentally
 played a part as a flexible test bed for experimenting with, and understanding,
-error recovery algorithms. We added a simple front-end which produces the output
+error recovery algorithms. We added a simple front-end \emph{nimbleparse} which produces the output
 seen in e.g.~Figure~\ref{fig:javaerror}. We use \emph{grmtools} for all experiments in
 this paper.
 
@@ -1814,7 +1227,7 @@ real-world inputs, the only way to guarantee that a good job has been done is to
 manually evaluate it, which means that it is only practical to use a small set
 of input programs. Most papers we are aware of use at most 200 source files
 (e.g.~\cite{corchuelo02repairing}), with one using a single source file with minor
-variants (\citet{kimyi10astar}). \citet{cerecke03phd} was the first to use a
+variants (\cite{kimyi10astar}). \cite{cerecke03phd} was the first to use a
 large-scale corpus of approximately 60,000 Java source files. Early in the
 development of our methodology, we performed some rough experiments which
 suggested that statistics only start to stabilise once a corpus exceeds 10,000
@@ -1877,15 +1290,15 @@ error recovery until an updated parsing stack and parsing index are returned
 along with minimum cost repair sequences. The timer is suspended when normal parsing
 restarts and resumed if error recovery is needed again.
 
-In order to test hypothesis H2, we created a variant of \mf called \mfrev,
+In order to test hypothesis H2, we created a variant of \cpctplus called \cpctplusrev,
 collecting the same data as for the other error recovery algorithms.
 Instead of selecting from the minimum cost repair sequences which allow
-parsing to continue furthest, \mfrev selects from those which allow parsing to
+parsing to continue furthest, \cpctplusrev selects from those which allow parsing to
 continue the least far. This models the worst case for other members of the
-\citet{fischer79locally} family which non-deterministically select a single minimum
+\fischer family which non-deterministically select a single minimum
 cost repair sequence. In other words, it allows us to understand how many
 more errors could be reported to users of other members of the
-\citet{fischer79locally} family compared to \mf.
+\fischer family compared to \cpctplus.
 
 In order to understand the accuracy of the numbers we report, we provide 99\%
 confidence intervals. We bootstrapped~\cite{efron79bootstrap} our results
@@ -1900,8 +1313,9 @@ size: this value only makes sense if the file was successfully recovered from,
 so we do not sample from runs where error recovery failed.
 
 All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with
-32GiB RAM running Debian 9, taking approximately 10 days to complete. We used
-Rust 1.31.0 to compile \emph{grmtools} (the
+32GiB RAM running Debian 9. We disabled hyperthreading and turbo boost and ran experiments
+serially. Our experiments take approximately 4 days to complete. We used Rust
+1.40.0 to compiler \emph{grmtools} (the
 \texttt{Cargo.lock} file necessary to reproduce the build is included in our
 experimental repository).
 
@@ -1931,21 +1345,16 @@ The failure rate is the percentage of files which could not be fully
 repaired within the timeout (this number is semi-meaningless for \panic, which,
 at worst, is always able to find a repair at the EOF token). Tokens skipped is
 the percentage of input
-skipped (because of a delete repair).
-The number of error locations shows how many separate points in files
-are reported as errors. Since fewer files in \mf timeout, it is able
-to continue repairing errors more often, hence the slightly higher
-number of error locations relative to \cpctplus. However \mfrev (which always selects
-from the minimum cost repair sequences that allow parsing to continue the least far)
-is much more prone to cascading errors, reporting
-\mfreverrorlocsratioovermf more error locations than \mf to users.}
+skipped (because of a delete repair). These results show that
+\cpctplusrev is much more prone than \cpctplus to cascading errors, and
+panic mode even more so.}
 \label{fig:results:summary}
 \end{figure}
 
 \begin{figure}[t]
 \vspace{-10pt}
 \includegraphics[scale=.7]{mf_histogram.pdf}
-\caption{A histogram of the time spent in error recovery by \mf for files in our
+\caption{\laurie{needs revising}A histogram of the time spent in error recovery by \mf for files in our
 corpus. The $x$ axis shows time (up to the timeout of 0.5s) and the $y$ axis is
 a logarithmic scale for the number of files. Error bars represent 99\% confidence
 intervals. As this clearly shows, most files
@@ -1956,22 +1365,17 @@ in the timeout cause a small, but pronounced, peak.}
 \end{figure}
 
 Figure~\ref{fig:results:summary} shows a summary of the results of our
-experiment. The overall conclusions are fairly clear. Both \cpctplus and \mf are
+experiment. The overall conclusions are fairly clear. \cpctplus is
 able to repair nearly all input files within the 0.5s timeout; and while
 panic mode is able to repair virtually every file within the 0.5s timeout, it
-reports well over twice as many error locations as \cpctplus or \mf (i.e.~panic
+reports well over twice as many error locations as \cpctplus (i.e.~panic
 mode substantially worsens the cascading error problem).
-The fact that the median recovery time for \cpctplus and \mf is two orders of
+The fact that the median recovery time for \cpctplus is two orders of
 magnitude lower than the mean
 recovery time suggests that only a small number of outliers cause error recovery to
 take long enough to be perceptible to humans; this is confirmed by the
-histogram in Figure~\ref{fig:results:mf_histogram}. \mf's failure rate is only
-\mfcpctplusfailurerateratio that of \cpctplus's, though in absolute terms
-both are already extremely low. \mf also has noticeably better median and
-mean repair times (the latter, in our opinion, being more important, since users
-are more sensitive to worst case than best case performance) though,
-again, in absolute terms both are
-already fairly low. These results strongly validate Hypothesis H1.
+histogram in Figure~\ref{fig:results:mf_histogram}. These results strongly
+validate Hypothesis H1.
 
 \begin{figure}[t]
 \includegraphics[scale=.7]{mf_mfrev_error_locs_histogram_full.pdf}
@@ -1990,23 +1394,23 @@ number of files a lot worse).}
 \label{fig:results:mf_mfrev_histogram}
 \end{figure}
 
-\cpctplus and \mf rank the complete set of minimum cost repair sequences by how
-far each allows parsing to continue and choose from those which allow parsing to
-continue furthest. \mfrev, in contrast, selects from those which allow parsing
-to continue the least far. \mfrev shows that the ranking technique used in \mf substantially
+\cpctplus ranks the complete set of minimum cost repair sequences by how
+far parsing can continue and chooses from those which allow parsing to
+continue furthest. \cpctplusrev, in contrast, selects from those which allow parsing
+to continue the least far. \cpctplusrev shows that the ranking technique used in \mf substantially
 reduces the potential for cascading errors: \mfrev leads to
 \mfreverrorlocsratioovermf more error locations being reported to users
 relative to \mf. As the histogram in Figure~\ref{fig:results:mf_mfrev_histogram} shows,
-the distribution of error locations in \mf and \mfrev is
+the distribution of error locations in \cpctplus and \cpctplusrev is
 similar, with the latter simply shifted slightly to the right.
-In other words, \mfrev
+In other words, \cpctplusrev
 makes error recovery slightly worse in a number of files
 (rather than making error
 recovery in a small number of files a lot worse). This strongly validates
 Hypothesis H2.
 
-Interestingly, \mfrev has a noticeably higher mean cost of repair sequences relative to
-\cpctplus and \mf. In other words, \mfrev not only causes more error locations to be reported,
+Interestingly, \cpctplusrev has a noticeably higher mean cost of repair sequences relative to
+\cpctplus. In other words, \cpctplusrev not only causes more error locations to be reported,
 but the repair sequences at the additional error locations have higher numbers
 of insert and delete repairs. This suggests that there is a double whammy from
 cascading errors: not only are more error locations reported, but the poorer
@@ -2017,7 +1421,7 @@ disproportionately harder for the error recovery algorithm to recover from.
 \subsection{The impact of skipping input}
 
 As well as the much higher failure rate, the number of error locations reported
-by panic mode is well over twice that of \cpctplus and \mf. This led us to make
+by panic mode is well over twice that of \cpctplus. This led us to make
 an additional hypothesis:
 
 \begin{description}
@@ -2029,10 +1433,10 @@ The intuition underlying this hypothesis is that, in general, the user's input
 is very close to being correct: thus the more of the input that one skips, the
 less likely one is to get back to a successful parse. We thus added the ability
 to record how much of the user's input is skipped as the result of \emph{delete}
-repairs during error recovery. The figures surprised us: \cpctplus and \mf skip
-very little of the user's input; \mfrev skips a little more; and
+repairs during error recovery. The figures surprised us: \cpctplus skips
+very little of the user's input; \cpctplusrev skips a little more; and
 panic mode skips an order of magnitude more. Although we do
-not have enough data points to make a definitive statement, our data seems to
+not have enough data points to make a definitive statement, our data seem to
 validate Hypothesis H3.
 
 
@@ -2041,14 +1445,14 @@ validate Hypothesis H3.
 
 The algorithms presented in this paper would be of only marginal interest if
 they could not be used easily in practice. Previous approaches in the
-\citet{fischer79locally} family make no mention of how error recovery should be
+\fischer family make no mention of how error recovery should be
 used or, indeed, if it has any implications for users at all. Although several
-members of the \citet{fischer79locally} family were implemented in parsing tools
+members of the \fischer family were implemented in parsing tools
 of the day, to the best of our knowledge none of those implementations have
 survived.
 
 We are therefore forced to treat the following as an open question: can one
-sensibly use error recovery in the \citet{fischer79locally} family in practice? In
+sensibly use error recovery in the \fischer family in practice? In
 particular, given that the most common way to use LR grammars
 is to execute semantic actions as each production is reduced, what should semantic actions do
 when parts of the input have been altered by error recovery? This latter
@@ -2210,7 +1614,7 @@ Yacc's error recovery is implicitly expected to maintain this guarantee). In
 contrast, we are unable to provide such a guarantee: some tokens will be the
 result of insert repairs and will have a type but no value. How can the
 programmer handle this in a sensible way? For example, given the input `2 +',
-\cpctplus and \mf find a single repair sequence \emph{[Insert Int]}. What should
+\cpctplus finds a single repair sequence \emph{[Insert Int]}. What should
 a calculator do with an inserted integer? It would be surprising to guess a
 suitable value, so our naive calculator simply \texttt{panic}s (roughly
 equivalent to `raises an exception and then exits') if it encounters an inserted
@@ -2291,16 +1695,12 @@ the second option).
 \section{Threats to validity}
 \label{sec:threats}
 
-The most obvious threat to validity is our performance comparison of \cpctplus,
-and \mf. They are specific to our implementation context and it is possible that their
-relative positions could change if implemented in a different fashion.
-Nevertheless, the absolute performance numbers for \cpctplus and \mf are already good, and
-better implementations will only improve our view of both algorithms.
-
-A less obvious problem is that, even after repair sequence ranking, \cpctplus
-and \mf are still non-deterministic. This is because, in general, multiple
-repair sequences may have identical effects up to $N_\textit{try}$ tokens, but
-cause different effects after that value. By running each file through each
+Although it might not be obvious at first sight, \cpctplus is still
+non-deterministic, and that non-determinism can occasionally lead to surprising
+different results from one run to the next. The root cause of this problem is
+that multiple repair sequences may have identical effects up to
+$N_\textit{try}$ tokens, but cause different effects after that value.
+By running each file through each
 error recovery multiple times and reporting confidence intervals, we are able
 to give a good -- though inevitably imperfect -- sense of the likely variance
 induced by this non-determinism.
@@ -2310,7 +1710,7 @@ inherent limitations. First, it only contains Java source code. This means that
 our main experiment is limited to one grammar: it is possible that our
 techniques do not generalise beyond the Java grammar (though, as
 Appendix~\ref{app:examples} suggests, our techniques do appear to work well
-on other grammars). Although \citet[p.~109]{cerecke03phd}
+on other grammars). Although \cite[p.~109]{cerecke03phd}
 suggests that different grammars make relatively little difference
 to the performance of such error recovery algorithms, we are not aware
 of an equivalent repository for other language's source code. One solution is
@@ -2332,7 +1732,7 @@ partly because a good error recovery algorithm should
 aim to perform well with inputs from users of different experience levels.
 
 Our corpus was parsed using a Java 1.7 grammar, but some members of the corpus
-were almost certainly written using Java 1.8 features. Many -- though not all -- Java 1.8
+were almost certainly written using Java 1.8 or later features. Many -- though not all -- post-1.7 Java
 features require a new keyword: such candidate source files would thus have
 failed our initial lexing test and not been included in our corpus. However,
 some Java 1.8 files will have made it through our checks. Arguably these are still a valid
@@ -2344,31 +1744,31 @@ syntax than files intended for Java 1.7.
 \section{Related work}
 
 Error recovery techniques are so numerous that there is no
-definitive reference or overview of them. However, \citet{degano95comparison}
-contains an overall historical analysis and \citet{cerecke03phd} an excellent
-overview of many of the approaches which build on \citet{fischer79locally}. Both
+definitive reference or overview of them. However, \cite{degano95comparison}
+contains an overall historical analysis and \cite{cerecke03phd} an excellent
+overview of many of the approaches which build on \fischer. Both
 must be supplemented with more recent works, such as those we have cited in this
 paper.
 
 The biggest limitation of error recovery algorithms in the
-\citet{fischer79locally} family is that they are local: they find repairs at the
+\fischer family is that they are local: they find repairs at the
 point that an error is discovered, which may be later in the file than the cause
 of the error. Thus even when they successfully recover from an error, the repair
 sequence reported may be very different from the fix the user considers
 appropriate (note that this is distinct from the cascading error problem,
 which our ranking of repair sequences in Section~\ref{rankingrepairs} partly
-addresses). perhaps the most common -- and without doubt the most frustrating
+addresses). Perhaps the most common -- and without doubt the most frustrating
 -- example of this are missing `\texttt{\}}' characters in
 C/Java-like languages. Some approaches are able to backtrack from the source of
 the error in order to try and find more appropriate repairs. However, there are
 two problems with this: first, the cost of maintaining the necessary state to
-backtrack slows down normal parsing (e.g.~\cite{deJonge12natural} only store the
+backtrack slows down normal parsing (e.g.~\cite{deJonge12natural} only stores the
 relevant state at each line encountered to reduce this cost), whereas we add no
 overhead at all to normal parsing; second, the search-space is so hugely
 increased that it can be harder to find any repairs at
 all~\cite{degano95comparison}.
 
-A more recent possibility from~\citet{santos18syntax} is to use
+A more recent possibility from~\cite{santos18syntax} is to use
 machine learning to train a system on syntactically correct programs: when a
 syntax error is encountered, they use their model to suggest appropriate global
 fixes. Although they also use data from Blackbox, their
@@ -2376,7 +1776,7 @@ experimental methodology is very different: they are stricter, in that they aim
 to find exactly the same type of repair as the human user actually
 applied themselves; but also looser, in that they only
 consider errors which can be fixed by a single token (discarding 42\% of
-the data \cite[p.~8]{santos18syntax}) whereas we attempt to fix errors which
+the data~\cite[p.~8]{santos18syntax}) whereas we attempt to fix errors which
 span multiple tokens. It is thus difficult to directly compare their results to
 ours. However, by the high bar they have set themselves, they are able to repair
 52\% of single-token errors (i.e.~about 30\% of all possible errors; for
@@ -2387,11 +1787,11 @@ that a `perfect' system will mix both deterministic approaches (such as ours, wh
 has a high chance of finding a good-enough recovery) with
 probabilistic approaches (which have a moderate chance of finding a perfect
 recovery). There may be several shades of grey, leading to a system
-with multiple error recovery sub-approaches (in similar fashion to \citet{deJonge12natural}).
+with multiple error recovery sub-approaches (in similar fashion to~\cite{deJonge12natural}).
 
-As \mfrev shows, choosing an inappropriate repair sequence during
+As \cpctplusrev shows, choosing an inappropriate repair sequence during
 error recovery leads to cascading errors. The noncorrecting error recovery approach
-proposed by~\citet{richter85noncorrecting} explicitly addresses this weakness,
+proposed by~\cite{richter85noncorrecting} explicitly addresses this weakness,
 eschewing repairs entirely. When a syntax error is discovered, noncorrecting
 error recovery attempts to discover all further syntax errors by checking
 whether the remaining input (after the point an error is detected) is a valid suffix in the
@@ -2403,9 +1803,9 @@ errors in the (discarded) prefix. However, because the suffix parser in
 essence starts with a clean slate unaffected by the input before a syntax
 error, it misses some genuine syntax errors that would not have been valid
 suffixes at that point in the user's input had the original syntax error not
-been present. In other words, while error recovery in the
-\citet{fischer79locally} family overapproximates the true number of syntax
-errors, noncorrecting error recovery underapproximates. There seem to be two
+been present. Roughly speaking, error recovery in the
+\fischer family roughly overapproximates the true number of syntax
+errors, while noncorrecting error recovery underapproximates. There seem to be two
 main reasons why noncorrecting error recovery has
 not been adopted. First, building an appropriate recogniser is surprisingly
 tricky and we are not currently aware of one that can handle the full class of
@@ -2434,40 +1834,59 @@ some syntax errors in the middle of a file versus its end. There is a
 body of work which has tried to understand how best to structure compiler error
 messages (normally in the context of those learning to program). However, the
 results are hard to interpret: some studies find that more complex error
-messages are not useful \cite{nienaltowski08error}, while others suggest they
-are \cite{prather17novices}. It is unclear to us what the right approach might be,
+messages are not useful~\cite{nienaltowski08error}, while others suggest they
+are~\cite{prather17novices}. It is unclear to us what the right approach might be,
 or how it could be applied in our context.
 
-The approach of \citet{mckenzie95error} is similar to
-\citet{corchuelo02repairing}, although the former cannot incorporate shift
+The approach of \cite{mckenzie95error} is similar to
+\corchuelo, although the former cannot incorporate shift
 repairs. It tries harder than \cpctplus to prune out pointless search
 configurations~\cite[p.~12]{mckenzie95error}, such as cycles in the parsing stack,
 although this leads to some minimum cost repairs being
 skipped~\cite{bertsch99failure}. A number of interlocking, sophisticated pruning
-mechanisms which build on this are described in~\citet{cerecke03phd}. These are
+mechanisms which build on this are described in~\cite{cerecke03phd}. These are
 significantly more complex than our merging of compatible configurations: since this
 gives us acceptable performance in practise, we have not investigated other
 pruning mechanisms.
 
-\cpctplus and \mf take only the grammar and token types into account. However,
+The most radical member of the \fischer family is that
+of~\cite{kimyi10astar}\footnote{In an earlier online draft of this paper we
+stated that this algorithm has a fundamental flaw. We now believe this was
+due to us incorrectly assuming that the `delete' optimisation of \corchuelo
+applied to \cite{kimyi10astar}. We apologise to the authors for this
+mistake.}. This uses the A* algorithm, and a precomputed distance table to
+quickly generate repair sequences in the vein of \corchuelo. However,
+\cite{kimyi10astar} works exclusively on the stategraph, assuming that it is
+unambiguous. However, Yacc systems allow ambiguous stategraphs and a means for
+resolving those ambiguities when creating the statetable. Most practical
+grammars make use of this feature because it makes writing a grammar much
+easier (the Java 1.7 grammar is the only large grammar we know of which has no
+ambiguities, and we suspect that property has been lost in Java 1.8). In
+an earlier online draft, we created a second algorithm \mf, which, in
+essence, extends \cpctplus with ideas from \cite{kimyi10astar} at the cost of
+significant additional complexity. With the benefit of hindsight, we do not
+consider \mf's relatively small benefits over \cpctplus to be worth that
+additional complexity.
+
+\cpctplus takes only the grammar and token types into account. However,
 it is possible to use additional information, such as nesting (e.g.~taking into
 account curly brackets) and indentation when recovering from errors. This
 has two aims: reducing the size of the search space (i.e.~speeding up error
 recovery); and making it more likely that the repairs reported matched
 the user's intentions. The most sophisticated
-approach in this vein we are aware of is that of \citet{deJonge12natural}. At
+approach in this vein we are aware of is that of~\cite{deJonge12natural}. At
 its core, this approach uses GLR parsing: after a grammar is suitably
 annotated by the user, it is then transformed into a `permissive' grammar which
 can parse likely erroneous inputs; strings which match the permissive parts of
 the grammar can then be transformed into a non-permissive counterpart. In
 all practical cases, the transformed grammar will be ambiguous, hence the
 need for generalised parsing. There is an intriguing similarity between
-our approach and that of \citet{deJonge12natural}: our use of graph-structured
+our approach and that of~\cite{deJonge12natural}: our use of graph-structured
 stacks in configuration merging (see Section~\ref{corchuelo:allminimumcost})
 gives that part of our algorithm a similar feel to GLR parsing (even though
 we never generate ambiguous strings). However, there are also major
 differences: LR parsers are significantly simpler to implement than GLR parsers;
-and the \citet{fischer79locally} family of algorithms do not require manually
+and the \fischer family of algorithms do not require manually
 annotating, or statically increasing the size of, the grammar. It is unlikely,
 for example, that a Yacc-based parser would be able or willing to use a GLR
 parser for error recovery.
@@ -2485,10 +1904,10 @@ and even the best ambiguity heuristics
 fail to find all ambiguous parts of a grammar~\cite{vasudevan13detecting};
 and resolving those ambiguities can make the parser context
 sensitive~\cite{eijck__lets_accept_rejects}. Other possibilities are to
-intermingle parsing and lexing (see e.g.~\citet{wyk07context}) or to allow
-`fuzzy' or partial matching of tokens (see~\citet[p.~8]{vanter00displaying}).
+intermingle parsing and lexing (see e.g.~\cite{wyk07context}) or to allow
+`fuzzy' or partial matching of tokens (see~\cite[p.~8]{vanter00displaying}).
 
-A different approach to error recovery is that taken by \citet{pottier16reachability}: rather
+A different approach to error recovery is that taken by~\citet{pottier16reachability}: rather
 than try and recover from errors directly, it reports precisely and accurately
 how the user's input caused the parser to reach an error state (e.g.~``I
 read an open bracket followed by an expression, so I was expecting a close
@@ -2509,28 +1928,27 @@ recovery. Though generally ad-hoc in their approach, it is possible, with
 sufficient effort, to make them perform well. However, this comes at
 a cost. For example, the hand-written error recovery routines in the Eclipse IDE
 are approximately 5KLoC and are solely for use with Java code: \cpctplus
-and \mf are approximately 450LoC and 800LoC respectively and can be applied to
-any LR grammar.
+is approximately 500LoC and can be applied to any LR grammar.
 
 Although error recovery approaches have, historically, been mostly LR based,
 there are several non-LR approaches. A full overview is impractical, though a
 few pointers are useful. When LL approaches encounter an error, they generally
 skip input until a token in the follow set is encountered (an early example
-is~\citet{turner77error}). Although this outperforms the simple panic mode of
+is~\cite{turner77error}). Although this outperforms the simple panic mode of
 Section~\ref{sec:panic mode}, it will, in general, clearly skip more input than
-\cpctplus or \mf which is undesirable. LL parsers do, however, make it
+\cpctplus, which is undesirable. LL parsers do, however, make it
 somewhat easier to express grammar-specific error recovery rules.
 The most advanced approach in this vein that we are aware of is that of
 IntelliJ's Grammar-Kit, which allows user to annotate their grammars for error
 recovery. Perhaps the most interesting annotation is that certain rules can be
 considered as fully matched even if only a prefix is matched (e.g.~a partially
 completed function is parsed as if it was complete). It might be possible to add
-similar ideas to a successor of \cpctplus or \mf, though this is more
+similar ideas to a successor of \cpctplus, though this is more
 awkward to express in an LR approach. Error recovery for PEG grammars is much more
 challenging, because the non-LL parts of the grammar mean that there is not
 always a clearly defined point at which an error is determined to have
 occurred. PEG error recovery has thus traditionally required extensive manual
-annotations in order to achieve good quality recovery. \citet{medeiros19syntax}
+annotations in order to achieve good quality recovery. \cite{medeiros19syntax}
 is the most advanced work we are aware of that tackles the problem of lessening
 the need for manual annotations for PEG error recovery. It does this by
 automatically adding many (though not necessarily all) of the annotations
@@ -2538,25 +1956,25 @@ needed for good error recovery. However, deciding when to add, and when not to
 add, annotations is a difficult task and the two algorithms presented have
 different trade-offs: the \emph{Standard} algorithm adds more annotations,
 leading to better quality error recovery, but is more likely to change
-the input language accepted; the \emph{Conservative}
+the input language accepted; the \emph{Unique}
 algorithm adds fewer annotations, leaving to poorer quality error recovery, but
-is less likely to affect the language accepted. The quality of error recovery of the
-Conservative algorithm, in particular, is heavily dependent on the input grammar: it works
+does not affect the language accepted. The quality of error recovery of the
+Unique algorithm, in particular, is heavily dependent on the input grammar: it works
 well on some (e.g.~Pascal) but less well on others (e.g.~Java). In cases
 where it performs less well, it can lead to parsers which skip large portions
 (sometimes the remainder) of the input.
 
 While the programming language world has largely forgotten the approach of
-\citet{aho72minimum}, there are a number of successor works, most recently that
-of~\citet{rajasekaran16error}. These improve on the time complexity, though none
+\cite{aho72minimum}, there are a number of successor works, most recently that
+of~\cite{rajasekaran16error}. These improve on the time complexity, though none
 that we are aware of address the issue of how to present what has been done to
 the user.
 
 We are not aware of any error recovery algorithms that are formally verified.
-Indeed, as shown in this paper, several have serious flaws. We are only aware of
-two works which have begun to consider what correctness for such algorithms might mean:
-\citet{zaytsev14formal} provides a brief philosophical justification of the need
-and \citet{gomezrodriguez10error} provides an outline of an approach. Until
+Indeed, as shown in this paper, some have serious flaws. We are only aware of
+two works which have begun to consider what correctness for such algorithms might
+mean:~\cite{zaytsev14formal} provides a brief philosophical justification of the need
+and~\cite{gomezrodriguez10error} provides an outline of an approach. Until
 such time as someone verifies a full error recovery algorithm, it is difficult
 to estimate the effort involved, or what issues may be uncovered.
 
@@ -2564,25 +1982,23 @@ to estimate the effort involved, or what issues may be uncovered.
 \section{Conclusions}
 
 In this paper we have shown that error recovery algorithms in the
-\citet{fischer79locally} family can run fast enough to be usable in the real
+\fischer family can run fast enough to be usable in the real
 world, and that they produce significantly better results than traditional
 panic mode. Furthermore, extending such algorithms to produce the complete set of
 minimum cost repair sequences allows parsers to provide better feedback to
 users, as well as significantly reducing the cascading error problem.
+The \cpctplus algorithm is simple to implement (less than 500LoC in our
+Rust system) and still has good performance.
 
-For batch compilers, \cpctplus is probably a good match: it is simple to
-implement (around 450LoC in our Rust system) and still has good performance. For
-interactive environments, the extra effort involved in implementing \mf --
-roughly 350LoC more than \cpctplus -- may be small enough to justify the
-performance improvement.
-
-Looking to the future, we (perhaps immodestly) suggest that \cpctplus and \mf might be `good enough'
-to serve as the main representative of the \citet{fischer79locally} family.
-However, we do not think that either algorithm on their own is the perfect solution. We suspect
+Looking to the future, we (perhaps immodestly) suggest that \cpctplus might be `good enough'
+to serve as the main representative of the \fischer family.
+However, we do not think that it is the perfect solution. We suspect
 that, in the future, multi-phase solutions will be developed. For example, one
-may use a machine-learning approach such as that of \citet{santos18syntax} as a
-first-step and, when it fails (which current evidence suggests it
-will do fairly often), fall back to \cpctplus or \mf.
+may use a combination of noncorrecting error recovery
+(e.g.~\cite{richter85noncorrecting}), machine-learning
+(e.g.~\cite{santos18syntax}), and \cpctplus to reduce the number of locations
+reported and maximise the chances of the repair sequences reported matching
+user intentions.
 
 \textbf{Acknowledgements:}
 We are grateful to the Blackbox developers for allowing us access
@@ -2624,7 +2040,7 @@ neutral.
 
 \vspace{12pt}
 
-\noindent Example 3 (taken from \citet[p.~10]{deJonge12natural}) input:
+\noindent Example 3 (taken from \cite[p.~10]{deJonge12natural}) input:
 \lstinputlisting[numbers=left,language=Java,xleftmargin=2em]{examples/java_ex3.java}
 
 \noindent Example 3 output:
@@ -2632,7 +2048,7 @@ neutral.
 
 \vspace{12pt}
 
-\noindent Example 4 (taken from \citet[p.~16]{deJonge12natural}) input:
+\noindent Example 4 (taken from \cite[p.~16]{deJonge12natural}) input:
 \lstinputlisting[numbers=left,language=Java,xleftmargin=2em]{examples/java_ex4.java}
 
 \noindent Example 4 output:
@@ -2641,7 +2057,7 @@ neutral.
 
 \vspace{12pt}
 
-\noindent Example 5 (taken from \citet[p.~2]{medeiros18syntax}):
+\noindent Example 5 (taken from \cite[p.~2]{medeiros18syntax}):
 \lstinputlisting[numbers=left,language=Java,xleftmargin=2em]{examples/java_ex5.java}
 
 \noindent Example 5:
@@ -2679,10 +2095,10 @@ be terminated by `\texttt{end}'.
 
 \vspace{12pt}
 
-\noindent Examples 3 and 4 (both derived from the Lua 5.3 reference manual) show
-that \cpctplus and \mf happily deal with an inherent ambiguity in Lua's Yacc
+\noindent Examples 3 and 4 (both derived from the Lua 5.3 reference manual) shows
+that \cpctplus naturally deals with an inherent ambiguity in Lua's Yacc
 grammar involving function calls and assignments (which, following the Lua
-specification, is resolved by Yacc in favour of function calls). First, this
+specification, is resolved by Yacc in favour of function calls). This
 example shows the `unambiguous' case (i.e.~if Lua forced users to use `;'
 everywhere, the grammar would have no ambiguities):
 
@@ -2706,7 +2122,7 @@ grammar resolves in favour of viewing the code below as a function call to
 
 \vspace{12pt}
 
-\noindent Example 5 (taken from \citet[p.~7]{medeiros18syntax}):
+\noindent Example 5 (taken from \cite[p.~7]{medeiros18syntax}):
 
 \lstinputlisting[numbers=left,xleftmargin=2em]{examples/lua_ex5.lua}
 
