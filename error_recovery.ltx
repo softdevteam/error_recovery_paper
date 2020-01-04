@@ -1443,15 +1443,14 @@ validate Hypothesis H3.
 \section{Using error recovery in practice}
 \label{sec:api}
 
-The algorithms presented in this paper would be of only marginal interest if
-they could not be used easily in practice. Previous approaches in the
-\fischer family make no mention of how error recovery should be
-used or, indeed, if it has any implications for users at all. Although several
-members of the \fischer family were implemented in parsing tools
-of the day, to the best of our knowledge none of those implementations have
-survived.
+Although several members of the \fischer family were implemented in parsing
+tools of the day, to the best of our knowledge none of those implementations
+have survived. Equally, previous approaches in the \fischer family make no
+mention of how error recovery should be used or, indeed, if it has any
+implications for users at all.
 
-We are therefore forced to treat the following as an open question: can one
+We are therefore forced to treat the following
+as an open question: can one
 sensibly use error recovery in the \fischer family in practice? In
 particular, given that the most common way to use LR grammars
 is to execute semantic actions as each production is reduced, what should semantic actions do
@@ -1460,16 +1459,15 @@ question is important for real-world systems (e.g.~compilers) which can
 still perform useful computations (e.g.~running a type checker) in the
 face of syntax errors.
 
-In this section we briefly outline the approach taken in \emph{grmtools}, our
-Rust parsing tool. This section necessarily contains several Rust-specific
-parts. Thus, while it is impossible to answer the question posed above in general, we can
-at least show that one reasonable solution exists. Readers who prefer to avoid
+While different languages are likely to require different solutions, in
+this section we show that \emph{grmtools} allows sensible integration
+of error recovery in a Rust context. Readers who prefer to avoid
 Rust-specific details may wish to move immediately to Section~\ref{sec:threats}.
 
 
 \subsection{A basic solution}
 
-\begin{figure}
+\begin{figure}[!t]
 \begin{adjustbox}{valign=t,minipage=.53\textwidth}
 \begin{lstlisting}[numbers=left]
 %start Expr
@@ -1519,37 +1517,21 @@ avoid both problems.}
 \end{figure}
 
 Figure~\ref{fig:api:naive} shows a naive \emph{grmtools} version of the grammar
-from Figure~\ref{fig:exprgrammar}. The most obvious difference in
-Figure~\ref{fig:api:naive} is that it can evaluate numeric results as parsing
-occurs (i.e.~given the input $2 + 3 * 4$ it returns $14$). Each production has
-a semantic action, which is arbitrary Rust code that is executed when that
-production is reduced. At a basic level, we have simply replaced Yacc's C semantic actions with
-Rust actions: like Yacc, symbols in the production are available to the action
+from Figure~\ref{fig:exprgrammar} that can evaluate numeric results as
+parsing occurs (i.e.~given the input $2 + 3 * 4$ it returns $14$). This
+grammar should mostly be familiar to Yacc users: each production has a \emph{semantic
+action} (i.e.~Rust code that is executed when the production is reduced); and
+symbols in the production are available to the semantic action
 as pseudo-variables named \texttt{\$\emph{n}} (a production of
 $n$ symbols has $n$ pseudo-variables with the first symbol connected to
-\texttt{\$1} and so on). However, there are two major differences.
+\texttt{\$1} and so on). A minor difference from traditional Yacc is that
+\emph{grmtools} allows rules to specify a different return type, an approach
+shared with other modern parsers such as ANTLR~\cite{parr13definitive}.
 
-The first major difference is a syntactic extension over traditional Yacc: each
-rule $R$ has an associated Rust \emph{semantic action type} (between `\texttt{->}' and
-`\texttt{:}'). Each production in $R$ must evaluate to a value of the semantic action
-type (an approach shared with other modern parsers such as
-ANTLR~\cite{parr13definitive}). This is in contrast to traditional Yacc where
-productions must return a C \texttt{union} specified with the \texttt{\%union}
-directive. This is easy, albeit dangerous, for programmers to use, as values can
-be extracted from a C \texttt{union} without static checks. It is possible
-to use Rust \texttt{enum}s to achieve a similar effect. However, we soon found
-this unpleasant to use: explicit, often lengthy, pattern matching has to be
-added before values can be extracted; the necessary pattern matching often
-percolates to other rules, causing significant readability problems; and
-typing errors only become apparent at run-time. Having a
-separate semantic action type per rule gives a natural, and fully statically typable,
-way of avoiding these problems.
-
-The second major difference is in the contents of the \texttt{\$\emph{n}}
+A more significant difference is in the contents of the \texttt{\$\emph{n}}
 pseudo-variables and how user input is extracted from them. If a pseudo-variable
-references a rule $R$, then that pseudo-variable's static type is $R$'s semantic action
-type (in Figure~\ref{fig:api:naive}, each rule has the same semantic action type of
-\texttt{u64}). However, if a pseudo-variable references a token $T$, then that
+references a rule $R$, then that pseudo-variable's static type is $R$'s return type.
+However, if a pseudo-variable references a token $T$, then that
 pseudo-variable's static type is (slightly simplified) \texttt{Result<Lexeme,
 Lexeme>}. We will explain the reasons for this shortly, but at this stage it
 suffices to note that we can extract tokens matching the user's input by
@@ -1559,7 +1541,7 @@ using the globally available \texttt{\$lexer.lexeme\_str} function.
 
 \subsection{Can semantic action execution continue in the face of error recovery?}
 
-\begin{figure}
+\begin{figure}[!t]
 \begin{adjustbox}{valign=t,minipage=.59\textwidth}
 \begin{lstlisting}[numbers=left]
 %start Expr
@@ -1607,48 +1589,40 @@ the expression continues.}
 \end{adjustbox}
 \end{figure}
 
-In Yacc, semantic actions can execute safely in the knowledge that each symbol in the
-production has `normal' data attached to it (either a rule's value or the string
-matching a token;
-Yacc's error recovery is implicitly expected to maintain this guarantee). In
-contrast, we are unable to provide such a guarantee: some tokens will be the
-result of insert repairs and will have a type but no value. How can the
-programmer handle this in a sensible way? For example, given the input `2 +',
-\cpctplus finds a single repair sequence \emph{[Insert Int]}. What should
-a calculator do with an inserted integer? It would be surprising to guess a
-suitable value, so our naive calculator simply \texttt{panic}s (roughly
-equivalent to `raises an exception and then exits') if it encounters an inserted
-token (the \texttt{unwrap} in line 17).
+In Yacc, semantic actions can assume that each symbol in the
+production has `normal' data attached to it (either a rule's value or the
+string matching a token; Yacc's error recovery is implicitly expected to
+maintain this guarantee). This assumption is unsafe in our setting, if we apply
+a repair sequence with an insert repair: the inserted token will have a type
+but no value. Given the input `(2 + 3', the inserted close bracket is not
+hugely important, and our calculator returns the value 5. However,
+given the input `2 +',
+\cpctplus finds a single repair sequence \emph{[Insert Int]}: what should
+a calculator do with an inserted integer? Our naive calculator simply \texttt{panic}s
+(the \texttt{unwrap} in line 17, which is roughly
+equivalent to `raises an exception and then exits') in such a situation.
+However, there are two alternatives to this rather extreme outcome:
+the semantic action can assume a default value or stop further execution
+of semantic values while allowing parsing to continue. Determining which is the
+right action in the face of inserted tokens is inherently situation specific.
+We therefore need to find a pragmatic way for users to control what happens in
+such cases.
 
-In general, simply exiting when such a situation is encountered is undesirable.
-One possibility is to stop executing further semantic actions, but to continue parsing,
-reporting any further syntax errors. However, many syntax errors are sufficiently minor that we
-would like to continue executing semantic actions. Unfortunately, what constitutes a `minor' syntax error is
-inherently situation specific. We therefore need a mechanism which allows the
-grammar author to make this decision while not overburdening them with
-boilerplate code.
-
-The outline of a solution is to allow users a mechanism to differentiate between
-tokens derived from user input and tokens created
-by error recovery. \emph{grmtools} does this in a way that is simple and
-ergonomic --- at least for Rust. In essence, pseudo-variables that reference tokens have
+The approach we take is to allow users to easily differentiate normal vs.~inserted
+tokens in a semantic action. Pseudo-variables that reference tokens have
 (slightly simplified) the Rust type \texttt{Result<Lexeme, Lexeme>}. Rust's \texttt{Result}
 type\footnote{Equivalents are found in several other languages: Haskell's
 \texttt{Either}; O'Caml's \texttt{result}; or Scala's \texttt{Either}.} is a sum
-type which references a success (\texttt{Ok($\ldots$)}) or error
-(\texttt{Err($\ldots$)}) type. In our case, both the \texttt{Ok} and
-\texttt{Err} cases reference the same types because it allows a fairly natural
-interaction with normal Rust idioms and operators. We use the \texttt{Ok} case
+type which represents success (\texttt{Ok($\ldots$)}) or error
+(\texttt{Err($\ldots$)}) conditions. We use the \texttt{Ok} case
 to represent `normal' tokens created form user input and the \texttt{Err} case
-to represent tokens inserted by error recovery. The reason we encode things in
-this way is that it allows users to use familiar Rust idioms when choosing what
-to do when inserted tokens are encountered: the \texttt{Result} type has a
-variety of useful helper functions which are widely known by Rust programmers.
+to represent tokens inserted by error recovery. Since the \texttt{Result} type
+is widely used in Rust code, users can avail themselves of standard idioms.
 
-As a simple example of how this can be used, we can easily alter our grammar to continue
+For example, we can then alter our calculator grammar to continue
 parsing, but stop executing meaningful semantic action code, when an inserted integer
-is encountered. This can be achieved by altering rules from returning a
-type \texttt{T} to returning \texttt{Result<T, ()>} (where `()' is Rust's unit type). When a
+is encountered. We change grammar rules from returning
+type \texttt{T} to \texttt{Result<T, ()>} (where `()' is Rust's unit type). When a
 rule cannot produce a value, for whatever reason, it simply returns
 \texttt{Err(())}. It is then, deliberately, fairly easy to use with the
 \texttt{Result<Lexeme, Lexeme>} type: for tokens whose value we absolutely
@@ -1657,32 +1631,29 @@ require, we map the \texttt{Err(Lexeme)} case to \texttt{Err())} with the
 this first says `if \$n is an \texttt{Err(Lexeme)}, convert it to
 \texttt{Err(())}' (with \texttt{map\_err}) and then `if we have
 \texttt{Err(...)} percolate it upwards, otherwise unwrap the \texttt{Ok} case'
-(the `\texttt{?}' operator). While we might prefer the code to be slightly
-less verbose, it is easily understood by Rust
-programmers and achieves the desired result. Figure~\ref{fig:api:resulttype}
-shows a version of the grammar making use of this idiom. As it shows,
-relatively little extra code is required over the naive approach.
+(the `\texttt{?}' operator). While slightly verbose, this idiom is easily
+understood by Rust programmers. Figure~\ref{fig:api:resulttype} shows a
+version that changing the grammar to make use of this idiom requires relatively
+little extra code.
 
 
-\subsection{Preferring repair sequences that are easy for semantic actions to deal with}
+\subsection{Avoiding insert repairs when possible}
 
-Insert repairs are often awkward for semantic actions to deal with. In most cases, there
-is simply no alternative than to force semantic actions to deal with this possibility,
-hence the solution proposed in the previous subsection. However, the complete
-set of repair sequences sometimes give us a way of avoiding this awkwardness. For
+Although we now have a reasonable mechanism for dealing with inserted tokens,
+there are cases where we can bypass them entirely. For
 example, consider the input `2 + + 3', which has two repair sequences
 \emph{[Delete +], [Insert Int]}: evaluation of the expression can continue
-if the former repair sequence is used, but not if the latter is used. However, as
+with the former repair sequence, but not the latter. However, as
 presented thus far, these repair sequences are ranked equally and one
-non-deterministically selected to apply to the input.
+non-deterministically selected.
 
-\emph{grmtools} therefore provides an optional declaration
-\texttt{\%avoid\_insert} which takes a list of token names. These tokens
-should be those which, if inserted by error recovery, are likely to prevent
+We therefore added an optional declaration
+\texttt{\%avoid\_insert} to \emph{grmtools} which allows users to specify
+those tokens which, if inserted by error recovery, are likely to prevent
 semantic actions from continuing execution. In practise, this is synonymous with those
-tokens whose values (and not just their types) are important. Of the tokens in
-our running example, only the \texttt{INT} token satisfies this
-criteria, so we simply add \texttt{\%avoid\_insert "INT"} to the grammar. We then
+tokens whose values (and not just their types) are important. In the calculator
+grammar only the \texttt{INT} token satisfies this
+criteria, so we add \texttt{\%avoid\_insert "INT"} to the grammar. We then
 make a simple change to the repair sequence ranking of
 Section~\ref{rankingrepairs} such that the final list of repair sequences is
 sorted with inserts of such tokens at the bottom of the list. In our case, this
