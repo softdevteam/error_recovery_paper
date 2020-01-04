@@ -1666,8 +1666,8 @@ the second option).
 \section{Threats to validity}
 \label{sec:threats}
 
-Although it might not be obvious at first sight, \cpctplus is still
-non-deterministic, and that non-determinism can occasionally lead to surprising
+Although it might not be obvious at first, \cpctplus is
+non-deterministic, which can lead to surprising
 different results from one run to the next. The root cause of this problem is
 that multiple repair sequences may have identical effects up to
 $N_\textit{try}$ tokens, but cause different effects after that value.
@@ -1717,48 +1717,38 @@ syntax than files intended for Java 1.7.
 Error recovery techniques are so numerous that there is no
 definitive reference or overview of them. However, \cite{degano95comparison}
 contains an overall historical analysis and \cite{cerecke03phd} an excellent
-overview of many of the approaches which build on \fischer. Both
-must be supplemented with more recent works, such as those we have cited in this
-paper.
+overview of many members of the \fischer family. Both
+must be supplemented with more recent works.
 
 The biggest limitation of error recovery algorithms in the
-\fischer family is that they are local: they find repairs at the
+\fischer family is that they find repairs at the
 point that an error is discovered, which may be later in the file than the cause
 of the error. Thus even when they successfully recover from an error, the repair
 sequence reported may be very different from the fix the user considers
 appropriate (note that this is distinct from the cascading error problem,
 which our ranking of repair sequences in Section~\ref{rankingrepairs} partly
-addresses). Perhaps the most common -- and without doubt the most frustrating
--- example of this are missing `\texttt{\}}' characters in
+addresses). A common, frustrating, example of this is a missing `\texttt{\}}' character in
 C/Java-like languages. Some approaches are able to backtrack from the source of
 the error in order to try and find more appropriate repairs. However, there are
-two problems with this: first, the cost of maintaining the necessary state to
+two challenges to this: first, the cost of maintaining the necessary state to
 backtrack slows down normal parsing (e.g.~\cite{deJonge12natural} only stores the
 relevant state at each line encountered to reduce this cost), whereas we add no
 overhead at all to normal parsing; second, the search-space is so hugely
 increased that it can be harder to find any repairs at
 all~\cite{degano95comparison}.
 
-A more recent possibility from~\cite{santos18syntax} is to use
-machine learning to train a system on syntactically correct programs: when a
-syntax error is encountered, they use their model to suggest appropriate global
-fixes. Although they also use data from Blackbox, their
-experimental methodology is very different: they are stricter, in that they aim
-to find exactly the same type of repair as the human user actually
-applied themselves; but also looser, in that they only
-consider errors which can be fixed by a single token (discarding 42\% of
+One approach to global error recovery is to use machine
+learning to train a system on syntactically correct programs~\cite{santos18syntax}: when a
+syntax error is encountered, the resulting model is used to suggest appropriate global
+fixes. Although \cite{santos18syntax} also use data from Blackbox, their
+experimental methodology is both stricter -- aiming to find exactly the same
+repair as the human user applied -- and looser -- they only
+consider errors which can be fixed by a single token, discarding 42\% of
 the data~\cite[p.~8]{santos18syntax}) whereas we attempt to fix errors which
 span multiple tokens. It is thus difficult to directly compare their results to
 ours. However, by the high bar they have set themselves, they are able to repair
 52\% of single-token errors (i.e.~about 30\% of all possible errors; for
-reference, MF repairs \mfsuccessrate of files). It seems likely that future machine
-learning approaches will improve upon this figure, although the size of the
-problem space suggests that it will be hard to get close to 100\%{}. It seems plausible
-that a `perfect' system will mix both deterministic approaches (such as ours, which
-has a high chance of finding a good-enough recovery) with
-probabilistic approaches (which have a moderate chance of finding a perfect
-recovery). There may be several shades of grey, leading to a system
-with multiple error recovery sub-approaches (in similar fashion to~\cite{deJonge12natural}).
+reference, MF repairs \mfsuccessrate of files).
 
 As \cpctplusrev shows, choosing an inappropriate repair sequence during
 error recovery leads to cascading errors. The noncorrecting error recovery approach
@@ -1767,16 +1757,12 @@ eschewing repairs entirely. When a syntax error is discovered, noncorrecting
 error recovery attempts to discover all further syntax errors by checking
 whether the remaining input (after the point an error is detected) is a valid suffix in the
 language. This is achieved by creating a recogniser that can identify all valid
-suffixes in the language. The beauty of this approach is that
-any errors identified in the suffix parse are, by
-definition, genuine syntax errors because they are uninfluenced by
-errors in the (discarded) prefix. However, because the suffix parser in
-essence starts with a clean slate unaffected by the input before a syntax
-error, it misses some genuine syntax errors that would not have been valid
+suffixes in the language. Any errors identified in the suffix parse are
+guaranteed to be genuine syntax errors because they are uninfluenced by
+errors in the (discarded) prefix (though this does mean that some
+genuine syntax errors are missed that would not have been valid
 suffixes at that point in the user's input had the original syntax error not
-been present. Roughly speaking, error recovery in the
-\fischer family roughly overapproximates the true number of syntax
-errors, while noncorrecting error recovery underapproximates. There seem to be two
+been present). There seem to be two
 main reasons why noncorrecting error recovery has
 not been adopted. First, building an appropriate recogniser is surprisingly
 tricky and we are not currently aware of one that can handle the full class of
@@ -1784,17 +1770,13 @@ LR grammars (though the full class of LL grammars has been
 tackled~\cite{deudekom93initial}), though we doubt that this problem is
 insoluble. Second, as soon as a syntax error is encountered, noncorrecting error
 recovery is unable to execute semantic actions, since it lacks the execution context
-they need. This means that the ability to continue with non-parsing
-activities in the face of syntax errors (such as the approach described in
-Section~\ref{sec:api}) is lost. An intriguing future possibility might be to
-use noncorrecting error recovery to find syntax errors and then
-find repairs which move the parse in that direction.
+they need.
 
 Although one of our paper's aims is to find the complete set of minimum cost repair sequences,
 it is unclear how best to present them to users, leading to questions such as:
 should they be simplified? should a subset be presented? and so on. Although
 rare, there are some surprising edge cases. For example,
-the (incorrect) Java expression `\texttt{x = f(""a""b);}' leads to 23,067 minimum
+the (incorrect) Java 1.7 expression `\texttt{x = f(""a""b);}' leads to 23,067 minimum
 cost repair sequences being found, due to the large number of Java keywords that are
 valid in several parts of this expression leading to a combinatorial explosion: even the most
 diligent user is unlikely to find such a volume of information valuable. In
@@ -1823,18 +1805,16 @@ pruning mechanisms.
 The most radical member of the \fischer family is that
 of~\cite{kimyi10astar}\footnote{In an earlier online draft of this paper we
 stated that this algorithm has a fundamental flaw. We now believe this was
-due to us incorrectly assuming that the `delete' optimisation of \corchuelo
+due to our incorrectly assuming that the `delete' optimisation of \corchuelo
 applied to \cite{kimyi10astar}. We apologise to the authors for this
 mistake.}. This uses the A* algorithm, and a precomputed distance table to
-quickly generate repair sequences in the vein of \corchuelo. However,
+quickly generate repair sequences in the vein of \corchuelo.
 \cite{kimyi10astar} works exclusively on the stategraph, assuming that it is
-unambiguous. However, Yacc systems allow ambiguous stategraphs and a means for
-resolving those ambiguities when creating the statetable. Most practical
-grammars make use of this feature because it makes writing a grammar much
-easier (the Java 1.7 grammar is the only large grammar we know of which has no
-ambiguities, and we suspect that property has been lost in Java 1.8). In
-an earlier online draft, we created a second algorithm \mf, which, in
-essence, extends \cpctplus with ideas from \cite{kimyi10astar} at the cost of
+unambiguous. However, Yacc systems allow ambiguous stategraphs and provide a means for
+resolving those ambiguities when creating the statetable. Many real-world
+grammars (e.g.~Lua, PHP) make use of ambiguity resolution. In
+an earlier online draft, we created \mf, an algorithm which
+extends \cpctplus with ideas from \cite{kimyi10astar} at the cost of
 significant additional complexity. With the benefit of hindsight, we do not
 consider \mf's relatively small benefits over \cpctplus to be worth that
 additional complexity.
@@ -1858,9 +1838,7 @@ gives that part of our algorithm a similar feel to GLR parsing (even though
 we never generate ambiguous strings). However, there are also major
 differences: LR parsers are significantly simpler to implement than GLR parsers;
 and the \fischer family of algorithms do not require manually
-annotating, or statically increasing the size of, the grammar. It is unlikely,
-for example, that a Yacc-based parser would be able or willing to use a GLR
-parser for error recovery.
+annotating, or statically increasing the size of, the grammar.
 
 The approach we have taken in this paper can only repair errors on files which
 are fully lexed. Since many users are unaware of the distinction between these
@@ -1878,8 +1856,8 @@ sensitive~\cite{eijck__lets_accept_rejects}. Other possibilities are to
 intermingle parsing and lexing (see e.g.~\cite{wyk07context}) or to allow
 `fuzzy' or partial matching of tokens (see~\cite[p.~8]{vanter00displaying}).
 
-A different approach to error recovery is that taken by~\citet{pottier16reachability}: rather
-than try and recover from errors directly, it reports precisely and accurately
+A different approach to error recovery is that taken by~\cite{pottier16reachability}: rather
+than try and recover from errors directly, it reports in natural language
 how the user's input caused the parser to reach an error state (e.g.~``I
 read an open bracket followed by an expression, so I was expecting a close
 bracket here''), and
@@ -1888,11 +1866,7 @@ valid here''). This involves significant manual work, as every parser state
 (1148 in the Java grammar we use) in which an error can occur needs to be
 manually marked up, though the approach has
 various techniques to lessen the problem of maintaining messages as a grammar
-evolves. This approach seems complementary to ours: in an ideal world it would
-be possible to give precise, high-level messages about the problem
-encountered whilst also showing
-repair sequences that allowed parsing to continue. One challenge may be to make
-the top ranked repair sequences match the manually written messages.
+evolves.
 
 Many compilers and editors have hand-written parsers with hand-written error
 recovery. Though generally ad-hoc in their approach, it is possible, with
@@ -1909,7 +1883,7 @@ is~\cite{turner77error}). Although this outperforms the simple panic mode of
 Section~\ref{sec:panic mode}, it will, in general, clearly skip more input than
 \cpctplus, which is undesirable. LL parsers do, however, make it
 somewhat easier to express grammar-specific error recovery rules.
-The most advanced approach in this vein that we are aware of is that of
+The most advanced LL approach that we are aware of is
 IntelliJ's Grammar-Kit, which allows user to annotate their grammars for error
 recovery. Perhaps the most interesting annotation is that certain rules can be
 considered as fully matched even if only a prefix is matched (e.g.~a partially
