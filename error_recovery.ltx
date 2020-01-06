@@ -314,9 +314,9 @@ minimum cost repair sequence. \cpctplusrev leads to \cpctplusreverrorlocsratioov
 errors being reported (i.e.~it substantially worsens the cascading error problem).
 
 This paper is structured as follows. We describe the \corchuelo algorithm
-(Section~\ref{cpct}), filling in missing details from the original description
+(Section~\ref{corchuelo}), filling in missing details from the original description
 and correcting its definition. We then expand the algorithm into \cpctplus
-(Section~\ref{cpctplus}). We then validate \cpctplus on a corpus of \corpussize real,
+(Section~\ref{corchueloplus}). We then validate \cpctplus on a corpus of \corpussize real,
 syntactically incorrect, Java programs (Section~\ref{experiment}). To
 emphasise that our algorithms are grammar-neutral, we show examples of
 error recovery on different grammars in Appendix~\ref{app:examples}.
@@ -901,7 +901,7 @@ the search, we introduce a significant optimisation in the form
 of merging compatible configurations (Section~\ref{merging}). The complete set of
 minimum cost repair sequences allows us to make an
 algorithm less susceptible to the cascading error problem
-(Section~\ref{cpctplus}): we refer to this final algorithm as \cpctplus.
+(Section~\ref{cpctplus}\lukas{5.3?}): we refer to this final algorithm as \cpctplus.
 
 
 \subsection{Finding the complete set of minimum cost repair sequences}
@@ -932,7 +932,7 @@ in $c$ have been explored, the set of successful configurations is returned.
 \label{merging}
 
 Relative to finding a single solution, finding the complete set of repair
-sequences can be extremely extremely expensive because there may
+sequences can be extremely expensive because there may
 be many remaining configurations in $c$, which may, transitively, have many neighbours.
 Our solution to this performance problem is to merge together \emph{compatible}
 configurations on-the-fly, preserving their distinct repair sequences while
@@ -1095,7 +1095,7 @@ while the repair sequences we find are all equivalently good within the range
 of $N_\textit{shifts}$, some, but not others, may perform poorly beyond that
 range. This problem is exacerbated by the fact that $N_\textit{shifts}$ has
 to be a fairly small integer (we use 3, the value suggested by \corchuelo)
-since because each additional token searched exponentially increases the
+since each additional token searched exponentially increases the
 search space. From a user perspective this can mean that some members
 of the complete set of minimum cost repair sequences can appear to be of much
 lower quality than others.
