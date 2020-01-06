@@ -114,8 +114,8 @@ untold errors in our quest to perfect a program. Most troubling are semantic
 errors, where we intended the program to do one thing, but it does another. Less
 troubling, but often no less irritating, are syntax errors, which are
 (generally minor) deviances from the exacting syntax required by a compiler.
-So common are syntax errors that parsers in modern compilers expect us to make several
-in a single input. Rather than stop on the first syntax error encountered, they attempt
+So common are syntax errors that parsers in modern compilers are designed
+to cope with us making several: rather than stop on the first syntax error, they attempt
 to \emph{recover} from it. This allows them to report, and us to fix, all our
 syntax errors in one go.
 
@@ -213,8 +213,8 @@ entirely (`\texttt{int x;}'), or insert a comma
 
 A handful of parsers contain hand-written error recovery algorithms
 for specific languages.
-These generally allow better recovery from errors, but are difficult and
-expensive to create. For example, the Java error recovery approach in the Eclipse IDE is 5KLoC long,
+These generally allow better recovery from errors, but are challenging
+to create. For example, the Java error recovery approach in the Eclipse IDE is 5KLoC long,
 making it only slightly smaller than a modern version of Berkeley Yacc --- a
 complete parsing system! Unsurprisingly, few real-world parsers contain
 effective hand-written error recovery algorithms.
@@ -1176,13 +1176,13 @@ location.
 \label{methodology}
 
 In order to evaluate error recovery implementations, we need a concrete implementation. We
-implemented a new Yacc-compatible parsing system \emph{grmtools} in Rust. Including
+implemented a new Yacc-compatible parsing system \emph{grmtools} in Rust which
+we use for our experiments. Including
 associated libraries for LR table generation and so on, \emph{grmtools} is around
 13KLoC. Although intended as a production library, it has accidentally
 played a part as a flexible test bed for experimenting with, and understanding,
 error recovery algorithms. We added a simple front-end \emph{nimbleparse} which produces the output
-seen in e.g.~Figure~\ref{fig:javaerror}. We use \emph{grmtools} for all experiments in
-this paper.
+seen in e.g.~Figure~\ref{fig:javaerror}.
 
 There are two standard problems when evaluating error recovery algorithms: how
 to determine if a good job has been done on an individual example; and obtaining
@@ -1247,8 +1247,8 @@ whether error recovery on the file was successful (true or false); the
 number of error locations; the cost of repair sequences at each
 error location (only if error recovery was successful on the file as a whole);
 and the number of tokens skipped by error recovery (i.e.~how many \emph{delete}
-repairs were applied). Note that there are two ways of failing to repair all errors in a file:
-exceeding the timeout; or running out of plausible candidate repair sequences.
+repairs were applied). Note parsing fails if the timeout is exceeded or
+if the algorithm runs out of plausible candidate repair sequences.
 We measure the time spent in error recovery with a monotonic wall-clock timer,
 covering all aspects of error recovery from when the main parser first invokes
 error recovery until an updated parsing stack and parsing index are returned
