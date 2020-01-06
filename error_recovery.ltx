@@ -1452,6 +1452,7 @@ Factor -> u64:
           "{} cannot be represented as a u64",
           s)
       }
+    }
   ;
 \end{lstlisting}
 \end{adjustbox}
@@ -1502,7 +1503,7 @@ using the globally available \texttt{\$lexer.lexeme\_str} function.
 \subsection{Can semantic action execution continue in the face of error recovery?}
 
 \begin{figure}[!t]
-\begin{adjustbox}{valign=t,minipage=.59\textwidth}
+\begin{adjustbox}{valign=t,minipage=.60\textwidth}
 \begin{lstlisting}[numbers=left]
 %start Expr
 %avoid_insert "INT"
@@ -1521,21 +1522,20 @@ Factor -> Result<u64, ()>:
   '(' Expr ')' { $2 }
  | 'INT'
    {
-    let n = $lexer.lexeme_str(&$1.map_err(|_| ())?);
-    match s.parse::<u64>() {
-      Ok(val) => Ok(val as u64),
-      Err(_) => { eprintln!(
-        "{} cannot be represented as a u64", s
-        );
-        Err(())
-      }
-    }
+     let n = $lexer.lexeme_str(&$1.map_err(|_| ())?);
+     match s.parse::<u64>() {
+       Ok(val) => Ok(val as u64),
+       Err(_) => eprintln!(
+         "{} cannot be represented as a u64", s
+         );
+         Err(())
+     }
    }
  ;
 \end{lstlisting}
 \end{adjustbox}
 \hspace{3pt}
-\begin{adjustbox}{valign=t,minipage=.39\textwidth}
+\begin{adjustbox}{valign=t,minipage=.38\textwidth}
 \vspace*{0pt}
 \caption{A more sophisticated version of the grammar from
 Figure~\ref{fig:api:naive}. Each rule now returns a \texttt{Result} type. If an
