@@ -901,7 +901,8 @@ the search, we introduce a significant optimisation in the form
 of merging compatible configurations (Section~\ref{merging}). The complete set of
 minimum cost repair sequences allows us to make an
 algorithm less susceptible to the cascading error problem
-(Section~\ref{cpctplus}\lukas{5.3?}): we refer to this final algorithm as \cpctplus.
+(Section~\ref{rankingrepairs}). We then change the criteria for terminating
+error recovery (Section~\ref{timeout}).
 
 
 \subsection{Finding the complete set of minimum cost repair sequences}
@@ -1128,6 +1129,7 @@ the top-ranked set.
 
 
 \subsection{Timeout}
+\label{timeout}
 
 The final part of \cpctplus relates to the use of $N_\textit{total}$ in
 \corchuelo. As with all members of the
