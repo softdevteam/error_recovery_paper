@@ -927,6 +927,8 @@ exploring configurations in cost $c$ (including, transitively, all neighbours th
 also of cost $c$; those with cost $> c$ are immediately discarded). Each
 successful configuration is recorded and, when all configurations
 in $c$ have been explored, the set of successful configurations is returned.
+One of these successful configurations is then non-deterministically chosen,
+applied to the input, and parsing continued.
 
 
 \subsection{Merging compatible configurations}
@@ -1898,14 +1900,13 @@ The \cpctplus algorithm is simple to implement (less than 500LoC in our
 Rust system) and still has good performance.
 
 Looking to the future, we (perhaps immodestly) suggest that \cpctplus might be `good enough'
-to serve as the main representative of the \fischer family.
+to serve as a common representative of the \fischer family.
 However, we do not think that it is the perfect solution. We suspect
 that, in the future, multi-phase solutions will be developed. For example, one
-may use a combination of noncorrecting error recovery
-(e.g.~\cite{richter85noncorrecting}), machine-learning
-(e.g.~\cite{santos18syntax}), and \cpctplus to reduce the number of locations
-reported and maximise the chances of the repair sequences reported matching
-user intentions.
+may use noncorrecting error recovery (e.g.~\cite{richter85noncorrecting})
+to identify syntax errors, and then use a combination of machine-learning
+(e.g.~\cite{santos18syntax}) and \cpctplus to discover repair sequences
+that allow parsing to only error at those places.
 
 \textbf{Acknowledgements:}
 We are grateful to the Blackbox developers for allowing us access
