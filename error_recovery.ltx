@@ -712,7 +712,7 @@ all possible minimum cost repair sequences.
 \begin{figure}[tb]
 \small
 \[
-\hspace{-12pt}
+\hspace{-5pt}
 \infer[\textsc{CR Shift 2}]
       {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_m], [t_j \ldots t_n], [\underbrace{\textit{shift} \ldots \textit{shift}}_j])}
       {%
@@ -726,6 +726,7 @@ all possible minimum cost repair sequences.
 \]
 
 \[
+\hspace{20pt}
 \infer[\textsc{CR Shift 3}]
       {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_m], [t_j \ldots t_n], R)}
       {%
@@ -739,7 +740,7 @@ all possible minimum cost repair sequences.
 \end{array}
 }
 \]
-\vspace{-16pt}
+\vspace{-15pt}
 \caption{\textsc{CR Shift 1} always consumes input, when sometimes performing
 one or more reduction/gotos without consuming input would be better. \textsc{CR
 Shift 2} addresses this issue. Both \textsc{CR Shift 1} and \textsc{CR Shift 2}
@@ -747,39 +748,43 @@ generate multiple shift repairs in one go, which causes them to skip
 `intermediate' (and sometimes important) configurations. \textsc{CR Shift 3}
 generates at most one shift, exploring all intermediate configurations.}
 \label{fig:corchuelo:kimyi}
-\vspace*{-6pt}
+\vspace*{-0pt}
 \end{figure}
 
 
 \begin{figure}[t]
-\hspace*{-7pt}
+\hspace*{0pt}
 \begin{tabular}{llll}
 \begin{subfigure}{0.012\textwidth}
-\vspace{-31.5pt}
+\vspace{-22pt}
 \caption{}
 \label{lst:crshift2:crshift2}
 \end{subfigure}
 &
+\begin{minipage}{190pt}
 \begin{lstlisting}
 Delete 3, Delete +
 Delete 3, Shift +, Insert Int
 Insert +, Shift 3, Shift +, Insert Int
 Insert *, Shift 3, Shift +, Insert Int
 \end{lstlisting}
+\end{minipage}
 &
 \begin{subfigure}{0.012\textwidth}
-\vspace{-31.5pt}
+\vspace{-22pt}
 \caption{}
 \label{lst:crshift2:crshift3}
 \end{subfigure}
 &
+\begin{minipage}{140pt}
+\vspace{-16pt}
 \begin{lstlisting}
-<! \vspace{-27pt} !>
 Insert *, Shift 3, Delete +
 Insert +, Shift 3, Delete +
 \end{lstlisting}
+\end{minipage}
 \end{tabular}
-\vspace{-8pt}
+\vspace{-5pt}
 \caption{Given the input `\texttt{2 3 +}' and the grammar from
 Figure~\ref{fig:exprgrammar}, \textsc{CR Shift 1} is unable to find any repair
 sequences because it does not perform the reductions/gotos necessary after
