@@ -135,14 +135,14 @@ only the location of the first error in a file -- not the reported repair, nor t
 subsequent errors -- can be relied upon to be accurate.
 
 \begin{figure}[t]
-\begin{minipage}{0.53\textwidth}
+\begin{minipage}{0.49\textwidth}
 \begin{tabular}{p{0.02\textwidth}p{0.45\textwidth}}
 \begin{subfigure}{0.02\textwidth}
 \caption{}
 \label{lst:javaerror:input}
 \end{subfigure}
 &
-\begin{minipage}[t]{0.45\textwidth}
+\begin{minipage}[t]{0.86\textwidth}
 \vspace{-7pt}
 \begin{lstlisting}[language=Java]
 class C {
@@ -157,7 +157,7 @@ class C {
 \label{lst:javaerror:cpctplus}
 \end{subfigure}
 &
-\begin{minipage}[t]{0.45\textwidth}
+\begin{minipage}[t]{0.86\textwidth}
 \vspace{-7pt}
 \begin{lstlisting}
 Parsing error at line 2 col 9. Repair
@@ -170,17 +170,17 @@ sequences found:
 \end{tabular}
 \end{minipage}
 %
-\begin{minipage}{0.43\textwidth}
-\vspace{-30.5pt}
-\begin{tabular}{p{0.02\textwidth}p{0.45\textwidth}}
+\begin{minipage}{0.49\textwidth}
+\vspace{-33.5pt}
+\begin{tabular}{p{0.02\textwidth}p{0.48\textwidth}}
 \begin{subfigure}{0.02\textwidth}
 \addtocounter{subfigure}{-2}
 \caption{}
 \label{lst:javaerror:javac}
 \end{subfigure}
 &
-\begin{minipage}[t]{0.45\textwidth}
-\vspace{-7pt}
+\begin{minipage}[t]{0.9\textwidth}
+\vspace{-7.5pt}
 \begin{lstlisting}
 C.java:2: error: ';' expected
   int x y;
