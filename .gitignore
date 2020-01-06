@@ -6,4 +6,7 @@ error_recovery.log
 error_recovery.out
 error_recovery.pdf
 softdevbib/
-
+error_recovery.bcf
+error_recovery.run.xml
+error_recovery.vtc
+experimentstats.aux

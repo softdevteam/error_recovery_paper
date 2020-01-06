@@ -1245,7 +1245,7 @@ mean that it is an awkward, though not impossible, fit for an LR(1) formalism
 such as Yacc, requiring substantial changes to the current Java Yacc grammar. We
 consider the work involved beyond that useful for this paper.} We then
 randomly selected source files from Blackbox's database (following the lead of
-\citet{santos18syntax}, we selected data from Blackbox's beginning until the end
+\cite{santos18syntax}, we selected data from Blackbox's beginning until the end
 of 2017-12-31). We then ran such source files through our Java 1.7 lexer. We immediately
 rejected files which didn't lex, since such files cannot be considered
 for parsing.\footnote{Happily, this also excludes outputs which can't
@@ -1364,7 +1364,7 @@ in the timeout cause a small, but pronounced, peak.}
 Figure~\ref{fig:results:summary} shows a summary of the results of our
 experiment. The overall conclusions are fairly clear. \cpctplus is
 able to repair nearly all input files within the 0.5s timeout; and while
-panic mode is able to repair virtually every file within the 0.5s timeout, it
+panic mode is able to repair every file within the 0.5s timeout, it
 reports well over twice as many error locations as \cpctplus (i.e.~panic
 mode substantially worsens the cascading error problem).
 The fact that the median recovery time for \cpctplus is two orders of
@@ -1375,16 +1375,14 @@ histogram in Figure~\ref{fig:results:cpctplus_histogram}. These results strongly
 validate Hypothesis H1.
 
 \begin{figure}[t]
-\includegraphics[scale=.7]{cpctplus_cpctplusrev_error_locs_histogram_full.pdf}
 \includegraphics[scale=.7]{cpctplus_cpctplusrev_error_locs_histogram_zoomed.pdf}
-\caption{Histograms of the number of error locations for \cpctplus and \cpctplusrev (fewer
-is better). Error bars represent 99\% confidence
-intervals. The top histogram shows the full spread of data (with 50 bins). Since outliers
-obscure the main body of data, the bottom histogram only shows data up to 50 error
-recovery locations (with 50 bins i.e.~1 bin per error location size). For both histograms, the
-$x$ axis shows the number of error locations in a file and the $y$ axis is a logarithmic
-scale for the number of files.
-As the bottom histogram clearly shows, the entire distribution is skewed
+\caption{A histogram of the number of files with 0--50 errors (this removes a
+handful of outliers which distort the full histogram, which can be found in
+Figure~\ref{fig:results:cpctplus_cpctplusrev_histogram_full} in the Appendix)
+for \cpctplus and \cpctplusrev. The $x$ axis shows the number of error
+locations in a file and the $y$ axis is a logarithmic scale for the number of
+files. Error bars represent 99\% confidence intervals.  As this clearly
+shows, the entire distribution is skewed
 slightly rightwards by \cpctplusrev, showing that \cpctplusrev makes error recovery
 slightly worse in a number of files (rather than making error recovery in a small
 number of files a lot worse).}
@@ -2095,5 +2093,14 @@ grammar resolves in favour of viewing the code below as a function call to
 
 \noindent Example 3 output:
 \lstinputlisting[xleftmargin=2em]{examples/php_ex3.out}
+
+\begin{figure}[t]
+\includegraphics[scale=.7]{cpctplus_cpctplusrev_error_locs_histogram_full.pdf}
+\caption{The full histogram of the number of error locations. The small number
+of outliers obscures the main bulk of the data -- see
+Figure~\ref{fig:results:cpctplus_cpctplusrev_histogram} for the truncated
+version.}
+\label{fig:results:cpctplus_cpctplusrev_histogram_full}
+\end{figure}
 
 \end{document}
