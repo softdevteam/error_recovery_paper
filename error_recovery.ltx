@@ -1654,10 +1654,11 @@ humans make syntax errors, particularly as some are language specific
 Second, Blackbox's data comes largely from students,
 who are more likely than average to be somewhat novice programmers. It is clear
 that novice programmers make some different syntax errors -- and, probably, make
-some syntax errors more often -- relative to advanced programmers. An
-extreme example is the furthest outlier elided from
-Figure~\ref{fig:results:cpctplus_cpctplusrev_histogram}: it contains the same highly erroneous
-input copy and pasted several times within the same file. It is
+some syntax errors more often -- relative to advanced programmers. For example,
+many of the files with the greatest number of syntax errors are caused by
+erroneous fragments repeated with variants (i.e.~it is likely that the
+programmer wrote a line of code, copy and pasted it, edited it, and repeated
+that multiple times before deciding to test the syntactic validity). It is
 thus possible that a corpus consisting solely of programs from advanced programmers
 would lead to slightly different results. We consider this a minor worry,
 partly because a good error recovery algorithm should
