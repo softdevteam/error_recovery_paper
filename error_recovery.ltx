@@ -358,68 +358,8 @@ a \emph{parse tree}, ordering the tokens into a tree of nonterminal nodes
 relative to the underlying grammar.
 
 \begin{figure}[t]
-\begin{minipage}{0.44\textwidth}
-\begin{subfigure}{1.0\textwidth}
-\begin{lstlisting}
-%start Expr
-%%
-Expr: Term "+" Expr      // (I)
-    | Term ;             // (II)
-
-Term: Factor "*" Term    // (III)
-    | Factor ;           // (IV)
-
-Factor: "(" Expr ")"     // (V)
-      | "INT" ;          // (VI)
-\end{lstlisting}
-\end{subfigure}
-\begin{subfigure}{1.0\textwidth}
-\scriptsize
-\vspace{10pt}
-\begin{tabular}{c c c c c c c}
-\toprule
-      & \multicolumn{6}{c}{Actions}\\
-        \cmidrule{2-7}
-$s$ & INT  & \texttt{+}    & \texttt{*}    & \texttt{(} & \texttt{)}    & \$   \\
-\midrule
-0     & S(4) &       &      & S(1) &        &      \\
-1     & S(4) &       &      & S(1) &        &      \\
-2     &      & S(7)  &      &      & R(II)  & R(II) \\
-3     &      & R(IV) & S(8) &      & R(IV)  & R(IV) \\
-4     &      & R(VI) & R(VI)&      & R(VI)  & R(VI) \\
-5     &      &       &      &      &        & Accept \\
-6     &      &       &      &      & S(9)   &      \\
-7     & S(4) &       &      & S(1) &        &      \\
-8     & S(4) &       &      & S(1) &        &      \\
-9     &      & R(V)  & R(V) &      & R(V)   & R(V) \\
-10    &      &       &      &      & R(I)   & R(I) \\
-11    &      & R(III)&      &      & R(III) & R(III) \\
-\bottomrule
-\end{tabular}
-\begin{subfigure}{1.0\textwidth}
-\vspace{15pt}
-\begin{tabular}{c c c c}
-\toprule
-      & \multicolumn{3}{c}{Gotos}\\
-        \cmidrule{2-4}
-$s$ & Term & Factor & Expr\\
-\midrule
-0     &  2  &   3    &  5  \\
-1     &  2  &   3    &  6  \\
-7     &  2  &   3    & 10  \\
-8     & 11  &   3    &     \\
-\bottomrule
-\end{tabular}
-\end{subfigure}
-\end{subfigure}
-\end{minipage}
-\begin{minipage}{0.55\textwidth}
-\begin{subfigure}{1.0\textwidth}
-\vspace{-7pt}
-\includegraphics[width=1.0\textwidth]{graph}
-\end{subfigure}
-\end{minipage}
-\vspace{-5pt}
+\includegraphics{examplegrammar}
+\vspace{-23pt}
 \caption{An example grammar (top left), its corresponding stategraph (right), and statetable
 (split into separate action and goto tables; bottom left). Productions in
 the grammar are labelled \texttt{(I)} to \texttt{(VI)}. In the stategraph: S($x$)
