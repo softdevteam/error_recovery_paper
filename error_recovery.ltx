@@ -496,6 +496,7 @@ element, the input is advanced by one element (line 8) and the stack restored
 (line 3).}
 \label{fig:holub:algorithm}
 \end{adjustbox}
+\vspace{-15pt}
 \end{figure}
 
 The advantage of this algorithm is its simplicity and speed. For example,
@@ -563,13 +564,17 @@ same, or greater, cost to it.
 
 \begin{figure}[tb]
 \small
+\centering
+\begin{minipage}{0.9\textwidth}
 \[
 \infer[\textsc{CR Insert}]
       {([s_0 \ldots s_n], [t_0 \ldots t_n]) \crarrow ([s'_0 \ldots s'_m], [t_0 \ldots t_n], [\textit{insert}~t])}
       {\textsf{action}(s_n, t) \ne error \wedge t \ne \${}
        \wedge ([s_0 \ldots s_n], [t, t_0 \ldots t_n]) \lrarrowstar ([s'_0 \ldots s'_m], [t_0 \ldots t_n])}
 \]
-\vspace{-6pt}
+\end{minipage}
+\vspace{-0pt}
+\begin{minipage}{0.7\textwidth}
 \[
 \infer[\textsc{CR Delete}]
       {([s_0 \ldots s_n], [t_0, t_1 \ldots t_n])
@@ -577,7 +582,9 @@ same, or greater, cost to it.
        ([s_0 \ldots s_n], [t_1 \ldots t_n], [\textit{delete}])}
       {t_0 \ne \$}
 \]
-\vspace{-3pt}
+\end{minipage}
+\vspace{-0pt}
+\begin{minipage}{0.75\textwidth}
 \[
 \hspace{-12pt}
 \infer[\textsc{CR Shift 1}]
@@ -593,7 +600,8 @@ same, or greater, cost to it.
  \textsf{action}(s'_m, t_j) \in \{\textit{accept}, \textit{error}\} 
 \end{array}}
 \]
-\vspace{-9pt}
+\end{minipage}
+\vspace{-3pt}
 \caption{The repair-creating reduction rules \cite{corchuelo02repairing}.
 \textsc{CR Insert} finds all terminals reachable from the current state and
 creates insert repairs for them (other than the EOF token `$\$$').
@@ -607,7 +615,7 @@ token shifted is created.}
 
 
 \begin{figure}[tb]
-\begin{adjustbox}{valign=t,minipage=.51\textwidth}
+\begin{adjustbox}{valign=t,minipage=.52\textwidth}
 \begin{lstlisting}[numbers=left,language=Python]
 def corchueloetal(pstack, toks):
   todo = [[(pstack, toks, [])]]
@@ -646,8 +654,9 @@ def all_cr_star(pstack, toks):
   # list of (pstack, toks, repair) triples.
 \end{lstlisting}
 \end{adjustbox}
-\begin{adjustbox}{valign=t,minipage=.47\textwidth}
-\vspace*{-10pt}
+\hspace{5pt}
+\begin{adjustbox}{valign=t,minipage=.46\textwidth}
+\vspace*{-0pt}
 \caption{Our version of the \corchuelo algorithm. The main function
 \texttt{corchueloetal} takes in a (\emph{parsing stack}, \emph{token list})
 pair and returns: a (\emph{parsing stack}, \emph{token list}, \emph{repair
@@ -672,6 +681,7 @@ The \texttt{rprs\_cst} function returns the cost of a repair sequence. Inserts
 and deletes cost 1, shifts 0.}
 \label{fig:corchuelo:algorithm}
 \end{adjustbox}
+\vspace{-15pt}
 \end{figure}
 
 As with the original, we explain the approach in two parts.
