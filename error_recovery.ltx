@@ -411,20 +411,25 @@ where state $0$ is expected to represent the entry point into the stategraph, $t
 is the sequence of input tokens, and `$\$$' is the special End-Of-File (EOF) token.
 
 \begin{figure}[t]
+\centering
+\begin{minipage}{0.63\textwidth}
 \small
 \[
 \infer[\textsc{LR Shift}]
       {([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_n, s'], [t_1 \ldots t_n])}
       {\textsf{action}(s_n, t_0) = \textit{shift}\ s'}
 \]
-\vspace{-3pt}
+\end{minipage}
+\vspace{-0pt}
+\begin{minipage}{0.83\textwidth}
 \[
 \infer[\textsc{LR Reduce}]
       {([s_0 \ldots s_n], [t_0 \ldots t_n]) \lrarrow ([s_0 \ldots s_{n - \lvert \alpha \rvert}, s'], [t_0 \ldots t_n])}
       {(\textsf{action}(s_n, t_0) = \textit{reduce}\ N \colon \alpha)
        \wedge (\textsf{goto}(s_{n - \lvert \alpha \rvert}, N) = s')}
 \]
-\vspace{-15pt}
+\end{minipage}
+\vspace{-0pt}
 \caption{Reduction rules for $\lrarrow$, which operate on $(\textit{parsing stack},
 \textit{token list})$ pairs. \textsc{LR Shift}
 advances the input by one token and grows the parsing stack, while
@@ -465,7 +470,7 @@ this algorithm guarantees to find a match at the EOF token.
 Figure~\ref{fig:holub:algorithm} shows a more formal version of this algorithm.
 
 \begin{figure}[tb]
-\begin{adjustbox}{valign=t,minipage=.51\textwidth}
+\begin{adjustbox}{valign=t,minipage=.53\textwidth}
 \begin{lstlisting}[numbers=left,language=Python]
 def holub(pstack, toks):
   while len(toks) > 0:
@@ -478,8 +483,9 @@ def holub(pstack, toks):
   return None
 \end{lstlisting}
 \end{adjustbox}
-\begin{adjustbox}{valign=t,minipage=.47\textwidth}
-\vspace*{-10pt}
+\hspace{5pt}
+\begin{adjustbox}{valign=t,minipage=.45\textwidth}
+\vspace*{-0pt}
 \caption{Our version of the \holub~\cite{holub90compilerdesign} algorithm. This
 panic mode algorithm takes in a (\emph{parsing stack}, \emph{token list})
 pair and returns: a (\emph{parsing stack}, \emph{token list}) pair if
