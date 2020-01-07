@@ -252,7 +252,7 @@ syntactically incorrect, Java programs (Section~\ref{experiment}). \cpctplus is
 able to recover \cpctplussuccessrate of files within a 0.5s timeout and does
 so while reporting well under
 half as many error locations to the user as a traditional panic mode algorithm:
-in other \cpctplus substantially reduces the cascading error problem. Finally,
+in other \lukas{what?} \cpctplus substantially reduces the cascading error problem. Finally,
 we show -- for, as far as we know, the first time -- that advanced error
 recovery can be fairly easily added to a Yacc-esque system, allowing users
 to concisely make fine-grained decisions about what to do when error
@@ -278,7 +278,7 @@ appropriate: we use 0.5s since we think that even the most
 demanding user will tolerate such a delay. We strongly validate this hypothesis.
 Relative to previous approaches, we are the clear beneficiaries of faster, modern
 hardware, which undoubtedly makes it easier to validate this hypothesis.
-However, it it is important to note that we have
+However, it is important to note that we have
 stated a much stronger hypothesis than previous approaches: where
 they have aimed to find only a single minimum cost repair sequence, we
 find the complete set of minimum cost repair sequences, a much more challenging
@@ -474,7 +474,7 @@ Figure~\ref{fig:holub:algorithm} shows a more formal version of this algorithm.
 \begin{lstlisting}[numbers=left,language=Python]
 def holub(pstack, toks):
   while len(toks) > 0:
-    npstack = pstack[:]
+    npstack = pstack.copy()
     while len(npstack) > 0:
       if action(npstack[-1], toks[0]) != <!{\textrm{\textit{error}}}!>:
         return (npstack, toks)
@@ -837,7 +837,7 @@ First, although \corchuelo do not refer to it as such,
 it was clear to us that the most natural way to model the search is as an instance of
 Dijkstra's algorithm. However, rather than use a general queue data-structure (probably based on a
 tree) to discover which element to search next, we use a similar queue data-structure to
-\cite[p.~25]{cerecke03phd}. This consists of one sub-list per cost (i.e.~ the
+\cite[p.~25]{cerecke03phd}. This consists of one sub-list per cost (i.e.~the
 first sub-list contains configurations
 of cost 0, the second sub-list configurations of cost 1 and so on).
 Since we always know what cost we are currently investigating,
@@ -910,7 +910,7 @@ error recovery (Section~\ref{timeout}).
 
 The basic \corchuelo algorithm non-deterministically completes as soon
 as it has found a single minimum cost repair sequence. This is confusing
-in two different ways: the successful repair sequence found can change from run
+in two different ways: the successful repair sequence found can vary from run
 to run; and the successful repair sequence might not match the user's intention.
 
 We therefore introduce the idea of the complete set of repair sequences: that
@@ -981,7 +981,7 @@ duplicate repair sequences are uninteresting from a user perspective, so we
 would have to filter them out later anyway; and each additional merge costs
 memory. We thus have to make sure that merged repair sequences don't accidentally
 suppress insert repairs because one part of the repair sequence ends in a delete
-while the other does not. The simplest way of solving this problem is thus simply to
+while the other does not. The simplest way of solving this problem is thus to
 forbid merging repair sequences if one sequence ends in a delete and the other does not.
 
 Fortunately, implementing compatible configuration merging is simple. We
@@ -1237,7 +1237,7 @@ compare different algorithms: the fewer error locations an algorithm
 reports, the fewer cascading errors it has caused. This comes with an
 important caveat: a nefarious error recovery algorithm could simply skip all
 input after the first error encountered, thus reporting `only' \corpussize
-error locations. Since, for other reasons, we also record the proportion of input skipped,
+error locations (i.e.~one per file). Since, for other reasons, we also record the proportion of input skipped,
 we can confirm that this is not a significant factor in any of the algorithms
 we report on.
 
@@ -1247,13 +1247,13 @@ whether error recovery on the file was successful (true or false); the
 number of error locations; the cost of repair sequences at each
 error location (only if error recovery was successful on the file as a whole);
 and the number of tokens skipped by error recovery (i.e.~how many \emph{delete}
-repairs were applied). Note parsing fails if the timeout is exceeded or
+repairs were applied). Note that parsing fails if the timeout is exceeded or
 if the algorithm runs out of plausible candidate repair sequences.
 We measure the time spent in error recovery with a monotonic wall-clock timer,
 covering all aspects of error recovery from when the main parser first invokes
 error recovery until an updated parsing stack and parsing index are returned
 along with minimum cost repair sequences. The timer is suspended when normal parsing
-restarts and resumed if error recovery is needed again.
+restarts and resumed \lukas{and reset? Does each error has a 0.5s timeout or the file as a whole?} if error recovery is needed again.
 
 In order to test hypothesis H2, we created a variant of \cpctplus called \cpctplusrev,
 collecting the same data as for the other error recovery algorithms.
@@ -1271,14 +1271,14 @@ confidence intervals. We bootstrapped~\cite{efron79bootstrap} our results
 Figure~\ref{fig:results:cpctplus_histogram} shows, our distribution is heavy-tailed,
 we cannot bootstrap naively. Instead, we ran each error recovery algorithm
 \numruns times on each source file; when bootstrapping we randomly sample one of the
-\numruns values collected (i.e.~our bootstapped data contains an entry for every
+\numruns values collected (i.e.~our bootstrapped data contains an entry for every
 file in the experiment; that entry is one of the \numruns values collected for
 that file). The only subtlety is when bootstrapping the mean cost
 size: this value only makes sense if the file was successfully recovered from,
 so we do not sample from runs where error recovery failed.
 
 All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with
-32GiB RAM running Debian 9. We disabled hyperthreading and turbo boost and ran experiments
+32GiB RAM running Debian 9\lukas{Should be 10 by now.}. We disabled hyperthreading and turbo boost and ran experiments
 serially. Our experiments take approximately 4 days to complete. We used Rust
 1.40.0 to compiler \emph{grmtools} (the
 \texttt{Cargo.lock} file necessary to reproduce the build is included in our
@@ -1562,8 +1562,8 @@ hugely important, and our calculator returns the value 5. However,
 given the input `2 +',
 \cpctplus finds a single repair sequence \emph{[Insert Int]}: what should
 a calculator do with an inserted integer? Our naive calculator simply \texttt{panic}s
-(the \texttt{unwrap} in line 17, which is roughly
-equivalent to `raises an exception and then exits') in such a situation.
+(which is roughly equivalent to `raises an exception and then exits') in such a
+situation (the \texttt{unwrap} in Figure \ref{fig:api:naive} on line 17).
 However, there are two alternatives to this rather extreme outcome:
 the semantic action can assume a default value or stop further execution
 of semantic values while allowing parsing to continue. Determining which is the
@@ -1578,7 +1578,7 @@ type\footnote{Equivalents are found in several other languages: Haskell's
 \texttt{Either}; O'Caml's \texttt{result}; or Scala's \texttt{Either}.} is a sum
 type which represents success (\texttt{Ok($\ldots$)}) or error
 (\texttt{Err($\ldots$)}) conditions. We use the \texttt{Ok} case
-to represent `normal' tokens created form user input and the \texttt{Err} case
+to represent `normal' tokens created from user input and the \texttt{Err} case
 to represent tokens inserted by error recovery. Since the \texttt{Result} type
 is widely used in Rust code, users can avail themselves of standard idioms.
 
@@ -1589,7 +1589,7 @@ type \texttt{T} to \texttt{Result<T, ()>} (where `()' is Rust's unit type). When
 rule cannot produce a value, for whatever reason, it simply returns
 \texttt{Err(())}. It is then, deliberately, fairly easy to use with the
 \texttt{Result<Lexeme, Lexeme>} type: for tokens whose value we absolutely
-require, we map the \texttt{Err(Lexeme)} case to \texttt{Err())} with the
+require, we map the \texttt{Err(Lexeme)} case to \texttt{Err(())} with the
 (standard, if mildly clunky) idiom `\texttt{\$n.map\_err(|\_| ())?}'. In essence,
 this first says `if \$n is an \texttt{Err(Lexeme)}, convert it to
 \texttt{Err(())}' (with \texttt{map\_err}) and then `if we have
@@ -1685,7 +1685,7 @@ overview of many members of the \fischer family. Both
 must be supplemented with more recent works.
 
 The biggest limitation of error recovery algorithms in the
-\fischer family is that they find repairs at the
+\fischer family \lukas{(including CPCT+)} is that they find repairs at the
 point that an error is discovered, which may be later in the file than the cause
 of the error. Thus even when they successfully recover from an error, the repair
 sequence reported may be very different from the fix the user considers
@@ -1712,7 +1712,7 @@ the data~\cite[p.~8]{santos18syntax}) whereas we attempt to fix errors which
 span multiple tokens. It is thus difficult to directly compare their results to
 ours. However, by the high bar they have set themselves, they are able to repair
 52\% of single-token errors (i.e.~about 30\% of all possible errors; for
-reference, CPCT+ repairs \cpctplussuccessrate of files).
+reference, CPCT+ repairs \cpctplussuccessrate of files \lukas{hard for the reader to compare x\% errors to x\% files}).
 
 As \cpctplusrev shows, choosing an inappropriate repair sequence during
 error recovery leads to cascading errors. The noncorrecting error recovery approach
@@ -1769,7 +1769,7 @@ pruning mechanisms.
 The most radical member of the \fischer family is that
 of~\cite{kimyi10astar}\footnote{In an earlier online draft of this paper we
 stated that this algorithm has a fundamental flaw. We now believe this was
-due to our incorrectly assuming that the `delete' optimisation of \corchuelo
+due to us incorrectly assuming that the `delete' optimisation of \corchuelo
 applied to \cite{kimyi10astar}. We apologise to the authors for this
 mistake.}. This uses the A* algorithm, and a precomputed distance table to
 quickly generate repair sequences in the vein of \corchuelo.
@@ -1781,7 +1781,7 @@ an earlier online draft, we created \mf, an algorithm which
 extends \cpctplus with ideas from \cite{kimyi10astar} at the cost of
 significant additional complexity. With the benefit of hindsight, we do not
 consider \mf's relatively small benefits over \cpctplus to be worth that
-additional complexity.
+additional complexity. \lukas{Do we have any numbers we can compare here?}
 
 \cpctplus takes only the grammar and token types into account. However,
 it is possible to use additional information, such as nesting (e.g.~taking into
@@ -1832,6 +1832,8 @@ manually marked up, though the approach has
 various techniques to lessen the problem of maintaining messages as a grammar
 evolves.
 
+\lukas{worth mentioning Wagner's history based error recovery?}
+
 Many compilers and editors have hand-written parsers with hand-written error
 recovery. Though generally ad-hoc in their approach, it is possible, with
 sufficient effort, to make them perform well. However, this comes at
@@ -1866,7 +1868,7 @@ add, annotations is a difficult task and the two algorithms presented have
 different trade-offs: the \emph{Standard} algorithm adds more annotations,
 leading to better quality error recovery, but is more likely to change
 the input language accepted; the \emph{Unique}
-algorithm adds fewer annotations, leaving to poorer quality error recovery, but
+algorithm adds fewer annotations, leading to poorer quality error recovery, but
 does not affect the language accepted. The quality of error recovery of the
 Unique algorithm, in particular, is heavily dependent on the input grammar: it works
 well on some (e.g.~Pascal) but less well on others (e.g.~Java). In cases
