@@ -252,7 +252,7 @@ syntactically incorrect, Java programs (Section~\ref{experiment}). \cpctplus is
 able to recover \cpctplussuccessrate of files within a 0.5s timeout and does
 so while reporting well under
 half as many error locations to the user as a traditional panic mode algorithm:
-in other \lukas{what?} \cpctplus substantially reduces the cascading error problem. Finally,
+in other words, \cpctplus substantially reduces the cascading error problem. Finally,
 we show -- for, as far as we know, the first time -- that advanced error
 recovery can be fairly easily added to a Yacc-esque system, allowing users
 to concisely make fine-grained decisions about what to do when error
@@ -1250,10 +1250,11 @@ and the number of tokens skipped by error recovery (i.e.~how many \emph{delete}
 repairs were applied). Note that parsing fails if the timeout is exceeded or
 if the algorithm runs out of plausible candidate repair sequences.
 We measure the time spent in error recovery with a monotonic wall-clock timer,
-covering all aspects of error recovery from when the main parser first invokes
+covering the time from when the main parser first invokes
 error recovery until an updated parsing stack and parsing index are returned
 along with minimum cost repair sequences. The timer is suspended when normal parsing
-restarts and resumed \lukas{and reset? Does each error has a 0.5s timeout or the file as a whole?} if error recovery is needed again.
+restarts and resumed if error recovery is needed again (i.e.~the timeout applies
+to the file as a whole).
 
 In order to test hypothesis H2, we created a variant of \cpctplus called \cpctplusrev,
 collecting the same data as for the other error recovery algorithms.
@@ -1278,7 +1279,7 @@ size: this value only makes sense if the file was successfully recovered from,
 so we do not sample from runs where error recovery failed.
 
 All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with
-32GiB RAM running Debian 9\lukas{Should be 10 by now.}. We disabled hyperthreading and turbo boost and ran experiments
+32GiB RAM running Debian 10. We disabled hyperthreading and turbo boost and ran experiments
 serially. Our experiments take approximately 4 days to complete. We used Rust
 1.40.0 to compiler \emph{grmtools} (the
 \texttt{Cargo.lock} file necessary to reproduce the build is included in our
@@ -1685,7 +1686,7 @@ overview of many members of the \fischer family. Both
 must be supplemented with more recent works.
 
 The biggest limitation of error recovery algorithms in the
-\fischer family \lukas{(including CPCT+)} is that they find repairs at the
+\fischer family (including \cpctplus) is that they find repairs at the
 point that an error is discovered, which may be later in the file than the cause
 of the error. Thus even when they successfully recover from an error, the repair
 sequence reported may be very different from the fix the user considers
@@ -1711,8 +1712,7 @@ consider errors which can be fixed by a single token, discarding 42\% of
 the data~\cite[p.~8]{santos18syntax}) whereas we attempt to fix errors which
 span multiple tokens. It is thus difficult to directly compare their results to
 ours. However, by the high bar they have set themselves, they are able to repair
-52\% of single-token errors (i.e.~about 30\% of all possible errors; for
-reference, CPCT+ repairs \cpctplussuccessrate of files \lukas{hard for the reader to compare x\% errors to x\% files}).
+52\% of single-token errors.
 
 As \cpctplusrev shows, choosing an inappropriate repair sequence during
 error recovery leads to cascading errors. The noncorrecting error recovery approach
@@ -1780,8 +1780,9 @@ grammars (e.g.~Lua, PHP) make use of ambiguity resolution. In
 an earlier online draft, we created \mf, an algorithm which
 extends \cpctplus with ideas from \cite{kimyi10astar} at the cost of
 significant additional complexity. With the benefit of hindsight, we do not
-consider \mf's relatively small benefits over \cpctplus to be worth that
-additional complexity. \lukas{Do we have any numbers we can compare here?}
+consider \mf's relatively small benefits (e.g.~reducing the failure rate by
+approximately an additional 0.5\%) to be worth that
+additional complexity.
 
 \cpctplus takes only the grammar and token types into account. However,
 it is possible to use additional information, such as nesting (e.g.~taking into
@@ -1831,8 +1832,6 @@ valid here''). This involves significant manual work, as every parser state
 manually marked up, though the approach has
 various techniques to lessen the problem of maintaining messages as a grammar
 evolves.
-
-\lukas{worth mentioning Wagner's history based error recovery?}
 
 Many compilers and editors have hand-written parsers with hand-written error
 recovery. Though generally ad-hoc in their approach, it is possible, with
