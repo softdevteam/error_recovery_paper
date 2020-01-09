@@ -30,9 +30,13 @@ softdevbib:
 # Package up the paper for arxiv.org.
 ARXIV_FILES=graph.pdf \
 		cpctplus.pdf \
-		mf_histogram.pdf \
-		mf_mfrev_error_locs_histogram_full.pdf \
-		mf_mfrev_error_locs_histogram_zoomed.pdf \
+		examplegrammar.pdf \
+		cpctplus_histogram.pdf \
+		cpctplus_cpctplusrev_error_locs_histogram_zoomed.pdf \
+		cpctplus_cpctplusrev_error_locs_histogram_full.pdf \
+		orcid.pdf \
+		cc-by.pdf \
+		lipics-logo-bw.pdf \
 		softdev.sty \
 		bib.bib \
 		error_recovery.bbl \
@@ -72,6 +76,7 @@ ${ARXIV_BASE}: error_recovery.pdf
 	mkdir $@
 	rsync -Rav ${ARXIV_FILES} $@
 	cp error_recovery.ltx $@/error_recovery.tex
+	cp lipics-v2019.cls $@/lipics-v2019.cls
 	zip -r $@.zip ${ARXIV_BASE}
 
 clean-arxiv:

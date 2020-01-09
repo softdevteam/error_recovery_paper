@@ -10,7 +10,7 @@
 \usepackage{booktabs}
 \usepackage{listings}
 \usepackage{multicol}
-\usepackage{natbib}
+\usepackage[numbers]{natbib}
 \usepackage[autolanguage]{numprint}
 \usepackage{proof}
 \usepackage{softdev}
@@ -1819,7 +1819,7 @@ identifier or a keyword?); ambiguity is, in general, undecidable
 and even the best ambiguity heuristics
 fail to find all ambiguous parts of a grammar~\cite{vasudevan13detecting};
 and resolving those ambiguities can make the parser context
-sensitive~\cite{eijck__lets_accept_rejects}. Other possibilities are to
+sensitive~\cite{eijck07accept}. Other possibilities are to
 intermingle parsing and lexing (see e.g.~\cite{wyk07context}) or to allow
 `fuzzy' or partial matching of tokens (see~\cite[p.~8]{vanter00displaying}).
 
