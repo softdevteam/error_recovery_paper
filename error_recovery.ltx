@@ -1635,7 +1635,7 @@ the second option).
 \label{sec:threats}
 
 Although it might not be obvious at first, \cpctplus is
-non-deterministic, which can lead to surprising
+non-deterministic, which can lead to
 different results from one run to the next. The root cause of this problem is
 that multiple repair sequences may have identical effects up to
 $N_\textit{try}$ tokens, but cause different effects after that value.
@@ -1781,7 +1781,7 @@ quickly generate repair sequences in the vein of \corchuelo.
 unambiguous. However, Yacc systems allow ambiguous stategraphs and provide a means for
 resolving those ambiguities when creating the statetable. Many real-world
 grammars (e.g.~Lua, PHP) make use of ambiguity resolution. In
-an earlier online draft, we created \mf, an algorithm which
+an earlier online draft, we created \mf, a statetable-based algorithm which
 extends \cpctplus with ideas from \cite{kimyi10astar} at the cost of
 significant additional complexity. With the benefit of hindsight, we do not
 consider \mf's relatively small benefits (e.g.~reducing the failure rate by
@@ -1897,8 +1897,7 @@ to estimate the effort involved, or what issues may be uncovered.
 
 In this paper we have shown that error recovery algorithms in the
 \fischer family can run fast enough to be usable in the real
-world, and that they produce significantly better results than traditional
-panic mode. Furthermore, extending such algorithms to produce the complete set of
+world. Extending such algorithms to produce the complete set of
 minimum cost repair sequences allows parsers to provide better feedback to
 users, as well as significantly reducing the cascading error problem.
 The \cpctplus algorithm is simple to implement (less than 500LoC in our
