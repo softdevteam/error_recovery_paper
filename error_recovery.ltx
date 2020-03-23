@@ -708,8 +708,8 @@ unclear whether non-uniform token costs are useful in practise
 \subsection{Ensuring that minimum cost repair sequences aren't missed}
 \label{corchuelo:kimyi}
 
-\textsc{CR Shift 1} has two flaws which prevent it from generating
-all possible minimum cost repair sequences.
+\textsc{CR Shift 1} (see Figure~\ref{fig:corchuelo:reductions}) has two flaws
+which prevent it from generating all possible minimum cost repair sequences.
 
 \begin{figure}[tb]
 \small
@@ -797,17 +797,16 @@ minimum cost repair sequences on top those found by \textsc{CR Shift 2} (i.e.~6 
 \label{fig:crshift2:example}
 \end{figure}
 
-First, \textsc{CR Shift 1} requires at least one token to be shifted. However,
-after a non-shift repair, all that may be needed to reach a useful next configuration,
-or an \textit{accept} state, is one or more reductions/gotos via
-\textsc{LR Reduce}. \textsc{CR Shift 2} in Figure~\ref{fig:corchuelo:kimyi}
+First, \textsc{CR Shift 1} always consumes input, missing intermediate
+configurations (including \textit{accept} states!) that only require
+reductions/gotos to be performed. \textsc{CR Shift 2} in Figure~\ref{fig:corchuelo:kimyi}
 shows the two-phase fix which addresses this problem.
 We first change the condition $0 < j \leq N_\textit{shifts}$ to $0 \leq j \leq
-N_\textit{shifts}$ (i.e.~we don't force the LR parser to consume any tokens).
-However, this then opens the possibility of an infinite loop. We avoid this by
-saying that, if the input is not advanced, the parsing stack must have changed.
-Put another way, in either case we require progress
-to be made, even if that progress does not require consuming any input.
+N_\textit{shifts}$ so that the parser can make progress without consuming
+input. However, this opens the possibility of an infinite loop, so
+we then add a condition that if no input is consumed, the parsing stack
+must have changed. In other words, we require progress
+to be made, whether or not that progress involved consuming input or not.
 
 Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
 at a time. This causes them to skip intermediate
@@ -883,12 +882,10 @@ configurations are, in general, searched for successors extremely quickly. Thus
 if we attempt to seed threads with initial sets of configurations, some threads
 quickly run out of work whilst others have ever growing queues. If,
 alternatively, we have a single global queue then significant amounts of time
-can be spent adding or removing configurations in a thread-safe manner. This
-suggests that the right approach is likely to be a combination of the two
-approaches: threads would have a local queue which, if it gets too full,
-would be partly emptied into a global queue, from which otherwise idle threads
-can find new work. As we shall see in Section~\ref{experiment}, \cpctplus runs
-fast enough that the additional complexity of such an approach is not, in our
+can be spent adding or removing configurations in a thread-safe manner.
+A work stealing algorithm might solve this problem but, as we shall see in
+Section~\ref{experiment}, \cpctplus runs fast enough that the additional
+complexity of such an approach is not, in our
 opinion, justified.
 
 
@@ -941,7 +938,7 @@ sequences can be extremely expensive because there may
 be many remaining configurations in $c$, which may, transitively, have many neighbours.
 Our solution to this performance problem is to merge together \emph{compatible}
 configurations on-the-fly, preserving their distinct repair sequences while
-still reducing the search space. Two configurations are compatible if:
+reducing the search space. Two configurations are compatible if:
 
 \begin{enumerate}
 \item their
@@ -1216,7 +1213,7 @@ randomly selected source files from Blackbox's database (following the lead of
 \cite{santos18syntax}, we selected data from Blackbox's beginning until the end
 of 2017-12-31). We then ran such source files through our Java 1.7 lexer. We immediately
 rejected files which didn't lex, since such files cannot be considered
-for parsing.\footnote{Happily, this also excludes outputs which can't
+for parsing.\footnote{Happily, this also excludes files which can't
 possibly be Java source code. Some odd things are pasted into text
 editors.} We then parsed candidate files with our Java grammar and rejected any
 which did parse successfully, since there is little point running an error
@@ -1623,10 +1620,10 @@ criteria, so we add \texttt{\%avoid\_insert "INT"} to the grammar. We then
 make a simple change to the repair sequence ranking of
 Section~\ref{rankingrepairs} such that the final list of repair sequences is
 sorted with inserts of such tokens at the bottom of the list. In our case, this
-means that we deterministically always select \emph{Delete +} as the repair
-sequence to apply to the input `2 + + 3' (though note that we still present the
-\emph{Insert Int} repair sequence to the user, simply ranking it consistently as
-the second option).
+means that we always select \emph{Delete +} as the repair
+sequence to apply to the input `2 + + 3' (the
+\emph{Insert Int} repair sequence is always presented as the second
+option).
 
 
 \section{Threats to validity}
