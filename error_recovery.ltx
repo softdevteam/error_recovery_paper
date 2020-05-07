@@ -1627,6 +1627,94 @@ sequence to apply to the input `2 + + 3' (the
 option).
 
 
+\subsection{Turning lexing errors into parsing errors}
+
+
+\begin{figure}[t]
+\begin{minipage}{0.27\textwidth}
+\begin{tabular}{p{0.05\textwidth}p{0.48\textwidth}}
+\begin{subfigure}{0.02\textwidth}
+\caption{}
+\label{lst:lexerror:lexfile}
+\end{subfigure}
+&
+\begin{minipage}[t]{0.83\textwidth}
+\vspace{-13.5pt}
+\begin{lstlisting}[language=Java]
+. "ERRORTOKEN"
+\end{lstlisting}
+\end{minipage}
+\\
+\begin{subfigure}{0.02\textwidth}
+\caption{}
+\label{lst:lexerror:yaccfile}
+\end{subfigure}
+&
+\begin{minipage}[t]{0.83\textwidth}
+\vspace{-13.5pt}
+\begin{lstlisting}
+ErrorRule -> ():
+  "ERRORTOKEN" { } 
+  ;
+\end{lstlisting}
+\end{minipage}
+\end{tabular}
+\end{minipage}
+%
+\begin{minipage}{0.70\textwidth}
+\vspace{5.5pt}
+\begin{tabular}{p{0.02\textwidth}p{0.48\textwidth}}
+\begin{subfigure}{0.02\textwidth}
+\caption{}
+\label{lst:lexerror:output}
+\end{subfigure}
+&
+\begin{minipage}[t]{0.93\textwidth}
+\vspace{-13.5pt}
+\begin{lstlisting}
+>>> 2@3+4
+Parsing error at line 1 column 2. Repair sequences found:
+   1: Insert +, Delete @
+   2: Insert *, Delete @
+   3: Delete @, Delete 3
+Result: 9
+\end{lstlisting}
+\end{minipage}
+\end{tabular}
+\end{minipage}
+\vspace{-10pt}
+\caption{A simple way of turning lexing errors into parsing errors in
+\emph{grmtools}. First, we add an \texttt{ERRORTOKEN} which matches any input
+to the end of the Lex file (\subref{lst:lexerror:lexfile}). Second, we add a
+rule \texttt{ErrorRule} to the Yacc grammar referencing \texttt{ERRORTOKEN}
+(\subref{lst:lexerror:yaccfile}). Note that \texttt{ErrorRule} must not be
+referenced by any other rule in the Yacc grammar. With those two steps
+complete, even input with lexing errors such as `2@3+4' invokes normal error
+recovery (\subref{lst:lexerror:output}).}
+\label{lst:lexerror}
+\end{figure}
+
+In most traditional parsing systems, lexing errors are distinct from parsing
+errors: only files which can be fully lexed can be parsed. This is confusing
+for users, who are often unaware of the distinction between these two phases.
+To avoid this, we lightly adapt the idea of \emph{error tokens} from
+incremental parsing~\cite[p.~99]{wagner98practicalalgorithms}. In essence, any
+input which cannot be lexed is put into a token whose type is not referenced in
+the normal grammar. This guarantees that all possible input lexes without
+error and, when the parser encounters an error token, normal error recovery
+commences.
+
+A basic, but effective, version of this requires no special support from
+\emph{grmtools} as shown in Figure~\ref{lst:lexerror}. First, we add a rule to
+the lexer to match each invalid input character into its own error token.
+Second, since \emph{grmtools} requires that all tokens defined in the lexer are
+referenced in the grammar, we add a dummy rule to the grammar that references
+the token (making sure not to reference this rule elsewhere in the grammar).
+These two steps are sufficient to ensure that users always see the same style
+of error messages, and the same style of error recovery, no matter whether they
+made a lexing or a parsing error.
+
+
 \section{Threats to validity}
 \label{sec:threats}
 
@@ -1804,22 +1892,6 @@ we never generate ambiguous strings). However, there are also major
 differences: LR parsers are significantly simpler to implement than GLR parsers;
 and the \fischer family of algorithms do not require manually
 annotating, or statically increasing the size of, the grammar.
-
-The approach we have taken in this paper can only repair errors on files which
-are fully lexed. Since many users are unaware of the distinction between these
-two stages, this can cause confusion: a minor lexing error does not lead to any
-parsing errors. Looked at another way, fixing a single lexing error can,
-surprisingly, lead to a slew of parsing errors being reported. Scannerless
-parsing~\cite{salomon89scannerless} is one solution to this problem, since there
-is no distinction between lexing and parsing. However, scannerless parsing
-introduces new trade-offs: it is inherently ambiguous (e.g.~is `if' an
-identifier or a keyword?); ambiguity is, in general, undecidable
-and even the best ambiguity heuristics
-fail to find all ambiguous parts of a grammar~\cite{vasudevan13detecting};
-and resolving those ambiguities can make the parser context
-sensitive~\cite{eijck07accept}. Other possibilities are to
-intermingle parsing and lexing (see e.g.~\cite{wyk07context}) or to allow
-`fuzzy' or partial matching of tokens (see~\cite[p.~8]{vanter00displaying}).
 
 A different approach to error recovery is that taken by~\cite{pottier16reachability}: rather
 than try and recover from errors directly, it reports in natural language
