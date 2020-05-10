@@ -97,7 +97,7 @@ errors that drown out the original. More advanced error recovery techniques
 suffer less from this problem but have seen little practical use because
 their typical performance was seen as poor, their worst case unbounded, and the
 repairs they reported arbitrary. In this paper we introduce an algorithm
-and implementation that addresses these issues. First, we
+and implementation that address these issues. First, we
 report the complete set of minimum cost repair sequences for a given location, allowing
 programmers to select the one that best fits their intention. Second, on a
 corpus of \corpussize real-world syntactically invalid Java programs, we are
@@ -116,7 +116,7 @@ Programming is a humbling job which requires acknowledging that we will make
 untold errors in our quest to perfect a program. Most troubling are semantic
 errors, where we intended the program to do one thing, but it does another. Less
 troubling, but often no less irritating, are syntax errors, which are
-(generally minor) deviances from the exacting syntax required by a compiler.
+generally minor deviances from the exacting syntax required by a compiler.
 So common are syntax errors that parsers in modern compilers are designed
 to cope with us making several: rather than stop on the first syntax error, they attempt
 to \emph{recover} from it. This allows them to report, and us to fix, all our
@@ -134,7 +134,7 @@ synchronisation token. Such strategies are often unsuccessful,
 leading to a
 cascade of spurious syntax errors (see
 Figure~\ref{fig:javaerror} for an example). Programmers quickly learn that
-only the location of the first error in a file -- not the reported repair, nor the position of
+only the location of the first error in a file -- not the reported repair, nor the location of
 subsequent errors -- can be relied upon to be accurate.
 
 \begin{figure}[t]
@@ -214,8 +214,7 @@ entirely (`\texttt{int x;}'), or insert a comma
 \label{fig:javaerror}
 \end{figure}
 
-A handful of parsers contain hand-written error recovery algorithms
-for specific languages.
+It is possible to hand-craft error recovery algorithms for a specific language.
 These generally allow better recovery from errors, but are challenging
 to create. For example, the Java error recovery approach in the Eclipse IDE is 5KLoC long,
 making it only slightly smaller than a modern version of Berkeley Yacc --- a
@@ -245,10 +244,11 @@ location, and the algorithm has no way of knowing which best matches the user's 
 
 In this paper we introduce a new error recovery algorithm in the \fischer
 family, \cpctplus. This takes the approach of \corchuelo~\cite{corchuelo02repairing}
-as a base, corrects it, and then substantially expands it. \cpctplus is simple
-to implement (under 500 lines of Rust code), is able to repair
-nearly all errors in reasonable time, and reports the
-complete set of minimum cost repair sequences to users.
+as a base, corrects it, expands it, and optimises its implementation.
+\cpctplus is simple to implement (under 500 lines of Rust code), is able to repair
+nearly all errors in reasonable time, reports the
+complete set of minimum cost repair sequences to users, and does so
+in less time than \corchuelo.
 
 We validate \cpctplus on a corpus of \corpussize real,
 syntactically incorrect, Java programs (Section~\ref{experiment}). \cpctplus is
@@ -258,8 +258,8 @@ half as many error locations to the user as a traditional panic mode algorithm:
 in other words, \cpctplus substantially reduces the cascading error problem. Finally,
 we show -- for, as far as we know, the first time -- that advanced error
 recovery can be fairly easily added to a Yacc-esque system, allowing users
-to concisely make fine-grained decisions about what to do when error
-recovery has altered an input (Section~\ref{sec:api}). We believe that this
+to make fine-grained decisions about what to do when error
+recovery has been applied an input (Section~\ref{sec:api}). We believe that this
 shows that algorithms such as \cpctplus are ready for wider
 usage, either on their own, or as part of a multi-phase recovery system.
 
@@ -279,23 +279,16 @@ recovery per file, with a threshold of 1s. Since many compilers are able to
 fully execute in less time than this, we felt that a tighter threshold is more
 appropriate: we use 0.5s since we think that even the most
 demanding user will tolerate such a delay. We strongly validate this hypothesis.
-Relative to previous approaches, we are the clear beneficiaries of faster, modern
-hardware, which undoubtedly makes it easier to validate this hypothesis.
-However, it is important to note that we have
-stated a much stronger hypothesis than previous approaches: where
-they have aimed to find only a single minimum cost repair sequence, we
-find the complete set of minimum cost repair sequences, a much more challenging
-task.
 
-The complete set of minimum cost repair sequences makes it much more likely that
-the programmer will see a repair sequence that best matches their original
+The complete set of minimum cost repair sequences makes it more likely that
+the programmer will see a repair sequence that matches their original
 intention (see Figure~\ref{fig:javaerror} for an example; Appendix~\ref{app:examples}
 contains further examples in Java, Lua, and PHP). It also opens up a
-new opportunity for error recovery algorithms. Previous error recovery
+new opportunity. Previous error recovery
 algorithms find a single repair sequence, apply that to the input, and then
 continue parsing. While that repair sequence may have been a reasonable local
 choice, it may cause cascading errors later. Since we have the complete set of
-minimum cost repair sequences available, we can select from them a repair sequence
+minimum cost repair sequences available, we can select from that set a repair sequence
 which causes fewer cascading errors. We thus
 rank repair sequences by how far they allow parsing to continue successfully
 (up to a threshold --- parsing the whole file would, in general, be too costly),
@@ -303,9 +296,8 @@ and choose from the subset that gets furthest (note that the time required to do
 this is included in the 0.5s timeout). We thus also test a second hypothesis:
 
 \begin{description}
-  \item[H2] The cascading error problem can be significantly reduced by ranking
-the complete set of minimum cost repair sequences and choosing from those which
-allow parsing to continue the furthest.
+  \item[H2] Ranking the set of repair sequences and choosing those which are
+    locally superior reduces the global cascading error problem.
 \end{description}
 
 We also strongly validate this hypothesis. We do this by comparing `normal' \cpctplus
@@ -320,7 +312,8 @@ This paper is structured as follows. We describe the \corchuelo algorithm
 (Section~\ref{corchuelo}), filling in missing details from the original description
 and correcting its definition. We then expand the algorithm into \cpctplus
 (Section~\ref{corchueloplus}). We then validate \cpctplus on a corpus of \corpussize real,
-syntactically incorrect, Java programs (Section~\ref{experiment}). To
+syntactically incorrect, Java programs comparing it to implementations
+of panic mode and \corchuelo (Section~\ref{experiment}). To
 emphasise that our algorithms are grammar-neutral, we show examples of
 error recovery on different grammars in Appendix~\ref{app:examples}.
 
@@ -331,7 +324,7 @@ We assume a high-level understanding of the mechanics of parsing in this paper,
 but in this section we provide a handful of definitions, and a brief refresher
 of relevant low-level details, needed to understand the rest of this paper.
 Although the parsing tool we created for this paper is written in Rust, we
-appreciate that this is still an unfamiliar language to most readers: algorithms
+appreciate that this is still an unfamiliar language to many readers: algorithms
 are therefore given in Python which, we hope, is familiar to most.
 
 Although there are many flavours of parsing, the \fischer family
@@ -456,15 +449,15 @@ between algorithms are thus in what modifications they can carry out
 carry such modifications out.
 
 The simplest grammar-neutral error recovery algorithms are called `panic mode'
-algorithms. The precise origin of this family of algorithms seems lost in time;
+algorithms. The origin of this family of algorithms seems lost in time;
 there are also more members of this family for LL parsing than there are for
 LR parsing. Indeed, for LR parsing, there is only one fundamental way of creating
 a grammar-neutral panic mode algorithm: we take our formulation from
-\holub~\cite[p.~348]{holub90compilerdesign}.\footnote{Note that step 2 in
+\holub~\cite[p.~348]{holub90compilerdesign}\footnote{Note that step 2 in
 \holub causes valid repairs to be missed: while it is
 safe to ignore the top element of the parsing stack on the first iteration of
 the algorithm, as soon as one token is skipped, one must check all elements of
-the parsing stack. Our description simply drops step 2 entirely.} It works by
+the parsing stack. Our description simply drops step 2 entirely.}. It works by
 taking the parsing stack and popping elements to
 see if an earlier part of the stack is able to parse the next input symbol. If
 no element in the stack is capable of parsing the next input symbol, the input
@@ -514,14 +507,14 @@ error algorithm to complete, and parsing resumes with a stack [0, 2].
 
 The fundamental problem with error recovery can be seen from the above example:
 the adjustment made to the parsing stack is not one that the user can
-replicate. Looked at another way, error recovery is a \emph{Deus ex
-machina}: while panic mode managed to recover from the error, the only
+replicate. Looked at another way, error recovery with panic mode is a \emph{Deus ex
+machina}: the only
 general way to report what was done is to show the parsing stack
-before and after recovery: this is challenging to interpret for small grammars
+before and after recovery which is challenging to interpret for small grammars
 like that of Figure~\ref{fig:exprgrammar} and completely impractical for
-anything larger. There is an important corollary to this: since the recoveries
-made often don't match anything the user could have passed as input, they
-are often of poor quality, leading to a cascade of further
+anything larger. There is an important corollary to this: panic mode
+often leads to a state that no input from the user could have reached,
+making it more likely that resuming parsing will lead to a cascade of further
 parsing errors (as we will see later in Section~\ref{results}).
 
 
@@ -552,13 +545,14 @@ to find a minimum cost repair sequence consisting of: \textit{insert T}
 or \textit{shift} (`parse the token at the current offset'). The
 algorithm completes: successfully if it reaches an accept state or shifts
 `enough' tokens ($N_\textit{shifts}$, set at 3 in \corchuelo);
-or unsuccessfully if it deletes and inserts `too many' tokens ($N_\textit{total}$, set at 10
+or unsuccessfully if a repair sequence contains too many delete or insert repairs (set at 3 and 4
+respectively in \corchuelo) or spans `too much' input ($N_\textit{total}$, set at 10
 in \corchuelo). Repair sequences are reported back to users
 with trailing \emph{shift} repairs pruned i.e.~[\emph{insert x, shift y, delete
 z, shift a, shift b, shift c}] is reported as [\emph{insert x, shift y, delete
 z}].
 
-In order to find repair sequences, the algorithm keeps a queue of
+In order to find repair sequences, the algorithm keeps a breadth-first queue of
 \emph{configurations}, each of which represents a different search state;
 configurations are searched for their neighbours until a successful configuration
 is found. The cost of a configuration is the cumulative cost of the repairs
@@ -830,13 +824,14 @@ Figure~\ref{fig:crshift2:example} shows an example input where \textsc{CR Shift
 \subsection{Implementation considerations}
 \label{corchuelo:implementation}
 
+\label{cactusconfigurations}
 The definitions we have given thus far do not obviously lead to
 an efficient implementation and \corchuelo give few useful
 hints. We found that two techniques were both
 effective at improving performance while being simple to implement.
 
-First, although \corchuelo do not refer to it as such,
-it was clear to us that the most natural way to model the search is as an instance of
+First, \corchuelo suggest using a breadth-first search but give no
+further details. It was clear to us that the most natural way to model the search is as an instance of
 Dijkstra's algorithm. However, rather than use a general queue data-structure (probably based on a
 tree) to discover which element to search next, we use a similar queue data-structure to
 \cite[p.~25]{cerecke03phd}. This consists of one sub-list per cost (i.e.~the
@@ -852,10 +847,10 @@ data-structure is a good fit because costs in our setting are always small
 grammars) and each neighbour generated from a configuration with cost $c$ has
 a cost $\geq c$.
 
-\label{cactusconfigurations}
-Second, we do not use lists to represent parsing stacks and repair sequences
-as Figure~\ref{fig:corchuelo:algorithm} may suggest. We found
-that this representation consumes noticeably more memory, and is slightly less
+Second, since error recovery frequently adjusts and resets parsing stacks and
+repair sequences, during error recovery we do not represent these as lists (as
+is the case during normal parsing). We found that lists consume noticeably more
+memory, and are slightly less
 efficient, than using parent pointer trees (often called `cactuses').
 Every node in such a tree has a reference to a single parent (or \texttt{null} for the
 root node) but no references to child nodes. Since our implementation is written
@@ -874,7 +869,7 @@ suspect this representation is always likely to be a reasonable choice, it is
 difficult to generalise from our experience whether it will always be the best
 in other contexts, in particular for garbage collected languages.
 
-One seemingly obvious further improvement is to split the search into parallel threads. However,
+One seemingly obvious improvement is to split the search into parallel threads. However,
 we found that the nature of the problem means that parallelisation is more
 tricky, and less productive, than might be expected. There are two related
 problems: we cannot tell in advance if a given
@@ -959,8 +954,8 @@ ends in a delete.
 \noindent The first of these conditions is a direct consequence of the fact that a configuration
 is deemed successful if it ends in $N_\textit{shifts}$ shift
 repairs. When we merge configurations, one part of the merge is `dominant'
-(i.e.~checked for $N_\textit{shifts}$) and the other `subsumed'. Thus we have to
-maintain symmetry between the dominant and subsumed parts to prevent the
+(i.e.~checked for $N_\textit{shifts}$) and the other `subsumed': we have to
+maintain symmetry between the two to prevent the
 dominant part accidentally preventing the subsumed part from being recorded as
 successful. In other words, if the dominant part of the merge had fewer shifts
 at the end of its repair sequence than the subsumed part, then the
@@ -991,14 +986,12 @@ and thus allows list-like integer indexing as well as hash-based lookups.}. This
 near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 filters out duplicates with near-identical performance to an unordered hashset.
 We then make use of a simply property of hashsets: an object's hash behaviour
-need only be a non-strict subset of its equality behaviour. In other words,
-while we need to ensure that two objects that compare equal always map to the
-same hash, we can allow two objects that do not compare equal to map to the
-same hash. In our context, this allows us to quickly find potentially compatible
-nodes using hashing, checking for definitely compatible configurations
-using equality. We therefore hash configurations based solely on their parsing stack
-and remaining input whereas configuration equality is based on a configurations'
-parsing stacks, remaining input, and repair sequences.
+need only be a non-strict subset of its equality behaviour. Configuration
+hashing is based solely on a configurations' parsing stack and remaining input
+giving us a fast way of finding configurations that are are compatible under
+conditions \#1 (identical parsing stacks) and \#2 (identical input remaining).
+As well as checking these two conditions, configuration equality also checks
+condition \#3 (compatible repair sequences) in configuration equality.
 
 Conceptually, merging two configurations together is simple: each configuration
 needs to store a set of repair sequences, each of which is updated as further
@@ -1099,11 +1092,13 @@ of $N_\textit{shifts}$, some, but not others, may perform poorly beyond that
 range. This problem is exacerbated by the fact that $N_\textit{shifts}$ has
 to be a fairly small integer (we use 3, the value suggested by \corchuelo)
 since each additional token searched exponentially increases the
-search space. From a user perspective this can mean that some members
-of the complete set of minimum cost repair sequences can appear to be of much
-lower quality than others.
+search space. Thus while all repair sequences found may be locally
+equivalent, when considered in the context of the entire input, some may be
+better than others. While it is, in general, impractically slow to determine
+which repair sequences are the global best, we can quickly determine which are
+better under a wider definition of `local'.
 
-In order to lessen this problem, we rank configurations which represent the
+We thus rank configurations which represent the
 complete set of minimum cost repair sequences by how far they allow parsing to continue, up to a limit of
 $N_\textit{try}$ tokens (which we somewhat arbitrarily set at 250). Taking
 the furthest-parse point as our top rank, we then discard all configurations
@@ -1137,13 +1132,14 @@ The final part of \cpctplus relates to the use of $N_\textit{total}$ in
 \corchuelo. As with all members of the
 \fischer family, \cpctplus is not only unbounded in
 time~\cite[p.~14]{mckenzie95error}, but
-also unbounded in memory. $N_\textit{total}$ is an attempt to stop the
-algorithm from running unacceptably long by limiting how much input the
-algorithm will consider for modification. Unfortunately it is impossible to find
-a good value for this, as `too long' is entirely dependent on the grammar and
-erroneous input: Java's grammar, for example, is large with a commensurately
-large search space while Lua's grammar is small with a commensurately small
-search space.
+also unbounded in memory. In an attempt to combat this, \corchuelo limits
+repair sequences to a maximum of 3 deletes and 4 inserts and a span of at most
+10 tokens, attempting to stop the search from going too far. Unfortunately it
+is impossible to find good values for these constants, as `too far' is entirely
+dependent on the grammar and erroneous input: Java's grammar, for example, is
+large with a commensurately large search space (requiring smaller constants)
+while Lua's grammar is small with a commensurately small search space (which
+can cope with larger constants).
 
 This problem can be easily seen on inputs with unbalanced brackets
 (e.g.~expressions such as `\texttt{x = f(();}'): each additional unmatched
@@ -1153,8 +1149,6 @@ the complete set of minimum cost repair sequences for 3 unmatched brackets, 3s
 for 4 unmatched brackets, and 6 unmatched brackets caused our 32GiB test machine
 to run out of RAM.
 
-Attempting to work around this problem by reducing $N_\textit{total}$
-leads to some simple, but spread-out syntax errors, no longer being repaired.
 The only sensible alternative is a timeout: up to several seconds is safe in our
 experience. We thus remove $N_\textit{total}$ from \cpctplus and rely
 entirely on a timeout which, in this paper, is defined to be 0.5s.
@@ -1192,7 +1186,7 @@ real-world inputs, the only way to guarantee that a good job has been done is to
 manually evaluate it, which means that it is only practical to use a small set
 of input programs. Most papers we are aware of use at most 200 source files
 (e.g.~\cite{corchuelo02repairing}), with one using a single source file with minor
-variants (\cite{kimyi10astar}). \cite{cerecke03phd} was the first to use a
+variants~\cite{kimyi10astar}. \cite{cerecke03phd} was the first to use a
 large-scale corpus of approximately 60,000 Java source files. Early in the
 development of our methodology, we performed some rough experiments which
 suggested that statistics only start to stabilise once a corpus exceeds 10,000
@@ -1213,10 +1207,11 @@ consider the work involved beyond that useful for this paper.} We then
 randomly selected source files from Blackbox's database (following the lead of
 \cite{santos18syntax}, we selected data from Blackbox's beginning until the end
 of 2017-12-31). We then ran such source files through our Java 1.7 lexer. We immediately
-rejected files which didn't lex, since such files cannot be considered
-for parsing.\footnote{Happily, this also excludes files which can't
-possibly be Java source code. Some odd things are pasted into text
-editors.} We then parsed candidate files with our Java grammar and rejected any
+rejected files which didn't lex, to ensure we were dealing solely
+with parsing errors\footnote{Happily, this also excludes files which can't possibly be
+Java source code. Some odd things are pasted into text
+editors.} (see Section~\ref{sec:lexing errors into parsing
+errors}). We then parsed candidate files with our Java grammar and rejected any
 which did parse successfully, since there is little point running an error
 recovery algorithm on correct input. The final corpus consists of \corpussize source files
 (collectively a total of \corpussizemb{}MiB). Since Blackbox, quite reasonably,
@@ -1227,12 +1222,14 @@ files for those who register with Blackbox.
 
 The size of our corpus means that we cannot manually evaluate repairs for
 quality. Instead, we report several other metrics, of which the number of error
-locations is perhaps the closest proxy for manually perceived quality: for two
-algorithms with approximately the same failure rate, we consider the algorithm
-with the fewest error locations to be better. Such comparisons can only be made
-relatively. Although we know that the corpus
+locations is perhaps the closest proxy for manually perceived quality. However,
+this number has to be treated with caution for two reasons. First, it is
+affected by differences in the failure rate: if a particular error recovery
+algorithm cannot repair an entire file then it might undercount the number of
+error locations relative to another algorithm which can repair the entire file.
+Second, the number of error locations only allows relative comparisons. Although we know that the corpus
 contains at least \corpussize manually created errors (i.e.~at least one per
-file), we cannot know if or how many files contain more than one error.
+file), we cannot know if, or how many, files contain more than one error.
 Since we cannot know the true number of error locations, we are unable
 to evaluate algorithms in an absolute sense.
 
@@ -1252,17 +1249,18 @@ restarts and resumed if error recovery is needed again (i.e.~the timeout applies
 to the file as a whole).
 
 We evaluate three main error recovery algorithms: \corchuelo, \cpctplus, and
-panic mode. Our implementation of \corchuelo's algorithm is to some extent a
+panic mode. Our implementation of \corchuelo is to some extent a
 `best effort' since some parts of the algorithm are explained informally. As
-per the description, we: use a breadth-first queuing mechanism; use the same
-limits on repair sequences (in summary, repair sequences can contain at most 3
+per the description, we: use the same
+limits on repair sequences (repair sequences can contain at most 3
 delete or 4 insert repairs, and cannot span more than 10 tokens in the input);
 complete as soon as a single successful repair sequence is found; and, when no
 available repair sequence is found, fall back on panic mode. In addition, we
 impose the same 0.5s timeout on this algorithm, as it is otherwise unbounded in
-length, and exhausts available RAM. Note that panic mode and \corchuelo's
-algorithm -- which falls back on panic mode -- do not report a cost size as
-panic mode does not report repair sequences (see Section~\ref{sec:panic mode}).
+length, and sometimes exhausts available RAM. Note that we do not report the
+average cost size for panic mode or \corchuelo
+(which falls back on panic mode) since they do not (always) report
+repair sequences (see Section~\ref{sec:panic mode}).
 
 In order to test hypothesis H2, we created a variant of \cpctplus called \cpctplusrev,
 collecting the same data as for the other error recovery algorithms.
@@ -1287,7 +1285,7 @@ size, where we do not sample from runs where error recovery failed.
 
 All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with
 32GiB RAM running Debian 10. We disabled hyperthreading and turbo boost and ran experiments
-serially. Our experiments take approximately 4 days to complete. We used Rust
+serially. Our experiments take approximately 15 days to complete. We used Rust
 1.43.1 to compile \emph{grmtools} (the
 \texttt{Cargo.lock} file necessary to reproduce the build is included in our
 experimental repository).
@@ -1313,11 +1311,11 @@ report how long was spent in error recovery per file: both figures
 include files which exceeded the recovery timeout, so they represent the `real'
 times that users would experience, whether or not all errors are repaired or
 not. Cost size reports the mean cost (i.e.~the number of insert and delete
-repairs) of each error location repaired (this number is meaningless for \panic,
-which does not have a concept of costable repairs).
+repairs) of each error location repaired (this number is meaningless for
+\corchuelo (which falls back on panic mode) and \panic, since panic mode does
+not report repair sequences).
 The failure rate is the percentage of files which could not be fully
-repaired within the timeout (this number is semi-meaningless for \panic, which,
-at worst, is always able to find a repair at the EOF token). Tokens skipped is
+repaired within the timeout. Tokens skipped is
 the percentage of input
 skipped (because of a delete repair).}
 \label{fig:results:summary}
@@ -1339,34 +1337,33 @@ in the timeout cause a small, but pronounced, peak.}
 Figure~\ref{fig:results:summary} shows a summary of the results of our
 experiment. Comparing the different algorithms requires some care as a
 higher failure rate tends to lower the cost size, tokens skipped, and number of
-error locations simply because files are not completely parsed. For
-example, although \corchuelo has the lowest number of
-error locations, that is almost certainly due to its high failure rate.
+error locations simply because files are not completely parsed. For example,
+although \corchuelo reports slightly fewer error locations than \cpctplus, that
+is almost certainly due to \corchuelo's higher failure rate.
 
 The overall conclusions are fairly clear. \cpctplus is able to repair nearly
 all input files within the 0.5s timeout. While panic mode is able to repair
 every file within the 0.5s timeout, it reports well over twice as many error
 locations as \cpctplus (i.e.~panic mode substantially worsens the cascading
 error problem). As well as only reporting at most a single repair sequence,
-\corchuelo high failure rate, median, and mean times compare poorly to
+\corchuelo's high failure rate, median, and mean times compare poorly to
 \cpctplus. It is, however, harder to compare \corchuelo and panic mode, so
 different are their strengths and weaknesses. The fact that the median
-recovery time for \cpctplus is two orders of magnitude lower than the mean
+recovery time for \cpctplus is two orders of magnitude lower than its mean
 recovery time suggests that only a small number of outliers cause error recovery to
 take long enough to be perceptible to humans; this is confirmed by the
 histogram in Figure~\ref{fig:results:cpctplus_histogram}. These results strongly
 validate Hypothesis H1.
 
-\corchuelo's poor performance may be surprising, as it has seemingly less work
-to perform relative to \cpctplus. There are three main reasons for this. First,
+\corchuelo's poor performance may be surprising, as it produces worse quality
+output than \cpctplus. There are three main reasons for this. First,
 the use of \textsc{CR Shift 1} causes the search to miss intermediate nodes
 that would otherwise lead to success. Second, the heuristics used to stop the
 search from going too far (e.g.~limiting repair sequences number of inserts and
 deletes) appear to have been tuned on small grammars. On a larger grammar such
 as Java's, the main part of the search often exceeds the timeout, leaving no
-time for the fallback mechanism of panic mode to be used. Finally, \corchuelo's
-use of a breadth-first queueing mechanism does not weed out duplicates, causing
-significant extra work.
+time for the fallback mechanism of panic mode to be used. Finally, \corchuelo
+lacks configuration merging, causing it to perform needless duplicate work.
 
 \begin{figure}[t]
 \includegraphics[scale=.7]{cpctplus_cpctplusrev_error_locs_histogram_zoomed.pdf}
@@ -1422,7 +1419,7 @@ The intuition underlying this hypothesis is that, in general, the user's input
 is very close to being correct: thus the more of the input that one skips, the
 less likely one is to get back to a successful parse. We thus added the ability
 to record how much of the user's input is skipped as the result of \emph{delete}
-repairs during error recovery. The figures surprised us: \cpctplus skips
+repairs during error recovery. The figures surprised us, for example: \cpctplus skips
 very little of the user's input; \cpctplusrev skips a little more; and
 panic mode skips an order of magnitude more. Although we do
 not have enough data points to make a definitive statement, our data seem to
@@ -1475,7 +1472,8 @@ Factor -> u64:
     "(" Expr ")" { $2 }
   | "INT"
     {
-      let n = $lexer.lexeme_str(&$1.unwrap());
+      let n = $lexer.span_str($1.unwrap()
+                                .span());
       match s.parse::<u64>() {
         Ok(val) => val as u64,
         Err(_) => panic!(
@@ -1498,9 +1496,9 @@ variables reference the \emph{nth} symbol in a production (numbered from one
 i.e. \texttt{\$1} references the first symbol). If that symbol is a reference to
 a rule, a value of that rule's Rust type will be stored in that variable. If
 that symbol is a token then the user's input can be obtained by
-\texttt{\$lexer.lexeme\_str(\&\$1.unwrap())} (line 17). Note that while this
+\texttt{\$lexer.span\_str(\&\$1.unwrap().span())} (line 17--18). Note that while this
 grammar's semantic actions work as expected for inputs such as `2 + 3 * 4', they will
-panic if too large a number is passed (lines 20--23), or if an integer is
+panic if too large a number is passed (lines 21--24), or if an integer is
 inserted by error recovery. Figure~\ref{fig:api:resulttype} shows how to
 avoid both problems.}
 \label{fig:api:naive}
@@ -1527,7 +1525,7 @@ pseudo-variable's static type is (slightly simplified) \texttt{Result<Lexeme,
 Lexeme>}. We will explain the reasons for this shortly, but at this stage it
 suffices to note that we can extract tokens matching the user's input by
 calling \texttt{\$1.unwrap()}, and obtain the actual string the user passed by
-using the globally available \texttt{\$lexer.lexeme\_str} function.
+using the globally available \texttt{\$lexer.span\_str} function.
 
 
 \subsection{Can semantic action execution continue in the face of error recovery?}
@@ -1538,27 +1536,29 @@ using the globally available \texttt{\$lexer.lexeme\_str} function.
 %start Expr
 %avoid_insert "INT"
 %%
-Expr -> Result<u64, ()>:
+Expr -> Result<u64, Box<dyn Error>>:
    Term "+" Expr { Ok($1? + $3?) }
  | Term { $1 }
  ;
 
-Term -> Result<u64, ()>:
+Term -> Result<u64, Box<dyn Error>>:
    Factor "*" Term { Ok($1? * $3?) }
  | Factor { $1 }
  ;
 
-Factor -> Result<u64, ()>:
+Factor -> Result<u64, Box<dyn Error>>:
   '(' Expr ')' { $2 }
  | 'INT'
    {
-     let n = $lexer.lexeme_str(&$1.map_err(|_| ())?);
+     let n = $lexer.span_str($1?.span());
      match s.parse::<u64>() {
        Ok(val) => Ok(val as u64),
-       Err(_) => eprintln!(
-         "{} cannot be represented as a u64", s
-         );
-         Err(())
+       Err(_) => {
+         Err(Box::from(format!(
+           "{} cannot be represented as a u64",
+           s
+         )))
+       }
      }
    }
  ;
@@ -1569,11 +1569,12 @@ Factor -> Result<u64, ()>:
 \vspace*{0pt}
 \caption{A more sophisticated version of the grammar from
 Figure~\ref{fig:api:naive}. Each rule now returns a \texttt{Result} type. If an
-integer is inserted by error recovery, the \texttt{Factor} rule returns
-\texttt{Err(())} (line 18). All other rules simply percolate such errors upwards
-using the `\texttt{?}' operator (which, if the \texttt{Result}-returning
-expression it is attached to evaluates to an \texttt{Err}, immediately returns
-that error; otherwise it unwraps the \texttt{Ok}). Note that other token types
+integer is inserted by error recovery, the \texttt{Factor} rule stops
+evaluation by percolating the \texttt{Err} value upwards using the using the
+`\texttt{?}' operator (which, if the \texttt{Result}-returning expression it is
+attached to evaluates to an \texttt{Err}, immediately returns that error;
+otherwise it unwraps the \texttt{Ok}); all other rules percolate such errors
+upwards similiarly. Note that other token types
 are unaffected: if error recovery inserts a bracket, for example, evaluation of
 the expression continues.}
 \label{fig:api:resulttype}
@@ -1613,19 +1614,16 @@ is widely used in Rust code, users can avail themselves of standard idioms.
 For example, we can then alter our calculator grammar to continue
 parsing, but stop executing meaningful semantic action code, when an inserted integer
 is encountered. We change grammar rules from returning
-type \texttt{T} to \texttt{Result<T, ()>} (where `()' is Rust's unit type). When a
-rule cannot produce a value, for whatever reason, it simply returns
-\texttt{Err(())}. It is then, deliberately, fairly easy to use with the
+type \texttt{T} to \texttt{Result<T, Box<dyn Error>{}>} (where \texttt{Box<dyn Error>}
+is roughly equivalent to `can return any type of error'). It is then,
+deliberately, fairly easy to use with the
 \texttt{Result<Lexeme, Lexeme>} type: for tokens whose value we absolutely
-require, we map the \texttt{Err(Lexeme)} case to \texttt{Err(())} with the
-(standard, if mildly clunky) idiom `\texttt{\$n.map\_err(|\_| ())?}'. In essence,
-this first says `if \$n is an \texttt{Err(Lexeme)}, convert it to
-\texttt{Err(())}' (with \texttt{map\_err}) and then `if we have
-\texttt{Err(...)} percolate it upwards, otherwise unwrap the \texttt{Ok} case'
-(the `\texttt{?}' operator). While slightly verbose, this idiom is easily
-understood by Rust programmers. Figure~\ref{fig:api:resulttype} shows a
-version that changing the grammar to make use of this idiom requires relatively
-little extra code.
+require, we use Rust's `\texttt{?}' operator (which passes \texttt{Ok} values
+through unchanged but returns \texttt{Err} values to the function caller) to
+percolate our inability to continue upwards. While \texttt{Box<dyn Error>} is
+slightly verbose, it is a widely understood Rust idiom.
+Figure~\ref{fig:api:resulttype} shows that changing the grammar to make use of
+this idiom requires relatively little extra code.
 
 
 \subsection{Avoiding insert repairs when possible}
@@ -1655,7 +1653,7 @@ option).
 
 
 \subsection{Turning lexing errors into parsing errors}
-
+\label{sec:lexing errors into parsing errors}
 
 \begin{figure}[t]
 \begin{minipage}{0.27\textwidth}
@@ -1689,7 +1687,7 @@ ErrorRule -> ():
 \end{minipage}
 %
 \begin{minipage}{0.70\textwidth}
-\vspace{5.5pt}
+\vspace{-2.5pt}
 \begin{tabular}{p{0.02\textwidth}p{0.48\textwidth}}
 \begin{subfigure}{0.02\textwidth}
 \caption{}
@@ -1699,8 +1697,7 @@ ErrorRule -> ():
 \begin{minipage}[t]{0.93\textwidth}
 \vspace{-13.5pt}
 \begin{lstlisting}
->>> 2@3+4
-Parsing error at line 1 column 2. Repair sequences found:
+Parsing error at line 1 column 3. Repair sequences found:
    1: Insert +, Delete @
    2: Insert *, Delete @
    3: Delete @, Delete 3
@@ -1716,7 +1713,7 @@ to the end of the Lex file (\subref{lst:lexerror:lexfile}). Second, we add a
 rule \texttt{ErrorRule} to the Yacc grammar referencing \texttt{ERRORTOKEN}
 (\subref{lst:lexerror:yaccfile}). Note that \texttt{ErrorRule} must not be
 referenced by any other rule in the Yacc grammar. With those two steps
-complete, even input with lexing errors such as `2@3+4' invokes normal error
+complete, even input with lexing errors such as `\texttt{2 @ 3 + 4}' invokes normal error
 recovery (\subref{lst:lexerror:output}).}
 \label{lst:lexerror}
 \end{figure}
@@ -1732,14 +1729,14 @@ error and, when the parser encounters an error token, normal error recovery
 commences.
 
 A basic, but effective, version of this requires no special support from
-\emph{grmtools} as shown in Figure~\ref{lst:lexerror}. First, we add a rule to
+\emph{grmtools} (see Figure~\ref{lst:lexerror}). First, we add a rule to
 the lexer to match each invalid input character into its own error token.
 Second, since \emph{grmtools} requires that all tokens defined in the lexer are
 referenced in the grammar, we add a dummy rule to the grammar that references
 the token (making sure not to reference this rule elsewhere in the grammar).
 These two steps are sufficient to ensure that users always see the same style
 of error messages, and the same style of error recovery, no matter whether they
-made a lexing or a parsing error.
+make a lexing or a parsing error.
 
 
 \section{Threats to validity}
@@ -1754,6 +1751,10 @@ By running each file through each
 error recovery multiple times and reporting confidence intervals, we are able
 to give a good -- though inevitably imperfect -- sense of the likely variance
 induced by this non-determinism.
+
+Our implementation of \corchuelo is a `best effort' since we do not have
+access to the original source code, and the description is incomplete or
+vague in places, we may not have faithfully implemented the intended algorithm.
 
 Blackbox contains an astonishingly large amount of source code but has two
 inherent limitations. First, it only contains Java source code. This means that
@@ -1778,7 +1779,7 @@ erroneous fragments repeated with variants (i.e.~it is likely that the
 programmer wrote a line of code, copy and pasted it, edited it, and repeated
 that multiple times before deciding to test the syntactic validity). It is
 thus possible that a corpus consisting solely of programs from advanced programmers
-would lead to slightly different results. We consider this a minor worry,
+would lead to different results. We consider this a minor worry,
 partly because a good error recovery algorithm should
 aim to perform well with inputs from users of different experience levels.
 
@@ -1797,7 +1798,7 @@ syntax than files intended for Java 1.7.
 Error recovery techniques are so numerous that there is no
 definitive reference or overview of them. However, \cite{degano95comparison}
 contains an overall historical analysis and \cite{cerecke03phd} an excellent
-overview of many members of the \fischer family. Both
+overview of much of the \fischer family. Both
 must be supplemented with more recent works.
 
 The biggest limitation of error recovery algorithms in the
@@ -1860,9 +1861,10 @@ cost repair sequences being found, due to the large number of Java keywords that
 valid in several parts of this expression leading to a combinatorial explosion: even the most
 diligent user is unlikely to find such a volume of information valuable. In
 a different vein, the success condition of `reached an accept' state is
-encountered rarely enough that users sometimes forget it exists at all: they
-can then be surprised by an apparently unexplained difference in the repair sequences reported for
-some syntax errors in the middle of a file versus its end. There is a
+encountered rarely enough that we found that we sometimes forgot it existed and
+were confused by an apparently unexplained difference in the repair sequences
+reported for the same syntax chunk when it was moved from the end to the middle
+of a file. There is a
 body of work which has tried to understand how best to structure compiler error
 messages (normally in the context of those learning to program). However, the
 results are hard to interpret: some studies find that more complex error
@@ -1911,10 +1913,8 @@ annotated by the user, it is then transformed into a `permissive' grammar which
 can parse likely erroneous inputs; strings which match the permissive parts of
 the grammar can then be transformed into a non-permissive counterpart. In
 all practical cases, the transformed grammar will be ambiguous, hence the
-need for generalised parsing. There is an intriguing similarity between
-our approach and that of~\cite{deJonge12natural}: our use of graph-structured
-stacks in configuration merging (see Section~\ref{corchuelo:allminimumcost})
-gives that part of our algorithm a similar feel to GLR parsing (even though
+need for generalised parsing. Our use of parent-pointer trees
+in configuration merging gives that part of our algorithm a similar feel to GLR parsing (even though
 we never generate ambiguous strings). However, there are also major
 differences: LR parsers are significantly simpler to implement than GLR parsers;
 and the \fischer family of algorithms do not require manually
