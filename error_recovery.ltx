@@ -987,11 +987,11 @@ near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 filters out duplicates with near-identical performance to an unordered hashset.
 We then make use of a simply property of hashsets: an object's hash behaviour
 need only be a non-strict subset of its equality behaviour. Configuration
-hashing is based solely on a configurations' parsing stack and remaining input
+hashing is based solely on a configurations' parsing stack and remaining input,
 giving us a fast way of finding configurations that are compatible under
 conditions \#1 (identical parsing stacks) and \#2 (identical input remaining).
 As well as checking these two conditions, configuration equality also checks
-condition \#3 (compatible repair sequences)\lukas{delete the rest?} in configuration equality.
+condition \#3 (compatible repair sequences).
 
 Conceptually, merging two configurations together is simple: each configuration
 needs to store a set of repair sequences, each of which is updated as further
