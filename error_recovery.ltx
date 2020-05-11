@@ -1249,7 +1249,7 @@ restarts and resumed if error recovery is needed again (i.e.~the timeout applies
 to the file as a whole).
 
 We evaluate three main error recovery algorithms: \corchuelo, \cpctplus, and
-panic mode. Our implementation of \corchuelo is to some extent a
+\panic. Our implementation of \corchuelo is to some extent a
 `best effort' since some parts of the algorithm are explained informally. As
 per the description, we: use the same
 limits on repair sequences (repair sequences can contain at most 3
@@ -1257,8 +1257,9 @@ delete or 4 insert repairs, and cannot span more than 10 tokens in the input);
 complete as soon as a single successful repair sequence is found; and, when no
 available repair sequence is found, fall back on panic mode. In addition, we
 impose the same 0.5s timeout on this algorithm, as it is otherwise unbounded in
-length, and sometimes exhausts available RAM. Note that we do not report the
-average cost size for panic mode or \corchuelo
+length, and sometimes exhausts available RAM. \panic implements the algorithm
+explained in Section~\ref{sec:panic mode}. Note that we do not report the
+average cost size for \panic or \corchuelo
 (which falls back on panic mode) since they do not (always) report
 repair sequences (see Section~\ref{sec:panic mode}).
 
@@ -1339,15 +1340,19 @@ experiment. Comparing the different algorithms requires some care as a
 higher failure rate tends to lower the cost size, tokens skipped, and number of
 error locations simply because files are not completely parsed. For example,
 although \corchuelo reports slightly fewer error locations than \cpctplus, that
-is almost certainly due to \corchuelo's higher failure rate.
+is almost certainly due to \corchuelo's higher failure rate; however, as we
+shall see in Section~\ref{sec:skipping input}, \panic's much higher number of
+error locations relative to \cpctplus is probably not sufficiently explained by
+\cpctplus's higher failure rate.
 
-The overall conclusions are fairly clear. \cpctplus is able to repair nearly
-all input files within the 0.5s timeout. While panic mode is able to repair
+With that caution in mind, the overall conclusions are fairly clear. \cpctplus
+is able to repair nearly
+all input files within the 0.5s timeout. While \panic is able to repair
 every file within the 0.5s timeout, it reports well over twice as many error
 locations as \cpctplus (i.e.~panic mode substantially worsens the cascading
 error problem). As well as only reporting at most a single repair sequence,
 \corchuelo's high failure rate, median, and mean times compare poorly to
-\cpctplus. It is, however, harder to compare \corchuelo and panic mode, so
+\cpctplus. It is, however, harder to compare \corchuelo and \panic, so
 different are their strengths and weaknesses. The fact that the median
 recovery time for \cpctplus is two orders of magnitude lower than its mean
 recovery time suggests that only a small number of outliers cause error recovery to
@@ -1405,9 +1410,10 @@ disproportionately harder for the error recovery algorithm to recover from.
 
 
 \subsection{The impact of skipping input}
+\label{sec:skipping input}
 
-As well as the much higher failure rate, the number of error locations reported
-by panic mode is well over twice that of \cpctplus. This led us to make
+The number of error locations reported
+by \panic is well over twice that of \cpctplus. This led us to make
 an additional hypothesis:
 
 \begin{description}
