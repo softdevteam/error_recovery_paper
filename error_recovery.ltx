@@ -259,7 +259,7 @@ in other words, \cpctplus substantially reduces the cascading error problem. Fin
 we show -- for, as far as we know, the first time -- that advanced error
 recovery can be fairly easily added to a Yacc-esque system, allowing users
 to make fine-grained decisions about what to do when error
-recovery has been applied an input (Section~\ref{sec:api}). We believe that this
+recovery has been applied to an input (Section~\ref{sec:api}). We believe that this
 shows that algorithms such as \cpctplus are ready for wider
 usage, either on their own, or as part of a multi-phase recovery system.
 
@@ -988,10 +988,10 @@ filters out duplicates with near-identical performance to an unordered hashset.
 We then make use of a simply property of hashsets: an object's hash behaviour
 need only be a non-strict subset of its equality behaviour. Configuration
 hashing is based solely on a configurations' parsing stack and remaining input
-giving us a fast way of finding configurations that are are compatible under
+giving us a fast way of finding configurations that are compatible under
 conditions \#1 (identical parsing stacks) and \#2 (identical input remaining).
 As well as checking these two conditions, configuration equality also checks
-condition \#3 (compatible repair sequences) in configuration equality.
+condition \#3 (compatible repair sequences)\lukas{delete the rest?} in configuration equality.
 
 Conceptually, merging two configurations together is simple: each configuration
 needs to store a set of repair sequences, each of which is updated as further
@@ -1359,7 +1359,7 @@ validate Hypothesis H1.
 output than \cpctplus. There are three main reasons for this. First,
 the use of \textsc{CR Shift 1} causes the search to miss intermediate nodes
 that would otherwise lead to success. Second, the heuristics used to stop the
-search from going too far (e.g.~limiting repair sequences number of inserts and
+search from going too far (e.g.~limiting a repair sequence's number of inserts and
 deletes) appear to have been tuned on small grammars. On a larger grammar such
 as Java's, the main part of the search often exceeds the timeout, leaving no
 time for the fallback mechanism of panic mode to be used. Finally, \corchuelo
@@ -1570,7 +1570,7 @@ Factor -> Result<u64, Box<dyn Error>>:
 \caption{A more sophisticated version of the grammar from
 Figure~\ref{fig:api:naive}. Each rule now returns a \texttt{Result} type. If an
 integer is inserted by error recovery, the \texttt{Factor} rule stops
-evaluation by percolating the \texttt{Err} value upwards using the using the
+evaluation by percolating the \texttt{Err} value upwards using the
 `\texttt{?}' operator (which, if the \texttt{Result}-returning expression it is
 attached to evaluates to an \texttt{Err}, immediately returns that error;
 otherwise it unwraps the \texttt{Ok}); all other rules percolate such errors
