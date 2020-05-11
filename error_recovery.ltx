@@ -64,7 +64,7 @@
 \newcommand{\mf}{\textrm{\textit{MF}}\xspace}
 \newcommand{\mfarrow}{\rightarrow_{\textrm{\tiny MF}}}
 \newcommand{\mfarrowstar}{\rightarrow_{\textrm{\tiny MF}}^*}
-\newcommand{\panic}{\textrm{\textit{Panic}}\xspace}
+\newcommand{\panic}{\textrm{Panic mode}\xspace}
 
 \newcommand{\aho}{Aho and Peterson\xspace}
 \newcommand{\corchuelo}{Corchuelo \emph{et al.}\xspace}
@@ -296,8 +296,9 @@ and choose from the subset that gets furthest (note that the time required to do
 this is included in the 0.5s timeout). We thus also test a second hypothesis:
 
 \begin{description}
-  \item[H2] Ranking the set of repair sequences and choosing those which are
-    locally superior reduces the global cascading error problem.
+  \item[H2] Ranking the complete set of minimum cost repair sequences and
+    choosing those which are locally superior reduces the global cascading
+    error problem.
 \end{description}
 
 We also strongly validate this hypothesis. We do this by comparing `normal' \cpctplus
@@ -341,10 +342,9 @@ it. The CFG has one or more \emph{rules}; each rule has a name and one or more
 or more \emph{symbols}; and a symbol references either a \emph{token type}
 or a grammar rule. One rule is designated the \emph{start rule}. The resulting parser
 takes as input a stream of tokens, each of which has a \emph{type}
-(e.g.~\texttt{INT}) and a \emph{value} (e.g.~\texttt{123}).\footnote{In practise, the
-system we outline requires a \emph{lexer} which splits string inputs up into
-tokens. In the interests of brevity, we assume the existence of a tool such as
-Lex which performs this task.} Strictly speaking, parsing is the act of
+(e.g.~\texttt{INT}) and a \emph{value} (e.g.~\texttt{123}) -- we assume the
+existence of a Lex-like tool which can split a string into a stream of tokens.
+Strictly speaking, parsing is the act of
 determining whether a stream of tokens is correct with respect to the underlying
 grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
 to specify `semantic actions' which are executed when a production in the grammar is
@@ -1249,7 +1249,7 @@ restarts and resumed if error recovery is needed again (i.e.~the timeout applies
 to the file as a whole).
 
 We evaluate three main error recovery algorithms: \corchuelo, \cpctplus, and
-\panic. Our implementation of \corchuelo is to some extent a
+panic mode. Our implementation of \corchuelo is to some extent a
 `best effort' since some parts of the algorithm are explained informally. As
 per the description, we: use the same
 limits on repair sequences (repair sequences can contain at most 3
@@ -1257,9 +1257,9 @@ delete or 4 insert repairs, and cannot span more than 10 tokens in the input);
 complete as soon as a single successful repair sequence is found; and, when no
 available repair sequence is found, fall back on panic mode. In addition, we
 impose the same 0.5s timeout on this algorithm, as it is otherwise unbounded in
-length, and sometimes exhausts available RAM. \panic implements the algorithm
-explained in Section~\ref{sec:panic mode}. Note that we do not report the
-average cost size for \panic or \corchuelo
+length, and sometimes exhausts available RAM. Panic mode implements the algorithm
+from Section~\ref{sec:panic mode}. Note that we do not report the
+average cost size for panic mode or \corchuelo
 (which falls back on panic mode) since they do not (always) report
 repair sequences (see Section~\ref{sec:panic mode}).
 
@@ -1318,7 +1318,7 @@ include files which exceeded the recovery timeout, so they represent the `real'
 times that users would experience, whether or not all errors are repaired or
 not. Cost size reports the mean cost (i.e.~the number of insert and delete
 repairs) of each error location repaired (this number is meaningless for
-\corchuelo (which falls back on panic mode) and \panic, since panic mode does
+\corchuelo (which falls back on panic mode) and panic mode, since panic mode does
 not report repair sequences).
 The failure rate is the percentage of files which could not be fully
 repaired within the timeout. Tokens skipped is
@@ -1350,29 +1350,30 @@ higher failure rate tends to lower the cost size, tokens skipped, and number of
 error locations simply because files are not completely parsed. For example,
 although \corchuelo reports slightly fewer error locations than \cpctplus, that
 is almost certainly due to \corchuelo's higher failure rate; however, as we
-shall see in Section~\ref{sec:skipping input}, \panic's much higher number of
-error locations relative to \cpctplus is probably not sufficiently explained by
-\cpctplus's higher failure rate.
+shall see in Section~\ref{sec:skipping input}, panic mode's much higher number of
+error locations relative to \cpctplus is probably better explained by other
+factors than the failure rate.
 
 With that caution in mind, the overall conclusions are fairly clear. \cpctplus
 is able to repair nearly
-all input files within the 0.5s timeout. While \panic is able to repair
+all input files within the 0.5s timeout. While panic mode is able to repair
 every file within the 0.5s timeout, it reports well over twice as many error
 locations as \cpctplus (i.e.~panic mode substantially worsens the cascading
-error problem). As well as only reporting at most a single repair sequence,
-\corchuelo's high failure rate, median, and mean times compare poorly to
-\cpctplus. It is, however, harder to compare \corchuelo and \panic, so
-different are their strengths and weaknesses. The fact that the median
+error problem). As well as producing more detailed output, \cpctplus has a
+lower failure rate, median, and mean time than \corchuelo. The fact that the median
 recovery time for \cpctplus is two orders of magnitude lower than its mean
 recovery time suggests that only a small number of outliers cause error recovery to
 take long enough to be perceptible to humans; this is confirmed by the
 histogram in Figure~\ref{fig:results:cpctplus_histogram}. These results strongly
 validate Hypothesis H1.
 
-\corchuelo's poor performance may be surprising, as it produces worse quality
-output than \cpctplus. There are three main reasons for this. First,
+\corchuelo's poor performance may be surprising, as it produces at most
+one (possibly non-minimum cost) repair sequence whereas \cpctplus produces the complete set of minimum
+cost repair sequences -- in other words, \cpctplus is doing more work, more
+accurately, and in less time than \corchuelo. There are three main reasons for \corchuelo's
+poor performance. First,
 the use of \textsc{CR Shift 1} causes the search to miss intermediate nodes
-that would otherwise lead to success. Second, the heuristics used to stop the
+that would lead to success being detected earlier. Second, the heuristics used to stop the
 search from going too far (e.g.~limiting a repair sequence's number of inserts and
 deletes) appear to have been tuned on small grammars. On a larger grammar such
 as Java's, the main part of the search often exceeds the timeout, leaving no
@@ -1417,18 +1418,18 @@ cascading errors: not only are more error locations reported, but the poorer
 quality repair sequences chosen make subsequent error locations
 disproportionately harder for the error recovery algorithm to recover from.
 
-\cpctplusdontmerge shows that configuration merging has a significant relative,
-but small absolute, effect on the mean and median times. However, configuration
-merging has a significant effect on the failure rate, suggesting that
-configuration merging is particularly effective for files with complex errors.
+\cpctplusdontmerge shows that configuration merging has a significant effect on
+the failure rate, suggesting that configuration merging is particularly
+effective for files with complex errors.
 
 
 \subsection{The impact of skipping input}
 \label{sec:skipping input}
 
 The number of error locations reported
-by \panic is well over twice that of \cpctplus. This led us to make
-an additional hypothesis:
+by panic mode is well over twice that of \cpctplus; even given \cpctplus's
+higher failure rate relative to panic mode, this seemed hard to explain.
+We thus made an additional hypothesis:
 
 \begin{description}
   \item[H3] The more of the user's input that is skipped, the greater the number
@@ -1436,13 +1437,15 @@ of cascading parsing errors.
 \end{description}
 
 The intuition underlying this hypothesis is that, in general, the user's input
-is very close to being correct: thus the more of the input that one skips, the
-less likely one is to get back to a successful parse. We thus added the ability
+is very close to being correct and that the more of the input that one skips, the
+less likely one is to get back to a successful parse. We added the ability
 to record how much of the user's input is skipped as the result of \emph{delete}
-repairs during error recovery. The figures surprised us, for example: \cpctplus skips
+repairs during error recovery. Figure~\ref{fig:results:summary} shows a
+clear correlation between the number of tokens skipped and the number of
+error locations (e.g.~\cpctplus skips
 very little of the user's input; \cpctplusrev skips a little more; and
-panic mode skips an order of magnitude more. Although we do
-not have enough data points to make a definitive statement, our data seem to
+panic mode skips an order of magnitude more). Although we can only determine
+a correlation, and not a causation, our data seem to
 validate Hypothesis H3.
 
 
@@ -1772,9 +1775,10 @@ error recovery multiple times and reporting confidence intervals, we are able
 to give a good -- though inevitably imperfect -- sense of the likely variance
 induced by this non-determinism.
 
-Our implementation of \corchuelo is a `best effort' since we do not have
-access to the original source code, and the description is incomplete or
-vague in places, we may not have faithfully implemented the intended algorithm.
+Our implementation of \corchuelo is a `best effort'. The description in the
+paper is incomplete in places and, to the best of our knowledge, the
+accompanying source code is no longer available. We thus may not have
+faithfully implemented the intended algorithm.
 
 Blackbox contains an astonishingly large amount of source code but has two
 inherent limitations. First, it only contains Java source code. This means that
