@@ -55,6 +55,7 @@
 
 \newcommand{\cpctplus}{\textrm{\textit{CPCT}}$^+$\xspace}
 \newcommand{\cpctplusdontmerge}{\textrm{\textit{CPCT$^+_\textrm{DM}$}}\xspace}
+\newcommand{\cpctpluslonger}{\textrm{\textit{CPCT$^+_\textrm{LNG}$}}\xspace}
 \newcommand{\cpctplusrev}{\textrm{\textit{CPCT$^+_\textrm{rev}$}}\xspace}
 \newcommand{\crarrow}{\rightarrow_{\textrm{\tiny CR}}}
 \newcommand{\crarrowstar}{\rightarrow_{\textrm{\tiny CR}}^*}
@@ -1238,7 +1239,7 @@ the entire Java corpus, collecting for each file: the time spent in recovery (in
 whether error recovery on the file was successful (true or false); the
 number of error locations; the cost of repair sequences at each
 error location (only if error recovery was successful on the file as a whole);
-and the number of tokens skipped by error recovery (i.e.~how many \emph{delete}
+and the proportion of tokens skipped by error recovery (i.e.~how many \emph{delete}
 repairs were applied). Note that parsing fails if the timeout is exceeded or
 if the algorithm runs out of plausible candidate repair sequences.
 We measure the time spent in error recovery with a monotonic wall-clock timer,
@@ -1322,7 +1323,7 @@ repairs) of each error location repaired (this number is meaningless for
 not report repair sequences).
 The failure rate is the percentage of files which could not be fully
 repaired within the timeout. Tokens skipped is
-the percentage of input
+the proportion of input
 skipped (because of a delete repair). \cpctplusrev models the worst case
 of non-deterministic \fischer algorithms by reversing the order of repair
 ranking (see Section~\ref{rankingrepairs}). \cpctplusdontmerge shows the
@@ -1337,10 +1338,10 @@ Section\ref{merging}).}
 \caption{A histogram of the time spent in error recovery by \cpctplus for files in our
 corpus. The $x$ axis shows time (up to the timeout of 0.5s) and the $y$ axis is
 a logarithmic scale for the number of files. Error bars represent 99\% confidence
-intervals. As this clearly shows, most files
-are repaired extremely quickly. There is then a continual decrease
-until the timeout of 0.5s, where the files that were unable to be repaired
-in the timeout cause a small, but pronounced, peak.}
+intervals. As this clearly shows, the vast majority of files fit in the
+histogram's first bin; there is then a gradual decrease until around 0.15s,
+with a broadly flat distribution from then until the pronounced peak
+at the timeout of 0.5s.}
 \label{fig:results:cpctplus_histogram}
 \end{figure}
 
@@ -1348,11 +1349,11 @@ Figure~\ref{fig:results:summary} shows a summary of the results of our
 experiment. Comparing the different algorithms requires some care as a
 higher failure rate tends to lower the cost size, tokens skipped, and number of
 error locations simply because files are not completely parsed. For example,
-although \corchuelo reports slightly fewer error locations than \cpctplus, that
-is almost certainly due to \corchuelo's higher failure rate; however, as we
+although \corchuelo reports fewer error locations than \cpctplus, that
+is probably due to \corchuelo's higher failure rate; however, as we
 shall see in Section~\ref{sec:skipping input}, panic mode's much higher number of
-error locations relative to \cpctplus is probably better explained by other
-factors than the failure rate.
+error locations relative to \cpctplus might better be explained by other
+factors.
 
 With that caution in mind, the overall conclusions are fairly clear. \cpctplus
 is able to repair nearly
@@ -1432,21 +1433,28 @@ higher failure rate relative to panic mode, this seemed hard to explain.
 We thus made an additional hypothesis:
 
 \begin{description}
-  \item[H3] The more of the user's input that is skipped, the greater the number
-of cascading parsing errors.
+  \item[H3] The greater the proportion of tokens that are skipped, the greater
+    the number of error locations.
 \end{description}
 
 The intuition underlying this hypothesis is that, in general, the user's input
-is very close to being correct and that the more of the input that one skips, the
-less likely one is to get back to a successful parse. We added the ability
-to record how much of the user's input is skipped as the result of \emph{delete}
-repairs during error recovery. Figure~\ref{fig:results:summary} shows a
-clear correlation between the number of tokens skipped and the number of
-error locations (e.g.~\cpctplus skips
-very little of the user's input; \cpctplusrev skips a little more; and
-panic mode skips an order of magnitude more). Although we can only determine
-a correlation, and not a causation, our data seem to
-validate Hypothesis H3.
+is very close to being correct and that the more input that error recovery skips,
+the less likely it is to get back to a successful parse. We added the ability
+to record the proportion of tokens skipped as the result of \emph{delete}
+repairs during error recovery. The results in Figure~\ref{fig:results:summary}
+are mixed. To a reasonable extent there is a correlation between the
+proportion of tokens skipped and the number of error locations (e.g.~\cpctplus
+skips very little of the user's input; \cpctplusrev skips a little more; and
+panic mode skips an order of magnitude more). \cpctplusdontmerge is a slight
+outlier, but is easily explained by its high failure rate (i.e.~its proportion
+of input skipped would only increase if its failure rate decreased).
+However, \corchuelo is rather harder to explain: relative to the other
+algorithms, its number of error locations does not seem in line to the
+proportion of input skipped. Since \corchuelo falls back on panic mode, we
+conjecture that were its failure rate to lower then, in line with panic
+mode, its proportion of input skipped would noticeably increase. Overall we do
+not consider our data conclusive enough to validate or invalidate Hypothesis
+H3.
 
 
 \section{Using error recovery in practice}
