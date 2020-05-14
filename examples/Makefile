@@ -1,7 +1,7 @@
 .SUFFIXES: .out .java .lua
 
-GRMTOOLSV=grmtools-0.5.1
-GRAMMARSV=35c7848215e5565ddc3a2ea71a60fa26107a6a2e
+GRMTOOLSV=grmtools-0.7.0
+GRAMMARSV=926274486b2e81c78cf41faa6a600e62bd788772
 
 EXAMPLES=java_ex1.out java_ex2.out java_ex3.out java_ex4.out java_ex5.out java_ex6.out \
 		 lua_ex1.out lua_ex2.out lua_ex3.out lua_ex4.out lua_ex5.out php_ex1.out php_ex2.out \
