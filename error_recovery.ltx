@@ -1341,7 +1341,9 @@ a logarithmic scale for the number of files. Error bars represent 99\% confidenc
 intervals. As this clearly shows, the vast majority of files fit in the
 histogram's first bin; there is then a gradual decrease until around 0.15s,
 with a broadly flat distribution from then until the pronounced peak
-at the timeout of 0.5s.}
+at the timeout of 0.5s. Figure~\ref{fig:results:cpctplus_longer_histogram}
+in the Appendix shows how extending the timeout increases the number of files
+which can be successfully recovered.}
 \label{fig:results:cpctplus_histogram}
 \end{figure}
 
@@ -2192,6 +2194,19 @@ grammar resolves in favour of viewing the code below as a function call to
 
 \noindent Example 3 output:
 \lstinputlisting[xleftmargin=2em]{examples/php_ex3.out}
+
+
+\begin{figure}[t]
+\includegraphics[scale=.7]{cpctpluslonger_histogram.pdf}
+\caption{A histogram showing the effect of increasing the timeout from 0.5s to
+2s (see Figure~\ref{fig:results:cpctplus_histogram} for the histogram showing a
+timeout of 0.5s). Increasing the timeout from 0.5s to 2s lowers the failure
+rate from \cpctplusfailurerate to \cpctpluslongerfailurerate, with a very
+gradually decreasing number of files succeeding as the timeout increases.
+Different users may wish to pick a different trade-off in terms of timeout
+vs.~failure rate than we did.}
+\label{fig:results:cpctplus_longer_histogram}
+\end{figure}
 
 \begin{figure}[t]
 \includegraphics[scale=.7]{cpctplus_cpctplusrev_error_locs_histogram_full.pdf}
