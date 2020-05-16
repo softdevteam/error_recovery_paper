@@ -1400,12 +1400,12 @@ lacks configuration merging, causing it to perform needless duplicate work.
 
 \begin{figure}[t]
 \includegraphics[scale=.7]{cpctplus_cpctplusrev_error_locs_histogram_zoomed.pdf}
-\caption{A histogram of the number of files with 0--50 errors (this removes a
-handful of outliers which distort the full histogram, which can be found in
+\caption{A histogram of the number of files with 1--50 error locations (this removes a
+handful of outliers which distort the full histogram found in
 Figure~\ref{fig:results:cpctplus_cpctplusrev_histogram_full} in the Appendix)
 for \cpctplus and \cpctplusrev. The $x$ axis shows the number of error
 locations in a file and the $y$ axis is a logarithmic scale for the number of
-files. Error bars represent 99\% confidence intervals.  As this clearly
+files. Error bars represent 99\% confidence intervals. As this histogram
 shows, the entire distribution is skewed
 slightly rightwards by \cpctplusrev, showing that \cpctplusrev makes error recovery
 slightly worse in a number of files (rather than making error recovery in a small
@@ -1419,8 +1419,18 @@ continue furthest. \cpctplusrev, in contrast, selects from those which allow par
 to continue the least far. \cpctplusrev shows that the ranking technique used in \cpctplus substantially
 reduces the potential for cascading errors: \cpctplusrev leads to
 \cpctplusreverrorlocsratioovercpctplus more error locations being reported to users
-relative to \cpctplus. As the histogram in Figure~\ref{fig:results:cpctplus_cpctplusrev_histogram} shows,
-the distribution of error locations in \cpctplus and \cpctplusrev is
+relative to \cpctplus. We visualise this in the histogram of
+Figure~\ref{fig:results:cpctplus_cpctplusrev_histogram}
+which shows all files with 1--50 error locations (a complete histogram can be
+found in Figure~\ref{fig:results:cpctplus_cpctplusrev_histogram_full} in the
+Appendix). Note that files where
+error recovery did not complete and no error locations were found (which happens
+occasionally with \cpctplusrev) are excluded from this histogram (since we know
+that every file in the corpus has at least one error), but files where
+error recovery did not complete but some error locations were found are
+included (since this gives us, at least, a lower bound on the number of
+error locations). As Figure~\ref{fig:results:cpctplus_cpctplusrev_histogram}
+shows, the distribution of error locations in \cpctplus and \cpctplusrev is
 similar, with the latter simply shifted slightly to the right.
 In other words, \cpctplusrev
 makes error recovery slightly worse in a number of files
@@ -1964,10 +1974,10 @@ the grammar can then be transformed into a non-permissive counterpart. In
 all practical cases, the transformed grammar will be ambiguous, hence the
 need for generalised parsing. Our use of parent-pointer trees
 in configuration merging gives that part of our algorithm a similar feel to GLR parsing (even though
-we never generate ambiguous strings). However, there are also major
-differences: LR parsers are significantly simpler to implement than GLR parsers;
+we do not generate ambiguous strings). However, there are major
+differences: LR parsers are much simpler than GLR parsers;
 and the \fischer family of algorithms do not require manually
-annotating, or statically increasing the size of, the grammar.
+annotating, or increasing the size of, the grammar.
 
 A different approach to error recovery is that taken by~\cite{pottier16reachability}: rather
 than try and recover from errors directly, it reports in natural language
@@ -2022,9 +2032,9 @@ well on some (e.g.~Pascal) but less well on others (e.g.~Java). In cases
 where it performs less well, it can lead to parsers which skip large portions
 (sometimes the remainder) of the input.
 
-While the programming language world has largely forgotten the approach of
-\cite{aho72minimum}, there are a number of successor works, most recently that
-of~\cite{rajasekaran16error}. These improve on the time complexity, though none
+While the field of programming languages has largely forgotten the approach of
+\cite{aho72minimum}, there are a number of successor works (e.g.~\cite{rajasekaran16error}).
+These improve the time complexity, though none
 that we are aware of address the issue of how to present what has been done to
 the user.
 
