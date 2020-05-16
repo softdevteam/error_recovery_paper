@@ -2226,10 +2226,12 @@ grammar resolves in favour of viewing the code below as a function call to
 \caption{A histogram showing the effect of increasing the timeout from 0.5s to
 2s (see Figure~\ref{fig:results:cpctplus_histogram} for the histogram showing a
 timeout of 0.5s). Increasing the timeout from 0.5s to 2s lowers the failure
-rate from \cpctplusfailurerate to \cpctpluslongerfailurerate, with a very
-gradually decreasing number of files succeeding as the timeout increases.
-Different users may wish to pick a different trade-off in terms of timeout
-vs.~failure rate than we did.}
+rate from \cpctplusfailurerate to \cpctpluslongerfailurerate, with a slowly
+decreasing number of files succeeding as the timeout increases.
+Although we used a timeout of 0.5s on the basis that we felt most users
+would tolerate such a delay, others may wish to pick a shorter or longer
+timeout depending on their perception of their users tolerance of delay
+vs.~tolerance of failed error correction.}
 \label{fig:results:cpctplus_longer_histogram}
 \end{figure}
 
