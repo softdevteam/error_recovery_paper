@@ -1289,9 +1289,9 @@ cost repair sequence. In other words, it allows us to understand how many
 more errors could be reported to users of other members of the
 \fischer family compared to \cpctplus.
 
-Configuration merging is perhaps the most complex part of \cpctplus (although
-in total it is less than 100LoC). To understand whether this complexity is
-justified, we created another variant of \cpctplus called \cpctplusdontmerge
+Configuration merging (see Section~\ref{merging}) is the most complex part of
+\cpctplus. To understand whether this complexity leads to better results, we
+created another variant of \cpctplus called \cpctplusdontmerge
 which disables configuration merging.
 
 In order to understand the accuracy of the numbers we report, we provide 99\%
@@ -1343,7 +1343,7 @@ skipped (because of a delete repair). \cpctplusrev models the worst case
 of non-deterministic \fischer algorithms by reversing the order of repair
 ranking (see Section~\ref{rankingrepairs}). \cpctplusdontmerge shows the
 performance of \cpctplus if configuration merging is disabled (see
-Section\ref{merging}).}
+Section~\ref{merging}).}
 \label{fig:results:summary}
 \end{figure}
 
@@ -1440,15 +1440,17 @@ Hypothesis H2.
 
 Interestingly, \cpctplusrev has a noticeably higher mean cost of repair sequences relative to
 \cpctplus. In other words, \cpctplusrev not only causes more error locations to be reported,
-but the repair sequences at the additional error locations have higher numbers
-of insert and delete repairs. This suggests that there is a double whammy from
+but those additional error locations have longer repair sequences.  This
+suggests that there is a double whammy from
 cascading errors: not only are more error locations reported, but the poorer
 quality repair sequences chosen make subsequent error locations
 disproportionately harder for the error recovery algorithm to recover from.
 
 \cpctplusdontmerge shows that configuration merging has a significant effect on
-the failure rate, suggesting that configuration merging is particularly
-effective for files with complex errors.
+the failure rate, in our opinion justifying both its conceptual complexity and
+the less than 100LoC Rust code taken to implement it. The slowdown
+in the mean and median time for \cpctplusdontmerge suggest that configuration
+merging is particularly effective on files with complex or numerous errors.
 
 
 \subsection{The impact of skipping input}
