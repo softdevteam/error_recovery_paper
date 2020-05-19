@@ -1241,9 +1241,9 @@ quality. Instead, we report several other metrics, of which the number of error
 locations is perhaps the closest proxy for manually perceived quality. However,
 this number has to be treated with caution for two reasons. First, it is
 affected by differences in the failure rate: if a particular error recovery
-algorithm cannot repair an entire file then it might undercount the number of
-error locations relative to another algorithm which can repair the entire file.
-Second, the number of error locations only allows relative comparisons. Although we know that the corpus
+algorithm cannot repair an entire file then it may not have had time find all the
+`true' error locations. Second, the number of error locations only allows
+relative comparisons. Although we know that the corpus
 contains at least \corpussize manually created errors (i.e.~at least one per
 file), we cannot know if, or how many, files contain more than one error.
 Since we cannot know the true number of error locations, we are unable
@@ -1251,12 +1251,13 @@ to evaluate algorithms in an absolute sense.
 
 In order to test hypothesis H1 we ran each error recovery algorithm against
 the entire Java corpus, collecting for each file: the time spent in recovery (in seconds);
-whether error recovery on the file was successful (true or false); the
+whether error recovery on the file succeeded or failed (where failure is due
+to either the timeout being exceeded or no repair sequences being found for
+an error location); the
 number of error locations; the cost of repair sequences at each
-error location (only if error recovery was successful on the file as a whole);
+error location;
 and the proportion of tokens skipped by error recovery (i.e.~how many \emph{delete}
-repairs were applied). Note that parsing fails if the timeout is exceeded or
-if the algorithm runs out of plausible candidate repair sequences.
+repairs were applied).
 We measure the time spent in error recovery with a monotonic wall-clock timer,
 covering the time from when the main parser first invokes
 error recovery until an updated parsing stack and parsing index are returned
@@ -1294,16 +1295,14 @@ Configuration merging (see Section~\ref{merging}) is the most complex part of
 created another variant of \cpctplus called \cpctplusdontmerge
 which disables configuration merging.
 
-In order to understand the accuracy of the numbers we report, we provide 99\%
-confidence intervals. We bootstrapped~\cite{efron79bootstrap} our results
-\numbootstrap times to produce confidence intervals. However, since, as
+We bootstrap~\cite{efron79bootstrap} our results
+\numbootstrap times to produce 99\% confidence intervals. However, as
 Figure~\ref{fig:results:cpctplus_histogram} shows, our distribution is heavy-tailed,
-we cannot bootstrap naively. Instead, we ran each error recovery algorithm
+so we cannot bootstrap naively. Instead, we ran each error recovery algorithm
 \numruns times on each source file; when bootstrapping we randomly sample one of the
 \numruns values collected (i.e.~our bootstrapped data contains an entry for every
 file in the experiment; that entry is one of the \numruns values collected for
-that file). The only subtlety is when bootstrapping the mean cost
-size, where we do not sample from runs where error recovery failed.
+that file).
 
 All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with
 32GiB RAM running Debian 10. We disabled hyperthreading and turbo boost and ran experiments
@@ -1364,7 +1363,7 @@ which can be successfully recovered.}
 \end{figure}
 
 Figure~\ref{fig:results:summary} shows a summary of the results of our
-experiment. Comparing the different algorithms requires some care as a
+experiment. Comparing the different algorithms requires care as a
 higher failure rate tends to lower the cost size, tokens skipped, and number of
 error locations simply because files are not completely parsed. For example,
 although \corchuelo reports fewer error locations than \cpctplus, that
@@ -1394,8 +1393,8 @@ poor performance. First,
 the use of \textsc{CR Shift 1} causes the search to miss intermediate nodes
 that would lead to success being detected earlier. Second, the heuristics used to stop the
 search from going too far (e.g.~limiting a repair sequence's number of inserts and
-deletes) appear to have been tuned on small grammars. On a larger grammar such
-as Java's, the main part of the search often exceeds the timeout, leaving no
+deletes) are not well-suited to a large grammar such as Java's:
+the main part of the search often exceeds the timeout, leaving no
 time for the fallback mechanism of panic mode to be used. Finally, \corchuelo
 lacks configuration merging, causing it to perform needless duplicate work.
 
@@ -1403,10 +1402,13 @@ lacks configuration merging, causing it to perform needless duplicate work.
 \vspace{-10pt}
 \includegraphics[scale=.7]{cpctplus_cpctplusrev_error_locs_histogram_zoomed.pdf}
 \vspace{-25pt}
-\caption{A histogram of the number of files with 1--50 error locations (this removes a
+\caption{A histogram of the number of files with 1--50 error locations for
+\cpctplus and \cpctplusrev. Note that we exclude: any files for which an error
+recovery algorithms did not find a single error location (either because the
+timeout was exceeded or no repair sequences could be found); and a
 handful of outliers which distort the full histogram found in
-Figure~\ref{fig:results:cpctplus_cpctplusrev_histogram_full} in the Appendix)
-for \cpctplus and \cpctplusrev. The $x$ axis shows the number of error
+Figure~\ref{fig:results:cpctplus_cpctplusrev_histogram_full} in the Appendix.
+The $x$ axis shows the number of error
 locations in a file and the $y$ axis is a logarithmic scale for the number of
 files. Error bars represent 99\% confidence intervals. As this histogram
 shows, the entire distribution is skewed
@@ -1441,7 +1443,8 @@ makes error recovery slightly worse in a number of files
 recovery in a small number of files a lot worse). This strongly validates
 Hypothesis H2.
 
-Interestingly, \cpctplusrev has a noticeably higher mean cost of repair sequences relative to
+Interestingly, and despite its higher failure rate, \cpctplusrev has a
+noticeably higher mean cost of repair sequences relative to
 \cpctplus. In other words, \cpctplusrev not only causes more error locations to be reported,
 but those additional error locations have longer repair sequences.  This
 suggests that there is a double whammy from
@@ -1477,15 +1480,18 @@ repairs during error recovery. The results in Figure~\ref{fig:results:summary}
 are mixed. To a reasonable extent there is a correlation between the
 proportion of tokens skipped and the number of error locations (e.g.~\cpctplus
 skips very little of the user's input; \cpctplusrev skips a little more; and
-panic mode skips an order of magnitude more). \cpctplusdontmerge is a slight
-outlier, but is easily explained by its high failure rate (i.e.~its proportion
-of input skipped would only increase if its failure rate decreased).
-However, \corchuelo is rather harder to explain: relative to the other
-algorithms, its number of error locations does not seem in line to the
-proportion of input skipped. Since \corchuelo falls back on panic mode, we
-conjecture that were its failure rate to lower then, in line with panic
-mode, its proportion of input skipped would noticeably increase. Overall we do
-not consider our data conclusive enough to validate or invalidate Hypothesis
+panic mode skips an order of magnitude more).
+%XXX revisit when the 200K data is ready
+%\cpctplusdontmerge is a slight
+%outlier, but is easily explained by its high failure rate (i.e.~its proportion
+%of input skipped would only increase if its failure rate decreased).
+However, \corchuelo does not obviously follow this pattern: relative to the
+other algorithms, its number of error locations does not correlate with the
+proportion of input skipped. Because of its poor mean time and failure rate,
+we conjecture that \corchuelo is failing on files with large numbers of error
+locations, depressing its count in this area, but without a detailed
+analysis of this problem it is hard to be sure. Because of this, we do not
+consider our data conclusive enough to validate or invalidate Hypothesis
 H3.
 
 
