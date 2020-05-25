@@ -1481,18 +1481,14 @@ are mixed. To a reasonable extent there is a correlation between the
 proportion of tokens skipped and the number of error locations (e.g.~\cpctplus
 skips very little of the user's input; \cpctplusrev skips a little more; and
 panic mode skips an order of magnitude more).
-%XXX revisit when the 200K data is ready
-%\cpctplusdontmerge is a slight
-%outlier, but is easily explained by its high failure rate (i.e.~its proportion
-%of input skipped would only increase if its failure rate decreased).
 However, \corchuelo does not obviously follow this pattern: relative to the
 other algorithms, its number of error locations does not correlate with the
-proportion of input skipped. Because of its poor mean time and failure rate,
-we conjecture that \corchuelo is failing on files with large numbers of error
-locations, depressing its count in this area, but without a detailed
-analysis of this problem it is hard to be sure. Because of this, we do not
-consider our data conclusive enough to validate or invalidate Hypothesis
-H3.
+proportion of input skipped. However, the reason for this is related to its
+high mean time and high failure rate: \corchuelo tends to fail on files with
+large numbers of error locations, underreporting the `true' number of error
+locations simply because it cannot make it all of the way through such files
+before the timeout. Therefore, despite this apparent outlier,
+we consider that our data validate Hypothesis H3.
 
 
 \section{Using error recovery in practice}
