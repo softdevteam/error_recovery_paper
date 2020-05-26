@@ -312,7 +312,7 @@ this is included in the 0.5s timeout). We thus also test a second hypothesis:
 
 \begin{description}
   \item[H2] Ranking the complete set of minimum cost repair sequences and
-    choosing those which are locally superior\lukas{not clear what locally superior means here? e.g.~lead to less cascading errors?} reduces the global cascading
+    choosing those which are superior within their local context reduces the global cascading
     error problem.
 \end{description}
 
@@ -472,9 +472,7 @@ a grammar-neutral panic mode algorithm: we take our formulation from
 \holub causes valid repairs to be missed: while it is
 safe to ignore the top element of the parsing stack on the first iteration of
 the algorithm, as soon as one token is skipped, one must check all elements of
-the parsing stack. Our description simply drops step 2 entirely.}\lukas{This
-footnote is split over two pages for me. We should check this isn't the
-case for the final version.}. It works by
+the parsing stack. Our description simply drops step 2 entirely.}. It works by
 popping elements off the parsing stack to
 see if an earlier part of the stack is able to parse the next input symbol. If
 no element in the stack is capable of parsing the next input symbol, the input
@@ -518,7 +516,7 @@ consider the grammar from Figure~\ref{fig:exprgrammar} and the input `\texttt{2
 a parsing stack of [0, 2, 7] and the input `\texttt{+ 3}' remaining. The error
 recovery algorithm now starts. It first tries \textsf{action}(7, `+') which
 (by definition, since it is the place the parser encountered an error) returns
-\textit{error}; it then pops the top element (`\texttt{+}`) from the parsing stack and tries
+\textit{error}; it then pops the top element from the parsing stack and tries
 \textsf{action}(2, `+'), which returns \textit{shift}. This is enough for the
 error recovery algorithm to complete, and parsing resumes with a stack [0, 2].
 
@@ -529,10 +527,10 @@ machina}: the only
 general way to report what was done is to show the parsing stack
 before and after recovery which is challenging to interpret for small grammars
 like that of Figure~\ref{fig:exprgrammar} and completely impractical for
-anything larger\lukas{Isn't popping elements from the stack equivalent to removing the terminals contained in whatever was popped? So the algo could just report which terminals were removed which the user can easily replicate (esp in the above example). The report would then look similar to cpct+, e.g. delete, shift, delete, although in this case the deletes can get really large (i.e. entire subtrees) which doesn't make for a great error report.}. There is an important corollary to this: panic mode
+anything larger\lukas{Isn't popping elements from the stack equivalent to removing the terminals contained in whatever was popped? So the algo could just report which terminals were removed which the user can easily replicate (esp in the above example). The report would then look similar to cpct+, e.g. delete, shift, delete, although in this case the deletes can get really large (i.e. entire subtrees) which doesn't make for a great error report.}\laurie{notice that it isn't popping the terminals: it's literally popping the parsing stack. Only when the parsing stack is empty does it pop a terminal (it then replaces the empty parsing stack with the original parsing stack and tries again)}. There is an important corollary to this: panic mode
 often leads to a state that no input from the user could have reached,
 making it more likely that resuming parsing will lead to a cascade of further
-parsing errors (as we will see later in Section~\ref{results})\lukas{Can we give a small example: "e.g.~state 3 in Figure 2". I think what this means is: we can reach a state which shouldn't be reachable with the current lookahead, if for example we have just popped something of the stack and then skipped some input. Since skipping input has changed the lookahead, this new lookahead wouldn't have been able to reach the current state immediately leading to another error.}.
+parsing errors (as we will see later in Section~\ref{results})\lukas{Can we give a small example: "e.g.~state 3 in Figure 2". I think what this means is: we can reach a state which shouldn't be reachable with the current lookahead, if for example we have just popped something of the stack and then skipped some input. Since skipping input has changed the lookahead, this new lookahead wouldn't have been able to reach the current state immediately leading to another error.}\laurie{i think we'd need to give a specific input too in order to show an example. it wouldn't hurt but i don't know if it's super useful?}.
 
 
 \section{\corchuelo}
@@ -1121,7 +1119,8 @@ $N_\textit{try}$ tokens (which we somewhat arbitrarily set at 250). Taking
 the furthest-parse point as our top rank, we then discard all configurations
 which parsed less input than this. The reason
 why we rank the configurations, and not the repair sequences, is that we only
-need to rank one of the repair sequences of each merged configuration, a small but useful optimisation\lukas{I tried but failed to remind the reader here that a configuration can have multiple repair sequences, which I think makes this sentence easier to understand: my other attempt was: the reason ... is that a configuration can have multiple repair sequences of which we only need to rank one}. We then expand the top ranked configurations into repair
+need to rank one of the repair sequences from each merged configuration, a small but useful
+optimisation. We then expand the top ranked configurations into repair
 sequences and remove shifts from the end of those repair sequences. Since the
 earlier merging of compatible configurations is imprecise (it misses
 configurations that have already been processed), there can be some remaining
@@ -1132,8 +1131,8 @@ action.
 Particularly on real-world grammars, selecting the top-ranked repair sequences
 substantially decreases cascading errors (see Figure~\ref{fig:ranking} for an example).
 It also does so for very little additional computational cost, as the complete set of
-minimum cost repair sequences is much smaller than the number of configurations
-searched\lukas{I think this is trying to say: doing this is cheap, because there's not many minimum cost repair sequences relative to the thousands of possible configurations?}. However, it cannot entirely reduce the cascading error problem. Since,
+minimum cost repair sequences typically contains only a small number of items.
+However, it cannot entirely reduce the cascading error problem. Since,
 from our perspective, each member of the top-ranked set is equivalently good, we
 non-deterministically select one of its members to repair the input and allow
 parsing to continue. This can mean that we select a repair sequence which
