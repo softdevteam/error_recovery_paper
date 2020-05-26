@@ -478,8 +478,10 @@ a grammar-neutral panic mode algorithm: we take our formulation from
 \holub causes valid repairs to be missed: while it is
 safe to ignore the top element of the parsing stack on the first iteration of
 the algorithm, as soon as one token is skipped, one must check all elements of
-the parsing stack. Our description simply drops step 2 entirely.}. It works by
-taking the parsing stack and popping elements to
+the parsing stack. Our description simply drops step 2 entirely.}\lukas{This
+footnote is split over two pages for me. We should check this isn't the
+case for the final version.}. It works by
+popping elements off the parsing stack to
 see if an earlier part of the stack is able to parse the next input symbol. If
 no element in the stack is capable of parsing the next input symbol, the input
 symbol is skipped, the stack restored, and the process repeated. At worst,
@@ -522,9 +524,9 @@ consider the grammar from Figure~\ref{fig:exprgrammar} and the input `\texttt{2
 a parsing stack of [0, 2, 7] and the input `\texttt{+ 3}' remaining. The error
 recovery algorithm now starts. It first tries \textsf{action}(7, `+') which
 (by definition, since it is the place the parser encountered an error) returns
-\textit{error}; it then pops the top element from the parsing stack and tries
+\textit{error}; it then pops the top element (`\texttt{+}`) from the parsing stack and tries
 \textsf{action}(2, `+'), which returns \textit{shift}. This is enough for the
-error algorithm to complete, and parsing resumes with a stack [0, 2].
+error recovery algorithm to complete, and parsing resumes with a stack [0, 2].
 
 The fundamental problem with error recovery can be seen from the above example:
 the adjustment made to the parsing stack is not one that the user can
@@ -533,10 +535,10 @@ machina}: the only
 general way to report what was done is to show the parsing stack
 before and after recovery which is challenging to interpret for small grammars
 like that of Figure~\ref{fig:exprgrammar} and completely impractical for
-anything larger. There is an important corollary to this: panic mode
+anything larger\lukas{Isn't popping elements from the stack equivalent to removing the terminals contained in whatever was popped? So the algo could just report which terminals were removed which the user can easily replicate (esp in the above example). The report would then look similar to cpct+, e.g. delete, shift, delete, although in this case the deletes can get really large (i.e. entire subtrees) which doesn't make for a great error report.}. There is an important corollary to this: panic mode
 often leads to a state that no input from the user could have reached,
 making it more likely that resuming parsing will lead to a cascade of further
-parsing errors (as we will see later in Section~\ref{results}).
+parsing errors (as we will see later in Section~\ref{results})\lukas{Can we give a small example: "e.g.~state 3 in Figure 2". I think what this means is: we can reach a state which shouldn't be reachable with the current lookahead, if for example we have just popped something of the stack and then skipped some input. Since skipping input has changed the lookahead, this new lookahead wouldn't have been able to reach the current state immediately leading to another error.}.
 
 
 \section{\corchuelo}
