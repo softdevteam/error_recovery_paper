@@ -525,7 +525,7 @@ by popping from the parsing stack, it implicitly deletes input from before the
 error location (in this case the first `\texttt{+}') in order to find a way of
 parsing input after the error location. This often leads to panic mode throwing
 away huge portions of the input in its quest to find a repair. Not only can the
-resulting recovery can appear as a \emph{Deus ex machina}, but the more input
+resulting recovery appear as a \emph{Deus ex machina}, but the more input
 that is skipped, the more likely that a cascade of further parsing errors
 ensues (as we will see later in Section~\ref{results}).
 
