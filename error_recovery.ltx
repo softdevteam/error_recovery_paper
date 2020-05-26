@@ -818,7 +818,7 @@ N_\textit{shifts}$ so that the parser can make progress without consuming
 input. However, this opens the possibility of an infinite loop, so
 we then add a condition that if no input is consumed, the parsing stack
 must have changed. In other words, we require progress
-to be made, whether or not that progress involved consuming input or not.
+to be made, whether or not that progress involved consuming input.
 
 Second, \textsc{CR Shift 1} and \textsc{CR Shift 2} generate multiple shifts
 at a time. This causes them to skip intermediate
