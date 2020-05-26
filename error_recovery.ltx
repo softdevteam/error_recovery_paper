@@ -120,7 +120,8 @@ corpus of \corpussize real-world syntactically invalid Java programs, \cpctplus 
 able to repair \cpctplussuccessrate of files within
 a timeout of 0.5s. Finally, \cpctplus uses the existence of the complete set of
 minimum cost repair sequences to reduce one of the most frustrating consequences of
-error reporting: the cascading error problem. Across the test corpus, \cpctplus reports
+error reporting: the cascading error problem, where incorrect error recovery
+causes further spurious parsing errors. Across the test corpus, \cpctplus reports
 \cpctpluserrorlocs error locations to the user, reducing the cascading
 error problem by half relative to the \panicerrorlocs error locations reported by panic mode.
 \end{abstract}
