@@ -123,7 +123,12 @@ minimum cost repair sequences to reduce one of the most frustrating consequences
 error reporting: the cascading error problem. Across our corpus, we report
 \cpctpluserrorlocs error locations to the user, while the panic
 mode algorithm reports \panicerrorlocs error locations: in other words, we
-reduce the cascading error problem by well over half.
+reduce the cascading error problem by well over half\lukas{Can we
+confidently say we cut the cascading error problem in half without knowing
+what the fraction of real/cascading errors is? Let's assume the 400k are
+all real errors. Wouldn't that then mean we cut the cascading error problem
+by 100\% (i.e. we have 500k cascading errors and cpct gets rid of all of
+them)?}.
 \end{abstract}
 
 \section{Introduction}
@@ -313,7 +318,7 @@ this is included in the 0.5s timeout). We thus also test a second hypothesis:
 
 \begin{description}
   \item[H2] Ranking the complete set of minimum cost repair sequences and
-    choosing those which are locally superior reduces the global cascading
+    choosing those which are locally superior\lukas{not clear what locally superior means here? e.g.~lead to less cascading errors?} reduces the global cascading
     error problem.
 \end{description}
 
