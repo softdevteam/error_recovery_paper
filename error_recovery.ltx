@@ -521,16 +521,13 @@ recovery algorithm now starts. It first tries \textsf{action}(7, `+') which
 error recovery algorithm to complete, and parsing resumes with a stack [0, 2].
 
 The fundamental problem with error recovery can be seen from the above example:
-the adjustment made to the parsing stack is not one that the user can
-replicate. Looked at another way, error recovery with panic mode is a \emph{Deus ex
-machina}: the only
-general way to report what was done is to show the parsing stack
-before and after recovery which is challenging to interpret for small grammars
-like that of Figure~\ref{fig:exprgrammar} and completely impractical for
-anything larger\lukas{Isn't popping elements from the stack equivalent to removing the terminals contained in whatever was popped? So the algo could just report which terminals were removed which the user can easily replicate (esp in the above example). The report would then look similar to cpct+, e.g. delete, shift, delete, although in this case the deletes can get really large (i.e. entire subtrees) which doesn't make for a great error report.}\laurie{notice that it isn't popping the terminals: it's literally popping the parsing stack. Only when the parsing stack is empty does it pop a terminal (it then replaces the empty parsing stack with the original parsing stack and tries again)}\lukas{What I meant is that popping from the stack is equivalent to popping terminals or nonterminals (which usually contain terminals) to the left of the error, whereas skipping input happens to the right of the error. So an ER algo could easily report to the user that content to the left of the error needs to be deleted.}. There is an important corollary to this: panic mode
-often leads to a state that no input from the user could have reached,
-making it more likely that resuming parsing will lead to a cascade of further
-parsing errors (as we will see later in Section~\ref{results})\lukas{Can we give a small example: "e.g.~state 3 in Figure 2". I think what this means is: we can reach a state which shouldn't be reachable with the current lookahead, if for example we have just popped something of the stack and then skipped some input. Since skipping input has changed the lookahead, this new lookahead wouldn't have been able to reach the current state immediately leading to another error.}\laurie{i think we'd need to give a specific input too in order to show an example. it wouldn't hurt but i don't know if it's super useful?}\lukas{this comment is related to the above, that on first glance it's not immediately clear why it's impossible to find an easy way to report this repair to the user, as the ER could just report what was deleted and what was inserted.}\laurie{panic mode is doing two things: arbitrarily messing around with the parsing stack and skipping input. it can't insert anything.}.
+by popping from the parsing stack, it implicitly deletes input from before the
+error location (in this case the first `\texttt{+}') in order to find a way of
+parsing input after the error location. This often leads to panic mode throwing
+away huge portions of the input in its quest to find a repair. Not only can the
+resulting recovery can appear as a \emph{Deus ex machina}, but the more input
+that is skipped, the more likely that a cascade of further parsing errors
+ensues (as we will see later in Section~\ref{results}).
 
 
 \section{\corchuelo}
