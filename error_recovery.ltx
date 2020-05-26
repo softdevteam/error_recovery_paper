@@ -1002,9 +1002,9 @@ list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
 and thus allows list-like integer indexing as well as hash-based lookups.}. This has
 near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 filters out duplicates with near-identical performance to an unordered hashset.
-We then make use of a simply property of hashsets: an object's hash behaviour
+We then make use of a simple property of hashsets: an object's hash behaviour
 need only be a non-strict subset of its equality behaviour. Configuration
-hashing is based solely on a configurations' parsing stack and remaining input,
+hashing is based solely on a configuration's parsing stack and remaining input,
 giving us a fast way of finding configurations that are compatible under
 conditions \#1 (identical parsing stacks) and \#2 (identical input remaining).
 As well as checking these two conditions, configuration equality also checks
@@ -1121,8 +1121,7 @@ $N_\textit{try}$ tokens (which we somewhat arbitrarily set at 250). Taking
 the furthest-parse point as our top rank, we then discard all configurations
 which parsed less input than this. The reason
 why we rank the configurations, and not the repair sequences, is that we only
-need to rank one repair sequence for each merged configuration, a small but useful
-optimisation. We then expand the top ranked configurations into repair
+need to rank one of the repair sequences of each merged configuration, a small but useful optimisation\lukas{I tried but failed to remind the reader here that a configuration can have multiple repair sequences, which I think makes this sentence easier to understand: my other attempt was: the reason ... is that a configuration can have multiple repair sequences of which we only need to rank one}. We then expand the top ranked configurations into repair
 sequences and remove shifts from the end of those repair sequences. Since the
 earlier merging of compatible configurations is imprecise (it misses
 configurations that have already been processed), there can be some remaining
@@ -1134,7 +1133,7 @@ Particularly on real-world grammars, selecting the top-ranked repair sequences
 substantially decreases cascading errors (see Figure~\ref{fig:ranking} for an example).
 It also does so for very little additional computational cost, as the complete set of
 minimum cost repair sequences is much smaller than the number of configurations
-searched. However, it cannot entirely reduce the cascading error problem. Since,
+searched\lukas{I think this is trying to say: doing this is cheap, because there's not many minimum cost repair sequences relative to the thousands of possible configurations?}. However, it cannot entirely reduce the cascading error problem. Since,
 from our perspective, each member of the top-ranked set is equivalently good, we
 non-deterministically select one of its members to repair the input and allow
 parsing to continue. This can mean that we select a repair sequence which
