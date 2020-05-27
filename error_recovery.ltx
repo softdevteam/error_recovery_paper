@@ -1555,7 +1555,7 @@ Rust. Instead, \emph{grmtools} allows each rule to have a Rust return type
 associated with it (between `\texttt{->}' and `\texttt{:}'): the actions of each
 production in that rule must return values of that type. \texttt{\$\emph{n}}
 variables reference the \emph{nth} symbol in a production (numbered from one
-i.e. \texttt{\$1} references the first symbol). If that symbol is a reference to
+i.e.~\texttt{\$1} references the first symbol). If that symbol is a reference to
 a rule, a value of that rule's Rust type will be stored in that variable. If
 that symbol is a token then the user's input can be obtained by
 \texttt{\$lexer.span\_str(\&\$1.unwrap().span())} (line 17--18). Note that while this
@@ -1788,7 +1788,7 @@ incremental parsing~\cite[p.~99]{wagner98practicalalgorithms}. In essence, any
 input which cannot be lexed is put into a token whose type is not referenced in
 the normal grammar. This guarantees that all possible input lexes without
 error and, when the parser encounters an error token, normal error recovery
-commences.
+commences. \lukas{I assume we don't enable this for the experiments (we do say earlier that we remove files that don't lex, but readers may be wondering if this was applied to the experiments later) }
 
 A basic, but effective, version of this requires no special support from
 \emph{grmtools} (see Figure~\ref{lst:lexerror}). First, we add a rule to
