@@ -105,8 +105,8 @@
 \maketitle
 
 \begin{abstract}
-Syntax errors are generally easy to fix for humans, but not for parsers, in general,
-and LR parsers, in particular. Traditional `panic mode' error recovery, though
+Syntax errors are generally easy to fix for humans, but not for parsers in general
+nor LR parsers in particular. Traditional `panic mode' error recovery, though
 easy to implement and applicable to any grammar,
 often leads to a cascading chain of
 errors that drown out the original. More advanced error recovery techniques
@@ -140,7 +140,7 @@ syntax errors in one go.
 When error recovery works well, it is a useful productivity gain. Unfortunately,
 most current error recovery approaches are simplistic. The most common
 grammar-neutral approach to error recovery are those algorithms described as
-`panic mode' algorithms (e.g.~\cite[p.~348]{holub90compilerdesign}) which skip
+`panic mode' (e.g.~\cite[p.~348]{holub90compilerdesign}) which skip
 input until the parser finds something it is able to parse. A more
 grammar-specific variation of this idea is to skip input until a pre-determined
 synchronisation token (e.g. `;' in Java) is
@@ -214,9 +214,9 @@ C.java:2: error: <identifier> expected
 \caption{An example of a simple, common Java syntax error
 (\subref{lst:javaerror:input}) and the problems traditional error recovery has in
 dealing with it. \texttt{javac} (\subref{lst:javaerror:javac}) spots the error
-when it encounters `\texttt{y}'. Its error recovery heuristic then
+when it encounters `\texttt{y}'. Its error recovery algorithm then
 repairs the input by inserting a semicolon before `\texttt{y}' (i.e.~making
-the input equivalent to `\texttt{int x; y;}'). This causes a (spurious) cascading
+the input equivalent to `\texttt{int x; y;}'). This then causes a spurious
 parsing error, since `\texttt{y}' on its own is not a valid statement. The \cpctplus
 error recovery algorithm we introduce in this paper produces
 the output shown in (\subref{lst:javaerror:cpctplus}): after spotting an error
@@ -252,7 +252,7 @@ than naive approaches and can communicate the repairs they find in a way that
 humans can easily replicate. However, such algorithms
 have seen little practical use because their typical
 performance is seen as poor and their worst case unbounded \cite[p.~14]{mckenzie95error}.
-We add a further complaint to this mix: such approaches only report a single
+We add a further complaint: such approaches only report a single
 repair sequence to users. In general -- and especially in syntactically rich
 languages -- there are multiple reasonable repair sequences for a given error
 location, and the algorithm has no way of knowing which best matches the user's intentions.
@@ -272,7 +272,7 @@ so while reporting well under
 half as many error locations to the user as a traditional panic mode algorithm:
 in other words, \cpctplus substantially reduces the cascading error problem. Finally,
 we show -- for, as far as we know, the first time -- that advanced error
-recovery can be fairly easily added to a Yacc-esque system, allowing users
+recovery can be naturally added to a Yacc-esque system, allowing users
 to make fine-grained decisions about what to do when error
 recovery has been applied to an input (Section~\ref{sec:api}). We believe that this
 shows that algorithms such as \cpctplus are ready for wider
@@ -311,9 +311,9 @@ and choose from the subset that gets furthest (note that the time required to do
 this is included in the 0.5s timeout). We thus also test a second hypothesis:
 
 \begin{description}
-  \item[H2] Ranking the complete set of minimum cost repair sequences and
-    choosing those which allow parsing to continue furthest locally
-    reduces the global cascading error problem.
+  \item[H2] Ranking the complete set of minimum cost repair sequences by
+    how far they allow parsing to continue locally reduces the global cascading
+    error problem.
 \end{description}
 
 We also strongly validate this hypothesis. We do this by comparing `normal' \cpctplus
@@ -327,7 +327,7 @@ errors being reported (i.e.~it substantially worsens the cascading error problem
 This paper is structured as follows. We describe the \corchuelo algorithm
 (Section~\ref{corchuelo}), filling in missing details from the original description
 and correcting its definition. We then expand the algorithm into \cpctplus
-(Section~\ref{corchueloplus}). We then validate \cpctplus on a corpus of \corpussize real,
+(Section~\ref{corchueloplus}). Finally, we validate \cpctplus on a corpus of \corpussize real,
 syntactically incorrect, Java programs comparing it to implementations
 of panic mode and \corchuelo (Section~\ref{experiment}). To
 emphasise that our algorithms are grammar-neutral, we show examples of
@@ -365,8 +365,7 @@ grammar. Since this is rarely useful on its own, Yacc-like tools allow grammars
 to specify `semantic actions' which are executed when a production in the grammar is
 successfully matched. Except where stated otherwise, we assume that the semantic actions build
 a \emph{parse tree}, ordering the tokens into a tree of nonterminal nodes
-(which can have children) and terminal nodes (which cannot have children)
-relative to the underlying grammar.
+(which can have children) and terminal nodes (which cannot have children).
 
 \begin{figure}[t]
 \includegraphics{examplegrammar}
@@ -390,14 +389,14 @@ The CFG is first transformed into a \emph{stategraph}, a statemachine
 where each node contains one or more \emph{items} (describing the valid
 parse states at that point) and edges are labelled with terminals or
 nonterminals. Since even on a modern machine, a canonical
-(i.e.~unmerged) LR stategraph for a real-world grammar takes several seconds to
-build, and a surprising amount of memory to store, we use the state merging
+(i.e.~unmerged) LR stategraph can take several seconds to
+build, and a surprising amount of memory to store, we use the
 algorithm of \cite{pager77practical} to merge together compatible
-states.\footnote{Unfortunately \cite{pager77practical} can over-merge states when conflict
-resolution is used \cite[p.~3]{denny10ielr} (i.e.~when Yacc uses its
-precedence rules to turn an ambiguous input into an unambiguous LR parser).
+states\footnote{\cite{pager77practical} can over-merge states when conflicts
+occur \cite[p.~3]{denny10ielr} (i.e.~when Yacc uses
+precedence rules to turn an ambiguous grammar into an unambiguous LR parser).
 Since our error recovery approach operates purely on the statetable,
-it should work correctly with other merging approaches such as that of~\cite{denny10ielr}.} The
+it should work correctly with other merging approaches such as that of~\cite{denny10ielr}.}. The
 effect of this is significant, reducing the Java grammar we use later from
 8908 to 1148 states. The stategraph is then transformed into a
 \emph{statetable} with one row per state. Each row has a possibly empty \emph{action} (shift, reduce,
