@@ -1952,7 +1952,7 @@ stated that this algorithm has a fundamental flaw. We now believe this was
 due to us incorrectly assuming that the `delete' optimisation of \corchuelo
 applied to \cite{kimyi10astar}. We apologise to the authors for this
 mistake.}. This uses the A* algorithm, and a precomputed distance table to
-quickly generate repair sequences in the vein of \corchuelo.
+quickly generate repair sequences in the vein of \corchuelo.\lukas{This double dot is a bit confusing. Maybe we can remove it via rewriting. Though it's not the end of the world if not.}
 \cite{kimyi10astar} works exclusively on the stategraph, assuming that it is
 unambiguous. However, Yacc systems allow ambiguous stategraphs and provide a means for
 resolving those ambiguities when creating the statetable. Many real-world
@@ -2011,7 +2011,7 @@ Section~\ref{sec:panic mode}, it will, in general, clearly skip more input than
 \cpctplus, which is undesirable. LL parsers do, however, make it
 somewhat easier to express grammar-specific error recovery rules.
 The most advanced LL approach that we are aware of is
-IntelliJ's Grammar-Kit, which allows user to annotate their grammars for error
+IntelliJ's Grammar-Kit, which allows users to annotate their grammars for error
 recovery. Perhaps the most interesting annotation is that certain rules can be
 considered as fully matched even if only a prefix is matched (e.g.~a partially
 completed function is parsed as if it was complete). It might be possible to add
@@ -2039,8 +2039,7 @@ where it performs less well, it can lead to parsers which skip large portions
 While the field of programming languages has largely forgotten the approach of
 \cite{aho72minimum}, there are a number of successor works (e.g.~\cite{rajasekaran16error}).
 These improve the time complexity, though none
-that we are aware of address the issue of how to present what has been done to
-the user.
+that we are aware of address the issue of how to present to the user what has been done.
 
 We are not aware of any error recovery algorithms that are formally verified.
 Indeed, as shown in this paper, some have serious flaws. We are only aware of
@@ -2068,7 +2067,7 @@ that, in the future, multi-phase solutions will be developed. For example, one
 may use noncorrecting error recovery (e.g.~\cite{richter85noncorrecting})
 to identify syntax errors, and then use a combination of machine-learning
 (e.g.~\cite{santos18syntax}) and \cpctplus to discover repair sequences
-that allow parsing to only error at those places.
+that allow parsing to only error at those places\lukas{I'm not quite sure what this means. Did you mean "parsing to continue at those places"?}.
 
 \textbf{Acknowledgements:}
 We are grateful to the Blackbox developers for allowing us access
