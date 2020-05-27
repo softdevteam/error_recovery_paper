@@ -1194,7 +1194,7 @@ There are two standard problems when evaluating error recovery algorithms: how
 to determine if a good job has been done on an individual example; and obtaining
 sufficient examples to get a wide perspective on an algorithm's performance. To
 some extent, solutions to these problems are mutually exclusive: for
-real-world inputs, the only way to guarantee that a good job has been done is to
+real-world inputs, the only way to tell if a good job has been done is to
 manually evaluate it, which means that it is only practical to use a small set
 of input programs. Most papers we are aware of use at most 200 source files
 (e.g.~\cite{corchuelo02repairing}), with one using a single source file with minor
@@ -1234,7 +1234,7 @@ files for those who register with Blackbox.
 
 The size of our corpus means that we cannot manually evaluate repairs for
 quality. Instead, we report several other metrics, of which the number of error
-locations is perhaps the closest proxy for manually perceived quality. However,
+locations is perhaps the closest proxy for perceived quality. However,
 this number has to be treated with caution for two reasons. First, it is
 affected by differences in the failure rate: if a particular error recovery
 algorithm cannot repair an entire file then it may not have had time to find all the
@@ -1263,7 +1263,7 @@ to the file as a whole).
 
 We evaluate three main error recovery algorithms: \corchuelo, \cpctplus, and
 panic mode. Our implementation of \corchuelo is to some extent a
-`best effort' since some parts of the algorithm are explained informally. As
+`best effort' since we have had to fill in several implementation details ourselves. As
 per the description, we: use the same
 limits on repair sequences (repair sequences can contain at most 3
 delete or 4 insert repairs, and cannot span more than 10 tokens in the input);
@@ -1271,13 +1271,14 @@ complete as soon as a single successful repair sequence is found; and, when no
 available repair sequence is found, fall back on panic mode. In addition, we
 impose the same 0.5s timeout on this algorithm, as it is otherwise unbounded in
 length, and sometimes exhausts available RAM. Panic mode implements the algorithm
-from Section~\ref{sec:panic mode}. Note that we do not report the
+from Section~\ref{sec:panic mode}. We do not report the
 average cost size for panic mode or \corchuelo
 (which falls back on panic mode) since they do not (always) report
-repair sequences (see Section~\ref{sec:panic mode}).
+repair sequences (see Section~\ref{sec:panic mode}). Although
+panic mode can implicitly delete input from before the error location, we
+only include the input it explicitly skips in the proportion of tokens skipped.
 
-In order to test hypothesis H2, we created a variant of \cpctplus called \cpctplusrev,
-collecting the same data as for the other error recovery algorithms.
+In order to test hypothesis H2, we created a variant of \cpctplus called \cpctplusrev.
 Instead of selecting from the minimum cost repair sequences which allow
 parsing to continue furthest, \cpctplusrev selects from those which allow parsing to
 continue the least far. This models the worst case for other members of the
@@ -1287,7 +1288,7 @@ more errors could be reported to users of other members of the
 \fischer family compared to \cpctplus.
 
 Configuration merging (see Section~\ref{merging}) is the most complex part of
-\cpctplus. To understand whether this complexity leads to better results, we
+\cpctplus. To understand whether this complexity leads to better performance, we
 created another variant of \cpctplus called \cpctplusdontmerge
 which disables configuration merging.
 
@@ -1302,7 +1303,7 @@ that file).
 
 All experiments were run on an otherwise unloaded Intel Xeon E3-1240 v6 with
 32GiB RAM running Debian 10. We disabled hyperthreading and turbo boost and ran experiments
-serially. Our experiments take approximately 15 days to complete. We used Rust
+serially. Our experiments took approximately 15 days to complete. We used Rust
 1.43.1 to compile \emph{grmtools} (the
 \texttt{Cargo.lock} file necessary to reproduce the build is included in our
 experimental repository).
@@ -1324,12 +1325,12 @@ experimental repository).
 \caption{Summary statistics from running various error recovery algorithms over
 a corpus of \corpussize Java files (for all measures, lower values are better).
 Mean and median times
-report how \lukas{s/long/much time?}long was spent in error recovery per file: both figures
+report how much time was spent in error recovery per file: both figures
 include files which exceeded the recovery timeout, so they represent the `real'
 times that users would experience, whether or not all errors are repaired or
 not. Cost size reports the mean cost (i.e.~the number of insert and delete
 repairs) of each error location repaired (this number is meaningless for
-\corchuelo (which falls back on panic mode) and panic mode, since panic mode does
+\corchuelo -- which falls back on panic mode -- and panic mode, since panic mode does
 not report repair sequences).
 The failure rate is the percentage of files which could not be fully
 repaired within the timeout. Tokens skipped is
@@ -1350,7 +1351,7 @@ Section~\ref{merging}).}
 corpus. The $x$ axis shows time (up to the timeout of 0.5s) and the $y$ axis is
 a logarithmic scale for the number of files. Error bars represent 99\% confidence
 intervals. As this clearly shows, the vast majority of files fit in the
-histogram's first bin\lukas{what is this bin? roughly <7ms? might be interesting for the reader to have rough number here}; there is then a gradual decrease until around 0.15s,
+histogram's first bin; there is then a gradual decrease until around 0.15s,
 with a broadly flat distribution from then until the pronounced peak
 at the timeout of 0.5s. Figure~\ref{fig:results:cpctplus_longer_histogram}
 in the Appendix shows how extending the timeout increases the number of files
@@ -1372,8 +1373,8 @@ With that caution in mind, the overall conclusions are fairly clear. \cpctplus
 is able to repair nearly
 all input files within the 0.5s timeout. While panic mode is able to repair
 every file within the 0.5s timeout, it reports well over twice as many error
-locations as \cpctplus (i.e.~panic mode substantially worsens the cascading
-error problem). As well as producing more detailed output, \cpctplus has a
+locations as \cpctplus -- in other words, panic mode substantially worsens the cascading
+error problem. As well as producing more detailed and accurate output, \cpctplus has a
 lower failure rate, median, and mean time than \corchuelo. The fact that the median
 recovery time for \cpctplus is two orders of magnitude lower than its mean
 recovery time suggests that only a small number of outliers cause error recovery to
@@ -1409,7 +1410,7 @@ locations in a file and the $y$ axis is a logarithmic scale for the number of
 files. Error bars represent 99\% confidence intervals. As this histogram
 shows, the entire distribution is skewed
 slightly rightwards by \cpctplusrev, showing that \cpctplusrev makes error recovery
-slightly worse in most files (rather than making error recovery in a few
+slightly worse in a number of files (rather than making error recovery in a few
 files a lot worse).}
 \label{fig:results:cpctplus_cpctplusrev_histogram}
 \end{figure}
@@ -1473,18 +1474,18 @@ is very close to being correct and that the more input that error recovery skips
 the less likely it is to get back to a successful parse. We added the ability
 to record the proportion of tokens skipped as the result of \emph{delete}
 repairs during error recovery. The results in Figure~\ref{fig:results:summary}
-are mixed. To a reasonable extent there is a correlation between the
+show a general correlation between the
 proportion of tokens skipped and the number of error locations (e.g.~\cpctplus
 skips very little of the user's input; \cpctplusrev skips a little more; and
 panic mode skips an order of magnitude more).
 However, \corchuelo does not obviously follow this pattern: relative to the
 other algorithms, its number of error locations does not correlate with the
-proportion of input skipped. However, the reason for this is related to its
+proportion of input skipped. This is mostly explained by its
 high mean time and high failure rate: \corchuelo tends to fail on files with
 large numbers of error locations, underreporting the `true' number of error
 locations simply because it cannot make it all of the way through such files
-before the timeout. Therefore, despite this apparent outlier,
-we consider that our data validate Hypothesis H3.
+before the timeout. However, this outlier means that we consider
+Hypothesis H3 to be only weakly validated.
 
 
 \section{Using error recovery in practice}
