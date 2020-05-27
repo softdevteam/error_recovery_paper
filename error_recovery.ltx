@@ -901,11 +901,11 @@ opinion, justified.
 \label{corchueloplus}
 
 In this section, we extend the \corchuelo algorithm to become what we call
-\cpctplus. First we extend the algorithm to find
+\cpctplus. First we enhance the algorithm to find
 the complete set of minimum cost repair sequences
 (Section~\ref{corchuelo:allminimumcost}). Since this significantly slows down
-the search, we introduce a significant optimisation in the form
-of merging compatible configurations (Section~\ref{merging}). The complete set of
+the search, we introduce a significant optimisation by
+merging compatible configurations (Section~\ref{merging}). The complete set of
 minimum cost repair sequences allows us to make an
 algorithm less susceptible to the cascading error problem
 (Section~\ref{rankingrepairs}). We then change the criteria for terminating
@@ -921,9 +921,9 @@ in two different ways: the successful repair sequence found can vary from run
 to run; and the successful repair sequence might not match the user's intention.
 
 We therefore introduce the idea of the complete set of repair sequences: that
-is all equivalently good repair sequences. Although we will refine the concept
+is, all equivalently good repair sequences. Although we will refine the concept
 of `equivalently good' in Section~\ref{rankingrepairs}, at this stage we
-consider all successful repair sequences with the minimum cost $c$ to be
+consider all successful repair sequences with minimum cost $c$ to be
 equivalently good. In other words, as soon as we find the first successful repair
 sequence, its cost $c$ defines the minimum cost.
 
@@ -1002,7 +1002,7 @@ need only be a non-strict subset of its equality behaviour. Configuration
 hashing is based solely on a configuration's parsing stack and remaining input,
 giving us a fast way of finding configurations that are compatible under
 conditions \#1 (identical parsing stacks) and \#2 (identical input remaining).
-As well as checking these two conditions, configuration equality also checks
+As well as checking those two conditions, configuration equality also checks
 condition \#3 (compatible repair sequences).
 
 Conceptually, merging two configurations together is simple: each configuration
@@ -1023,8 +1023,8 @@ downside to this scheme is that expanding configurations into repair sequences r
 recursively expanding both the normal parent pointer tree of the first
 element as well as the merged parent pointer trees of the second element.
 
-Compatible configuration merging is a powerful optimisation even though
-it can only merge configurations in the todo list (i.e.~we cannot detect
+Compatible configuration merging is particularly effective in complex cases,
+even though it can only merge configurations in the todo list (i.e.~we cannot detect
 all possible compatible merges). An example of compatible configuration merging
 can be seen in Figure~\ref{fig:cpctplus:full}.
 
@@ -1173,7 +1173,7 @@ In order to understand the performance of \cpctplus, we conducted a large
 experiment on real-world Java code. In this section we outline our methodology
 (Section~\ref{methodology}) and results (Section~\ref{results}). Our experiment
 is fully repeatable and downloadable from
-\url{https://archive.org/download/error_recovery_experiment/0.3/}. The results
+\url{https://archive.org/download/error_recovery_experiment/0.4/}. The results
 from our particular run of the experiment can also be downloaded from the same
 location.
 
