@@ -455,26 +455,26 @@ complete before moving to a new (`goto') state.}
 Error recovery algorithms are invoked by a parser when it has yet to finish but
 there is no apparent way to continue parsing (i.e.~when \textsf{action}$(s_n,
 t_0) = \textit{error}$). Error recovery algorithms are thus called with a parsing
-stack and a sequence of remaining input (which, for simplicities sake, we represent
+stack and a sequence of remaining input (which we represent
 as a list of tokens): they can modify either or both of the
 parsing stack and the input in their quest to get parsing back on track. The differences
 between algorithms are thus in what modifications they can carry out
 (e.g.~altering the parse stack; deleting input; inserting input), and how they
 carry such modifications out.
 
-The simplest grammar-neutral error recovery algorithms are called `panic mode'
-algorithms. The origin of this family of algorithms seems lost in time;
-there are also more members of this family for LL parsing than there are for
-LR parsing. Indeed, for LR parsing, there is only one fundamental way of creating
-a grammar-neutral panic mode algorithm: we take our formulation from
+The simplest grammar-neutral error recovery algorithms are widely called `panic mode'
+algorithms (the origin of this family of algorithms seems lost in time).
+While there are several members of this family for LL parsing, there
+there is only one fundamental way of creating
+a grammar-neutral panic mode algorithm for LR parsing. We take our formulation from
 \holub~\cite[p.~348]{holub90compilerdesign}\footnote{Note that step 2 in
 \holub causes valid repairs to be missed: while it is
 safe to ignore the top element of the parsing stack on the first iteration of
 the algorithm, as soon as one token is skipped, one must check all elements of
-the parsing stack. Our description simply drops step 2 entirely.}. It works by
+the parsing stack. Our description simply drops step 2 entirely.}. The algorithm works by
 popping elements off the parsing stack to
 see if an earlier part of the stack is able to parse the next input symbol. If
-no element in the stack is capable of parsing the next input symbol, the input
+no element in the stack is capable of parsing the next input symbol, the next input
 symbol is skipped, the stack restored, and the process repeated. At worst,
 this algorithm guarantees to find a match at the EOF token.
 Figure~\ref{fig:holub:algorithm} shows a more formal version of this algorithm.
@@ -541,9 +541,9 @@ explain the original algorithm (Section~\ref{corchuelo:orig}), although we use
 different notation than the original, fill in several missing details, and
 provide a more formal definition. We then
 make two correctness fixes to ensure that the algorithm always
-finds minimum cost repair sequences (Section~\ref{corchuelo:kimyi}). Since the original description
+finds minimum cost repair sequences (Section~\ref{corchuelo:kimyi}). Since the original
 gives few details as to how the algorithm might best be implemented, we then
-explain the steps we took to make a performant implementation
+explain our approach to making a fast implementation
 (Section~\ref{corchuelo:implementation}).
 
 
@@ -565,8 +565,9 @@ z}].
 
 In order to find repair sequences, the algorithm keeps a breadth-first queue of
 \emph{configurations}, each of which represents a different search state;
-configurations are searched for their neighbours until a successful configuration
-is found. The cost of a configuration is the cumulative cost of the repairs
+configurations are queried for their neighbours which are put into the queue;
+and the search terminates when a successful configuration is found.
+The cost of a configuration is the sum of the repair costs
 in its repair sequence. By definition, a configuration's neighbours have the
 same, or greater, cost to it.
 
@@ -610,7 +611,7 @@ same, or greater, cost to it.
 \]
 \end{minipage}
 \vspace{-3pt}
-\caption{The repair-creating reduction rules \cite{corchuelo02repairing}.
+\caption{The repair-creating reduction rules for \corchuelo.
 \textsc{CR Insert} finds all terminals reachable from the current state and
 creates insert repairs for them (other than the EOF token `$\$$').
 \textsc{CR Delete} creates deletion repairs if user defined input remains.
