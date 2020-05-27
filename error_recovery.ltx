@@ -1236,7 +1236,7 @@ quality. Instead, we report several other metrics, of which the number of error
 locations is perhaps the closest proxy for manually perceived quality. However,
 this number has to be treated with caution for two reasons. First, it is
 affected by differences in the failure rate: if a particular error recovery
-algorithm cannot repair an entire file then it may not have had time find all the
+algorithm cannot repair an entire file then it may not have had time to find all the
 `true' error locations. Second, the number of error locations only allows
 relative comparisons. Although we know that the corpus
 contains at least \corpussize manually created errors (i.e.~at least one per
@@ -1323,7 +1323,7 @@ experimental repository).
 \caption{Summary statistics from running various error recovery algorithms over
 a corpus of \corpussize Java files (for all measures, lower values are better).
 Mean and median times
-report how long was spent in error recovery per file: both figures
+report how \lukas{s/long/much time?}long was spent in error recovery per file: both figures
 include files which exceeded the recovery timeout, so they represent the `real'
 times that users would experience, whether or not all errors are repaired or
 not. Cost size reports the mean cost (i.e.~the number of insert and delete
@@ -1349,7 +1349,7 @@ Section~\ref{merging}).}
 corpus. The $x$ axis shows time (up to the timeout of 0.5s) and the $y$ axis is
 a logarithmic scale for the number of files. Error bars represent 99\% confidence
 intervals. As this clearly shows, the vast majority of files fit in the
-histogram's first bin; there is then a gradual decrease until around 0.15s,
+histogram's first bin\lukas{what is this bin? roughly <7ms? might be interesting for the reader to have rough number here}; there is then a gradual decrease until around 0.15s,
 with a broadly flat distribution from then until the pronounced peak
 at the timeout of 0.5s. Figure~\ref{fig:results:cpctplus_longer_histogram}
 in the Appendix shows how extending the timeout increases the number of files
@@ -1408,8 +1408,8 @@ locations in a file and the $y$ axis is a logarithmic scale for the number of
 files. Error bars represent 99\% confidence intervals. As this histogram
 shows, the entire distribution is skewed
 slightly rightwards by \cpctplusrev, showing that \cpctplusrev makes error recovery
-slightly worse in a number of files (rather than making error recovery in a small
-number of files a lot worse).}
+slightly worse in most files (rather than making error recovery in a few
+files a lot worse).}
 \label{fig:results:cpctplus_cpctplusrev_histogram}
 \end{figure}
 
@@ -1450,7 +1450,7 @@ disproportionately harder for the error recovery algorithm to recover from.
 \cpctplusdontmerge shows that configuration merging has a significant effect on
 the failure rate, in our opinion justifying both its conceptual complexity and
 the less than 100LoC Rust code taken to implement it. The slowdown
-in the mean and median time for \cpctplusdontmerge suggest that configuration
+in the mean and median time for \cpctplusdontmerge suggests that configuration
 merging is particularly effective on files with complex or numerous errors.
 
 
