@@ -1585,7 +1585,7 @@ $R$'s return type; if they reference a token $T$, then their type
 is (slightly simplified) \texttt{Result<Lexeme,
 Lexeme>}. We will explain the reasons for this shortly, but at this stage it
 suffices to note that we can extract tokens matching the user's input from
-non-insert repairs by calling \texttt{\$1.unwrap()}, and obtain the actual string the user passed by
+non-insert repairs\lukas{I'm not sure why we need to emphasise "from non-insert repairs". Do you mean that we can only extract tokens if there wasn't an insertion from a repair sequence?} by calling \texttt{\$1.unwrap()}, and obtain the actual string the user passed by
 using the globally available \texttt{\$lexer.span\_str} function.
 
 
@@ -1927,7 +1927,7 @@ cost repair sequences being found, due to the large number of Java keywords that
 valid in several parts of this expression leading to a combinatorial explosion: even the most
 diligent user is unlikely to find such a volume of information valuable. In
 a different vein, the success condition of `reached an accept' state is
-encountered rarely enough that that we sometimes forgot that it could happen and
+encountered rarely enough that we sometimes forgot that it could happen and
 were confused by an apparently unexplained difference in the repair sequences
 reported for the same syntax chunk when it was moved from the end to the middle
 of a file. There is a
