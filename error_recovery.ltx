@@ -1788,7 +1788,8 @@ incremental parsing~\cite[p.~99]{wagner98practicalalgorithms}. In essence, any
 input which cannot be lexed is put into a token whose type is not referenced in
 the normal grammar. This guarantees that all possible input lexes without
 error and, when the parser encounters an error token, normal error recovery
-commences. \lukas{I assume we don't enable this for the experiments (we do say earlier that we remove files that don't lex, but readers may be wondering if this was applied to the experiments later) }
+commences\footnote{Note that this is an opt-in feature: it was not enabled
+for the experiments in Section~\ref{experiment}.}.
 
 A basic, but effective, version of this requires no special support from
 \emph{grmtools} (see Figure~\ref{lst:lexerror}). First, we add a rule to
@@ -1951,8 +1952,8 @@ of~\cite{kimyi10astar}\footnote{In an earlier online draft of this paper we
 stated that this algorithm has a fundamental flaw. We now believe this was
 due to us incorrectly assuming that the `delete' optimisation of \corchuelo
 applied to \cite{kimyi10astar}. We apologise to the authors for this
-mistake.}. This uses the A* algorithm, and a precomputed distance table to
-quickly generate repair sequences in the vein of \corchuelo.\lukas{This double dot is a bit confusing. Maybe we can remove it via rewriting. Though it's not the end of the world if not.}
+mistake.}. This generates repair sequences in the vein of \corchuelo
+using the A* algorithm and a precomputed distance table.
 \cite{kimyi10astar} works exclusively on the stategraph, assuming that it is
 unambiguous. However, Yacc systems allow ambiguous stategraphs and provide a means for
 resolving those ambiguities when creating the statetable. Many real-world
@@ -2066,8 +2067,8 @@ However, we do not think that it is the perfect solution. We suspect
 that, in the future, multi-phase solutions will be developed. For example, one
 may use noncorrecting error recovery (e.g.~\cite{richter85noncorrecting})
 to identify syntax errors, and then use a combination of machine-learning
-(e.g.~\cite{santos18syntax}) and \cpctplus to discover repair sequences
-that allow parsing to only error at those places\lukas{I'm not quite sure what this means. Did you mean "parsing to continue at those places"?}.
+(e.g.~\cite{santos18syntax}) and \cpctplus to discover those repair sequences
+that do not lead to additional error locations being encountered.
 
 \textbf{Acknowledgements:}
 We are grateful to the Blackbox developers for allowing us access
