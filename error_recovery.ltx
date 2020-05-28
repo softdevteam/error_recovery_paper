@@ -1493,8 +1493,8 @@ Hypothesis H3 to be only weakly validated.
 
 Although several members of the \fischer family were implemented in parsing
 tools of the day, to the best of our knowledge none of those implementations
-have survived. Equally, previous approaches in the \fischer family make no
-mention of how error recovery should be used or, indeed, if it has any
+have survived. Equally, we are not aware of any member of the \fischer
+family which explains how error recovery should be used or, indeed, if it has any
 implications for users at all.
 
 We are therefore forced to treat the following
@@ -1507,7 +1507,7 @@ question is important for real-world systems (e.g.~compilers) which can
 still perform useful computations (e.g.~running a type checker) in the
 face of syntax errors.
 
-While different languages are likely to require different solutions, in
+While different languages are likely to lend themselves to different solutions, in
 this section we show that \emph{grmtools} allows sensible integration
 of error recovery in a Rust context. Readers who prefer to avoid
 Rust-specific details may wish to move immediately to Section~\ref{sec:threats}.
@@ -1554,11 +1554,11 @@ production. The traditional Yacc \texttt{\%union} declaration is unwieldy in
 Rust. Instead, \emph{grmtools} allows each rule to have a Rust return type
 associated with it (between `\texttt{->}' and `\texttt{:}'): the actions of each
 production in that rule must return values of that type. \texttt{\$\emph{n}}
-variables reference the \emph{nth} symbol in a production (numbered from one
-i.e.~\texttt{\$1} references the first symbol). If that symbol is a reference to
+variables reference the \emph{nth} symbol in a production (where
+\texttt{\$1} references the first symbol). If that symbol is a reference to
 a rule, a value of that rule's Rust type will be stored in that variable. If
 that symbol is a token then the user's input can be obtained by
-\texttt{\$lexer.span\_str(\&\$1.unwrap().span())} (line 17--18). Note that while this
+\texttt{\$lexer.span\_str(\$1.unwrap().span())} (line 17--18). Note that while this
 grammar's semantic actions work as expected for inputs such as `2 + 3 * 4', they will
 panic if too large a number is passed (lines 21--24), or if an integer is
 inserted by error recovery. Figure~\ref{fig:api:resulttype} shows how to
@@ -1579,21 +1579,20 @@ $n$ symbols has $n$ pseudo-variables with the first symbol connected to
 \emph{grmtools} allows rules to specify a different return type, an approach
 shared with other modern parsers such as ANTLR~\cite{parr13definitive}.
 
-A more significant difference is in the contents of the \texttt{\$\emph{n}}
-pseudo-variables and how user input is extracted from them. If a pseudo-variable
-references a rule $R$, then that pseudo-variable's static type is $R$'s return type.
-However, if a pseudo-variable references a token $T$, then that
-pseudo-variable's static type is (slightly simplified) \texttt{Result<Lexeme,
+A more significant difference relates to the \texttt{\$\emph{n}}
+pseudo-variables: if they reference a rule $R$, then their type is
+$R$'s return type; if they reference a token $T$, then their type
+is (slightly simplified) \texttt{Result<Lexeme,
 Lexeme>}. We will explain the reasons for this shortly, but at this stage it
-suffices to note that we can extract tokens matching the user's input by
-calling \texttt{\$1.unwrap()}, and obtain the actual string the user passed by
+suffices to note that we can extract tokens matching the user's input from
+non-insert repairs by calling \texttt{\$1.unwrap()}, and obtain the actual string the user passed by
 using the globally available \texttt{\$lexer.span\_str} function.
 
 
 \subsection{Can semantic action execution continue in the face of error recovery?}
 
 \begin{figure}[!t]
-\begin{adjustbox}{valign=t,minipage=.60\textwidth}
+\begin{adjustbox}{valign=t,minipage=.54\textwidth}
 \begin{lstlisting}[numbers=left]
 %start Expr
 %avoid_insert "INT"
@@ -1612,7 +1611,9 @@ Factor -> Result<u64, Box<dyn Error>>:
   '(' Expr ')' { $2 }
  | 'INT'
    {
-     let n = $lexer.span_str($1?.span());
+     let t = $1.map_err(|_|
+       "<evaluation aborted>")?;
+     let n = $lexer.span_str(t.span());
      match s.parse::<u64>() {
        Ok(val) => Ok(val as u64),
        Err(_) => {
@@ -1627,7 +1628,7 @@ Factor -> Result<u64, Box<dyn Error>>:
 \end{lstlisting}
 \end{adjustbox}
 \hspace{3pt}
-\begin{adjustbox}{valign=t,minipage=.38\textwidth}
+\begin{adjustbox}{valign=t,minipage=.44\textwidth}
 \vspace*{0pt}
 \caption{A more sophisticated version of the grammar from
 Figure~\ref{fig:api:naive}. Each rule now returns a \texttt{Result} type. If an
@@ -1636,7 +1637,9 @@ evaluation by percolating the \texttt{Err} value upwards using the
 `\texttt{?}' operator (which, if the \texttt{Result}-returning expression it is
 attached to evaluates to an \texttt{Err}, immediately returns that error;
 otherwise it unwraps the \texttt{Ok}); all other rules percolate such errors
-upwards similiarly. Note that other token types
+upwards similiarly. As a convenience for the user, the contents of the `Err'
+value are changed from a lexeme to a string explaining why the calculator
+has not produced a value (lines 18-19). Note that other token types
 are unaffected: if error recovery inserts a bracket, for example, evaluation of
 the expression continues.}
 \label{fig:api:resulttype}
@@ -1646,9 +1649,8 @@ the expression continues.}
 In Yacc, semantic actions can assume that each symbol in the
 production has `normal' data attached to it (either a rule's value or the
 string matching a token; Yacc's error recovery is implicitly expected to
-maintain this guarantee). This assumption is unsafe in our setting, if we apply
-a repair sequence with an insert repair: the inserted token will have a type
-but no value. Given the input `(2 + 3', the inserted close bracket is not
+maintain this guarantee): in our setting inserted tokens
+have a type but no value. Given the input `(2 + 3', the inserted close bracket is not
 hugely important, and our calculator returns the value 5. However,
 given the input `2 +',
 \cpctplus finds a single repair sequence \emph{[Insert Int]}: what should
@@ -1682,7 +1684,7 @@ deliberately, fairly easy to use with the
 \texttt{Result<Lexeme, Lexeme>} type: for tokens whose value we absolutely
 require, we use Rust's `\texttt{?}' operator (which passes \texttt{Ok} values
 through unchanged but returns \texttt{Err} values to the function caller) to
-percolate our inability to continue upwards. While \texttt{Box<dyn Error>} is
+percolate our unwillingness to continue evaluation upwards. While \texttt{Box<dyn Error>} is
 slightly verbose, it is a widely understood Rust idiom.
 Figure~\ref{fig:api:resulttype} shows that changing the grammar to make use of
 this idiom requires relatively little extra code.
@@ -1709,7 +1711,7 @@ make a simple change to the repair sequence ranking of
 Section~\ref{rankingrepairs} such that the final list of repair sequences is
 sorted with inserts of such tokens at the bottom of the list. In our case, this
 means that we always select \emph{Delete +} as the repair
-sequence to apply to the input `2 + + 3' (the
+sequence to apply to the input `2 + + 3' (i.e.~the
 \emph{Insert Int} repair sequence is always presented as the second
 option).
 
@@ -1770,12 +1772,12 @@ Result: 9
 \end{minipage}
 \vspace{-10pt}
 \caption{A simple way of turning lexing errors into parsing errors in
-\emph{grmtools}. First, we add an \texttt{ERRORTOKEN} which matches any input
+\emph{grmtools}. First, we add a \texttt{ERRORTOKEN} token type, which matches otherwise invalid input,
 to the end of the Lex file (\subref{lst:lexerror:lexfile}). Second, we add a
 rule \texttt{ErrorRule} to the Yacc grammar referencing \texttt{ERRORTOKEN}
 (\subref{lst:lexerror:yaccfile}). Note that \texttt{ErrorRule} must not be
 referenced by any other rule in the Yacc grammar. With those two steps
-complete, even input with lexing errors such as `\texttt{2 @ 3 + 4}' invokes normal error
+complete, input with lexing errors such as `\texttt{2 @ 3 + 4}' invokes normal error
 recovery (\subref{lst:lexerror:output}).}
 \label{lst:lexerror}
 \end{figure}
@@ -1792,8 +1794,8 @@ commences\footnote{Note that this is an opt-in feature: it was not enabled
 for the experiments in Section~\ref{experiment}.}.
 
 A basic, but effective, version of this requires no special support from
-\emph{grmtools} (see Figure~\ref{lst:lexerror}). First, we add a rule to
-the lexer to match each invalid input character into its own error token.
+\emph{grmtools} (see Figure~\ref{lst:lexerror}). First, we add a new toke type to
+the lexer that matches each otherwise invalid input character.
 Second, since \emph{grmtools} requires that all tokens defined in the lexer are
 referenced in the grammar, we add a dummy rule to the grammar that references
 the token (making sure not to reference this rule elsewhere in the grammar).
@@ -1841,7 +1843,7 @@ some syntax errors more often -- relative to advanced programmers. For example,
 many of the files with the greatest number of syntax errors are caused by
 erroneous fragments repeated with variants (i.e.~it is likely that the
 programmer wrote a line of code, copy and pasted it, edited it, and repeated
-that multiple times before deciding to test the syntactic validity). It is
+that multiple times before deciding to test for syntactic validity). It is
 thus possible that a corpus consisting solely of programs from advanced programmers
 would lead to different results. We consider this a minor worry,
 partly because a good error recovery algorithm should
@@ -1890,11 +1892,11 @@ experimental methodology is both stricter -- aiming to find exactly the same
 repair as the human user applied -- and looser -- they only
 consider errors which can be fixed by a single token, discarding 42\% of
 the data~\cite[p.~8]{santos18syntax}) whereas we attempt to fix errors which
-span multiple tokens. It is thus difficult to directly compare their results to
-ours. However, by the high bar they have set themselves, they are able to repair
+span multiple tokens. It is thus difficult to directly compare our results to
+theirs. However, by the high bar they have set themselves, they are able to repair
 52\% of single-token errors.
 
-As \cpctplusrev shows, choosing an inappropriate repair sequence during
+As \cpctplusrev emphasises, choosing an inappropriate repair sequence during
 error recovery leads to cascading errors. The noncorrecting error recovery approach
 proposed by~\cite{richter85noncorrecting} explicitly addresses this weakness,
 eschewing repairs entirely. When a syntax error is discovered, noncorrecting
@@ -1925,7 +1927,7 @@ cost repair sequences being found, due to the large number of Java keywords that
 valid in several parts of this expression leading to a combinatorial explosion: even the most
 diligent user is unlikely to find such a volume of information valuable. In
 a different vein, the success condition of `reached an accept' state is
-encountered rarely enough that we found that we sometimes forgot it existed and
+encountered rarely enough that that we sometimes forgot that it could happen and
 were confused by an apparently unexplained difference in the repair sequences
 reported for the same syntax chunk when it was moved from the end to the middle
 of a file. There is a
@@ -2022,13 +2024,12 @@ challenging, because the non-LL parts of the grammar mean that there is not
 always a clearly defined point at which an error is determined to have
 occurred. PEG error recovery has thus traditionally required extensive manual
 annotations in order to achieve good quality recovery. \cite{medeiros19syntax}
-is the most advanced work we are aware of that tackles the problem of lessening
-the need for manual annotations for PEG error recovery. It does this by
+tackles this problem by
 automatically adding many (though not necessarily all) of the annotations
-needed for good error recovery. However, deciding when to add, and when not to
+needed for good PEG error recovery. However, deciding when to add, and when not to
 add, annotations is a difficult task and the two algorithms presented have
 different trade-offs: the \emph{Standard} algorithm adds more annotations,
-leading to better quality error recovery, but is more likely to change
+leading to better quality error recovery, but can change
 the input language accepted; the \emph{Unique}
 algorithm adds fewer annotations, leading to poorer quality error recovery, but
 does not affect the language accepted. The quality of error recovery of the
