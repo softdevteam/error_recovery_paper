@@ -118,9 +118,10 @@ reports the complete set of minimum cost repair sequences for a given location, 
 programmers to select the one that best fits their intention. Second, on a
 corpus of \corpussize real-world syntactically invalid Java programs, \cpctplus is
 able to repair \cpctplussuccessrate of files within
-a timeout of 0.5s. Finally, \cpctplus uses the existence of the complete set of
-minimum cost repair sequences to reduce the cascading error problem, where incorrect error recovery
-causes further spurious parsing errors. Across the test corpus, \cpctplus reports
+a timeout of 0.5s. Finally, \cpctplus uses the complete set of
+minimum cost repair sequences to reduce the cascading error problem, where
+incorrect error recovery causes further spurious syntax errors to be identified.
+Across the test corpus, \cpctplus reports
 \cpctpluserrorlocs error locations to the user, reducing the cascading
 error problem substantially relative to the \panicerrorlocs error locations reported by panic mode.
 \end{abstract}
@@ -268,10 +269,10 @@ in less time than \corchuelo.
 We validate \cpctplus on a corpus of \corpussize real,
 syntactically incorrect, Java programs (Section~\ref{experiment}). \cpctplus is
 able to recover \cpctplussuccessrate of files within a 0.5s timeout and does
-so while reporting well under
-half as many error locations to the user as a traditional panic mode algorithm:
-in other words, \cpctplus substantially reduces the cascading error problem. Finally,
-we show -- for, as far as we know, the first time -- that advanced error
+so while reporting fewer than
+half the error locations as a traditional panic mode algorithm:
+in other words, \cpctplus substantially reduces the cascading error problem.
+We also show -- for, as far as we know, the first time -- that advanced error
 recovery can be naturally added to a Yacc-esque system, allowing users
 to make fine-grained decisions about what to do when error
 recovery has been applied to an input (Section~\ref{sec:api}). We believe that this
@@ -290,10 +291,11 @@ Formally speaking, we first test the following hypothesis:
 
 The only work we are aware of with a similar concept of `acceptable time'
 is~\cite{deJonge12natural}, who define it as the total time spent in error
-recovery per file, with a threshold of 1s. Since many compilers are able to
-fully execute in less time than this, we felt that a tighter threshold is more
+recovery per file, with a threshold of 1s. We use that definition with one
+change: Since many compilers are able to
+fully execute in less than 1s, we felt that a tighter threshold is more
 appropriate: we use 0.5s since we think that even the most
-demanding user will tolerate such a delay. We strongly validate this hypothesis.
+demanding users will tolerate such a delay. We strongly validate this hypothesis.
 
 The complete set of minimum cost repair sequences makes it more likely that
 the programmer will see a repair sequence that matches their original
@@ -536,7 +538,7 @@ There have been many attempts to create better LR error recovery algorithms than
 panic mode. Most numerous are those error recovery algorithms in what we call the
 \fischer family. Indeed, there are far too many
 members of this family of algorithms to cover in one paper. We therefore start
-with one of the more recent -- \corchuelo~\cite{corchuelo02repairing}. We first
+with one of the most recent -- \corchuelo~\cite{corchuelo02repairing}. We first
 explain the original algorithm (Section~\ref{corchuelo:orig}), although we use
 different notation than the original, fill in several missing details, and
 provide a more formal definition. We then
@@ -876,10 +878,10 @@ Although this does mean that neighbouring configurations are scattered throughou
 memory, the memory sharing involved seems to more than compensate for
 poor cache behaviour; it also seems to be a good
 fit with modern \texttt{malloc} implementations, which are particularly
-efficient when allocating and freeing objects of the same size. While we
-suspect this representation is always likely to be a reasonable choice, it is
-difficult to generalise from our experience whether it will always be the best
-in other contexts, in particular for garbage collected languages.
+efficient when allocating and freeing objects of the same size.
+This representation is likely to be a reasonable choice in most contexts, although it is
+difficult to know from our experience whether it will always be the best choice (e.g~for
+garbage collected languages).
 
 One seemingly obvious improvement is to split the search into parallel threads. However,
 we found that the nature of the problem means that parallelisation is more
@@ -903,9 +905,9 @@ opinion, justified.
 In this section, we extend the \corchuelo algorithm to become what we call
 \cpctplus. First we enhance the algorithm to find
 the complete set of minimum cost repair sequences
-(Section~\ref{corchuelo:allminimumcost}). Since this significantly slows down
-the search, we introduce a significant optimisation by
-merging compatible configurations (Section~\ref{merging}). The complete set of
+(Section~\ref{corchuelo:allminimumcost}). Since this slows down
+the search, we optimise by merging together compatible configurations
+(Section~\ref{merging}). The complete set of
 minimum cost repair sequences allows us to make an
 algorithm less susceptible to the cascading error problem
 (Section~\ref{rankingrepairs}). We then change the criteria for terminating
@@ -920,7 +922,7 @@ as it has found a single minimum cost repair sequence. This is confusing
 in two different ways: the successful repair sequence found can vary from run
 to run; and the successful repair sequence might not match the user's intention.
 
-We therefore introduce the idea of the complete set of repair sequences: that
+We therefore introduce the idea of the complete set of minimum cost repair sequences: that
 is, all equivalently good repair sequences. Although we will refine the concept
 of `equivalently good' in Section~\ref{rankingrepairs}, at this stage we
 consider all successful repair sequences with minimum cost $c$ to be
@@ -997,7 +999,7 @@ list-of-ordered-hashsets\footnote{An ordered hashset preserves insertion order,
 and thus allows list-like integer indexing as well as hash-based lookups.}. This has
 near-identical \texttt{append} / \texttt{pop} performance to a normal list, but
 filters out duplicates with near-identical performance to an unordered hashset.
-We then make use of a simple property of hashsets: an object's hash behaviour
+We then make use of a simple property of hashsets: an object's hashing behaviour
 need only be a non-strict subset of its equality behaviour. Configuration
 hashing is based solely on a configuration's parsing stack and remaining input,
 giving us a fast way of finding configurations that are compatible under
@@ -1097,8 +1099,8 @@ in (\subref{lst:ranking:output}). javac in contrast attempts to insert
 \end{figure}
 
 In nearly all cases, members of the complete set of minimum cost repair
-sequences end with $N_\textit{shifts}$ (the only exception being if an error
-location is found less than $N_\textit{shifts}$ from the end of an input). Thus
+sequences end with $N_\textit{shifts}$ (the only exception being error
+locations near the end of an input where recovery leads to an accept state). Thus
 while the repair sequences we find are all equivalently good within the range
 of $N_\textit{shifts}$, some, but not others, may perform poorly beyond that
 range. This problem is exacerbated by the fact that $N_\textit{shifts}$ has
@@ -1182,7 +1184,7 @@ location.
 \label{methodology}
 
 In order to evaluate error recovery implementations, we need a concrete implementation. We
-implemented a new Yacc-compatible parsing system \emph{grmtools} in Rust which
+created a new Yacc-compatible parsing system \emph{grmtools} in Rust which
 we use for our experiments. Including
 associated libraries for LR table generation and so on, \emph{grmtools} is around
 13KLoC. Although intended as a production library, it has accidentally
@@ -1191,10 +1193,10 @@ error recovery algorithms. We added a simple front-end \emph{nimbleparse} which 
 seen in e.g.~Figure~\ref{fig:javaerror}.
 
 There are two standard problems when evaluating error recovery algorithms: how
-to determine if a good job has been done on an individual example; and obtaining
-sufficient examples to get a wide perspective on an algorithm's performance. To
-some extent, solutions to these problems are mutually exclusive: for
-real-world inputs, the only way to tell if a good job has been done is to
+to determine if a good job has been done on an individual example; and how to obtain
+sufficient examples to get a wide perspective on an algorithm's performance. Unfortunately,
+solutions to these problems are mutually exclusive, since the only way to tell if
+a good job has been done on a particular is to
 manually evaluate it, which means that it is only practical to use a small set
 of input programs. Most papers we are aware of use at most 200 source files
 (e.g.~\cite{corchuelo02repairing}), with one using a single source file with minor
@@ -1323,7 +1325,7 @@ experimental repository).
 \bottomrule
 \end{tabular}
 \caption{Summary statistics from running various error recovery algorithms over
-a corpus of \corpussize Java files (for all measures, lower values are better).
+a corpus of \corpussize Java files (for all measures, lower is better).
 Mean and median times
 report how much time was spent in error recovery per file: both figures
 include files which exceeded the recovery timeout, so they represent the `real'
@@ -1649,7 +1651,7 @@ the expression continues.}
 In Yacc, semantic actions can assume that each symbol in the
 production has `normal' data attached to it (either a rule's value or the
 string matching a token; Yacc's error recovery is implicitly expected to
-maintain this guarantee): in our setting inserted tokens
+maintain this guarantee) whereas, in our setting, inserted tokens
 have a type but no value. Given the input `(2 + 3', the inserted close bracket is not
 hugely important, and our calculator returns the value 5. However,
 given the input `2 +',
@@ -1661,7 +1663,7 @@ However, there are two alternatives to this rather extreme outcome:
 the semantic action can assume a default value or stop further execution
 of semantic values while allowing parsing to continue. Determining which is the
 right action in the face of inserted tokens is inherently situation specific.
-We therefore need to find a pragmatic way for users to control what happens in
+We therefore need a pragmatic way for users to control what happens in
 such cases.
 
 The approach we take is to allow users to easily differentiate normal vs.~inserted
@@ -2007,7 +2009,7 @@ is approximately 500LoC and can be applied to any LR grammar.
 
 Although error recovery approaches have, historically, been mostly LR based,
 there are several non-LR approaches. A full overview is impractical, though a
-few pointers are useful. When LL approaches encounter an error, they generally
+few pointers are useful. When LL parsers encounter an error, they generally
 skip input until a token in the follow set is encountered (an early example
 is~\cite{turner77error}). Although this outperforms the simple panic mode of
 Section~\ref{sec:panic mode}, it will, in general, clearly skip more input than
@@ -2062,7 +2064,7 @@ users, as well as significantly reducing the cascading error problem.
 The \cpctplus algorithm is simple to implement (less than 500LoC in our
 Rust system) and still has good performance.
 
-Looking to the future, we (perhaps immodestly) suggest that \cpctplus might be `good enough'
+Looking to the future, we, perhaps immodestly, suggest that \cpctplus might be `good enough'
 to serve as a common representative of the \fischer family.
 However, we do not think that it is the perfect solution. We suspect
 that, in the future, multi-phase solutions will be developed. For example, one
