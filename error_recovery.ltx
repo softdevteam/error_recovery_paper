@@ -1584,8 +1584,8 @@ pseudo-variables: if they reference a rule $R$, then their type is
 $R$'s return type; if they reference a token $T$, then their type
 is (slightly simplified) \texttt{Result<Lexeme,
 Lexeme>}. We will explain the reasons for this shortly, but at this stage it
-suffices to note that we can extract tokens matching the user's input from
-non-insert repairs\lukas{I'm not sure why we need to emphasise "from non-insert repairs". Do you mean that we can only extract tokens if there wasn't an insertion from a repair sequence?} by calling \texttt{\$1.unwrap()}, and obtain the actual string the user passed by
+suffices to note that, unless a token was inserted by error recovery,
+we can extract tokens by calling \texttt{\$1.unwrap()}, and obtain the actual string the user passed by
 using the globally available \texttt{\$lexer.span\_str} function.
 
 
