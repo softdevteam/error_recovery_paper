@@ -1,0 +1,100 @@
+\documentclass[a4paper,UKenglish]{darts-v2019}
+ 
+\usepackage{microtype}
+
+\nolinenumbers
+
+\bibliographystyle{plainurl}
+
+\newenvironment{scope}{\section{Scope}}{}
+\newenvironment{content}{\section{Content}}{}
+\newenvironment{getting}{\section{Getting the artifact} The artifact 
+endorsed by the Artifact Evaluation Committee is available free of 
+charge on the Dagstuhl Research Online Publication Server (DROPS).}{}
+\newenvironment{platforms}{\section{Tested platforms}}{}
+\newcommand{\license}[1]{{\section{License}#1}}
+\newcommand{\mdsum}[1]{{\section{MD5 sum of the artifact}#1}}
+\newcommand{\artifactsize}[1]{{\section{Size of the artifact}#1}}
+
+
+% Author macros::begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{Don't Panic! Better, Fewer, Syntax Errors for LR Parsers: Artefact}
+
+\author{Lukas Diekmann}{Software Development Team, King's College London, United Kingdom \and \url{https://lukasdiekmann.com/}}{lukas.diekmann@gmail.com}{}{}
+\author{Laurence Tratt}{Software Development Team, King's College London, United Kingdom \and \url{https://tratt.net/laurie/}}{laurie@tratt.net}{https://orcid.org/0000-0002-5258-3805}{}
+\authorrunning{L.\,Diekmann and L.\,Tratt}
+\Copyright{Lukas Diekmann and Laurence Tratt}
+\keywords{Parsing, error recovery, programming languages}
+\ccsdesc{Theory of computation~Parsing}
+\ccsdesc{Software and its engineering~Compilers}
+
+\RelatedArticle{<placeholder>}
+
+\Volume{6}
+\Issue{2}
+\Article{<placeholder>}
+\RelatedConference{34th European Conference on Object-Oriented Programming (ECOOP 2020), July 13--17, 2020, Berlin, Germany}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This is the artefact accompanying the paper `Don't Panic! Better, Fewer, Syntax
+Errors for LR Parsers` by Diekmann and Tratt. It focusses on the experiment
+from that paper, which compares a number of different error recovery algorithms
+on a large corpus of data, including all the software necessary to reproduce
+the experiment from the paper.
+\end{abstract}
+
+\begin{scope}
+The artefact focusses on the experiment in Section 6 from the paper. It
+includes the software necessary to build and run the experiment. The experiment
+makes use of Java source code with syntax errors from
+\href{https://bluej.org/blackbox/}{Blackbox}, which we are not allowed to
+distribute. Instead we include anonymised identifiers which allow those who
+\href{https://bluej.org/blackbox/#Access}{register with Blackbox} to precisely
+recreate the corpus we used. You can also use your own corpus of Java source
+code with the experiment if you wish.
+\end{scope}
+
+\begin{content}
+The artifact package includes:
+\begin{itemize}
+\item The software necessary to build and run the experiment.
+\item The specific version of the \emph{grmtools} parsing software (created for
+    the paper) used in the experiment.
+\end{itemize}
+\end{content}
+
+\begin{getting}
+In addition, the artifact is also available at:
+\url{https://archive.org/download/error_recovery_experiment/0.4/}
+\end{getting}
+
+\begin{platforms}
+The experiment is likely to work on any platform on which Rust 1.42 (or later)
+and Python 2.7 run. The artefact \texttt{README.md} includes further details
+about additional software dependencies.
+\end{platforms}
+
+\license{The artefact is available under both the Apache License (Version 2.0)
+and the MIT License.}
+
+% ARTIFACT: section specifying the md5 sum of the artifact master file
+% uploaded to the Dagstuhl Research Online Publication Server, enabling 
+% downloaders to check that the file is the expected version and suffered 
+% no damage during download.
+\mdsum{070d328911ec6e9b400f4d2db82b61f3}
+
+% ARTIFACT: section specifying the size of the artifact master file uploaded
+% to the Dagstuhl Research Online Publication Server
+\artifactsize{5.7 MiB}
+
+\subparagraph*{Acknowledgements.}
+
+We are grateful to the Blackbox developers for allowing us access to their
+data. This research was funded by the EPSRC Lecture (EP/L02344X/1) Fellowship.
+
+\end{document}
