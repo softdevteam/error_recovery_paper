@@ -33,6 +33,7 @@ ARXIV_FILES=graph.pdf \
 		examplegrammar.pdf \
 		cpctplus_histogram.pdf \
 		cpctplus_cpctplusrev_error_locs_histogram_zoomed.pdf \
+		cpctpluslonger_histogram.pdf \
 		cpctplus_cpctplusrev_error_locs_histogram_full.pdf \
 		orcid.pdf \
 		cc-by.pdf \
