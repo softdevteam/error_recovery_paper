@@ -377,7 +377,7 @@ a \emph{parse tree}, ordering the tokens into a tree of nonterminal nodes
 the grammar are labelled \texttt{(I)} to \texttt{(VI)}. In the stategraph: S($x$)
 means `shift to state $x$'; R($x$) means `reduce production $x$ from the
 grammar' (e.g.~\textit{action(3, `+')} returns R(IV) which references
-the production `\texttt{Term: Factor;}').
+the production `\texttt{Factor: Term;}').
   Each item within a state $[N \colon \alpha \bullet \beta]$ references one
   of rule $N$'s productions; $\alpha$ and $\beta$ each
 represent zero or more symbols; with the \emph{dot} ($\bullet$) representing
@@ -1523,16 +1523,16 @@ Rust-specific details may wish to move immediately to Section~\ref{sec:threats}.
 %start Expr
 %%
 Expr -> u64:
-    Term "+" Expr { $1 + $3 }
-  | Term { $1 }
-  ;
-
-Term -> u64:
-    Factor "*" Term { $1 * $3 }
+    Factor "+" Expr { $1 + $3 }
   | Factor { $1 }
   ;
 
 Factor -> u64:
+    Term "*" Factor { $1 * $3 }
+  | Term { $1 }
+  ;
+
+Term -> u64:
     "(" Expr ")" { $2 }
   | "INT"
     {
@@ -1600,16 +1600,16 @@ using the globally available \texttt{\$lexer.span\_str} function.
 %avoid_insert "INT"
 %%
 Expr -> Result<u64, Box<dyn Error>>:
-   Term "+" Expr { Ok($1? + $3?) }
- | Term { $1 }
- ;
-
-Term -> Result<u64, Box<dyn Error>>:
-   Factor "*" Term { Ok($1? * $3?) }
+   Factor "+" Expr { Ok($1? + $3?) }
  | Factor { $1 }
  ;
 
 Factor -> Result<u64, Box<dyn Error>>:
+   Term "*" Factor { Ok($1? * $3?) }
+ | Term { $1 }
+ ;
+
+Term -> Result<u64, Box<dyn Error>>:
   '(' Expr ')' { $2 }
  | 'INT'
    {
@@ -1634,7 +1634,7 @@ Factor -> Result<u64, Box<dyn Error>>:
 \vspace*{0pt}
 \caption{A more sophisticated version of the grammar from
 Figure~\ref{fig:api:naive}. Each rule now returns a \texttt{Result} type. If an
-integer is inserted by error recovery, the \texttt{Factor} rule stops
+integer is inserted by error recovery, the \texttt{Term} rule stops
 evaluation by percolating the \texttt{Err} value upwards using the
 `\texttt{?}' operator (which, if the \texttt{Result}-returning expression it is
 attached to evaluates to an \texttt{Err}, immediately returns that error;
