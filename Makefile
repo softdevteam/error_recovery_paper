@@ -5,7 +5,7 @@
 	ps2pdf -dEPSCrop ${@:.pdf=.eps} $@
 
 .svg.pdf:
-	inkscape --export-pdf=$@ $<
+	inkscape --export-filename=$@ $<
 
 LATEX_FILES = error_recovery.ltx experimentstats.tex table.tex
 
